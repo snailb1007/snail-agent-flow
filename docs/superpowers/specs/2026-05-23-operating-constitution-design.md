@@ -13,17 +13,26 @@ The first implementation target is `.ai/constitution.md`.
 ## Context
 
 This repository defines a thin orchestration protocol for AI-assisted software
-delivery. Existing project docs already establish the pipeline:
+delivery. Existing project docs already establish the canonical pipeline:
 
 1. Superpowers Constitution
 2. Recon
 3. GStack CEO / Eng Manager Review
 4. Spec-Kit / OpenSpec
 5. Spec Validation Gate
+   - Promptfoo or custom evaluator
+   - maximum three retries
+   - `NEEDS_HUMAN_REVIEW` if blocked
 6. GSD Full Execution
 7. Failure Feedback Loop
+   - local implementation bug returns to GSD Full Execution
+   - spec-level failure returns to Spec-Kit / OpenSpec
 8. GStack QA
 9. Memory Handoff
+   - read `.ai/sessions/`
+   - update `.ai/memory/project-summary.md`
+   - update `.ai/memory/current-architecture.md`
+   - update `.ai/memory/known-risks.md` when needed
 10. GStack Ship
 
 The current `.ai/constitution.md` contains the right seed ideas but is too short
@@ -109,6 +118,7 @@ Each major phase should have a clear entry and exit condition:
 - Spec Gate
 - Spec Validation Gate
 - Execution Gate
+- Failure Feedback Loop
 - QA Gate
 - Memory Handoff Gate
 - Ship Gate
@@ -138,6 +148,10 @@ unless the existing project instructions already require them.
 The constitution must stop unbounded loops:
 
 - If the same validation category fails more than three times, stop.
+- If a local implementation bug is found during execution, return to the
+  execution step and fix it there.
+- If a failure exposes a missing or wrong requirement, return to the spec step
+  instead of patching around the spec.
 - If the agent cannot distinguish between two materially different
   interpretations, stop.
 - If a change may cause data loss, security regression, API incompatibility, or
@@ -157,6 +171,9 @@ The constitution should name source-of-truth files and expected outputs:
 - `.ai/specs/current/tasks.md`
 - `.ai/specs/current/validation-report.md`
 - `.ai/state/spec-validation-state.json`
+- `.ai/memory/project-summary.md`
+- `.ai/memory/current-architecture.md`
+- `.ai/memory/known-risks.md`
 
 Artifacts must be specific enough for another agent or human to resume work
 without reconstructing hidden reasoning from chat history.
@@ -166,6 +183,8 @@ without reconstructing hidden reasoning from chat history.
 - `.ai/constitution.md` is rewritten as a hybrid operating constitution.
 - The document has explicit hard rules, engineering principles, pipeline gates,
   failure rules, and artifact contracts.
+- The document preserves the canonical pipeline from Constitution through Ship,
+  including Step 4.5 Failure Feedback Loop and Step 5.5 Memory Handoff.
 - The document remains concise and does not duplicate tool manuals.
 - The document aligns with `ai-delivery-pipeline-blueprint.md`, `.ai/pipeline.md`,
   and `.ai/recon.md`.
