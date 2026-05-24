@@ -116,7 +116,7 @@ Source-of-truth and handoff artifacts include:
 - `specs/<feature-slug>/plan.md`: accepted implementation plan.
 - `specs/<feature-slug>/tasks.md`: executable task list.
 - `.ai/reviews/<feature-slug>/spec-validation-report.md`: validation report.
-- `.ai/state/active-feature.json`: active feature state pointer.
+- `.specify/feature.json`: active feature state pointer.
 - `.ai/memory/project-summary.md`: durable project summary.
 - `.ai/memory/current-architecture.md`: durable architecture notes.
 - `.ai/memory/known-risks.md`: durable known risks.

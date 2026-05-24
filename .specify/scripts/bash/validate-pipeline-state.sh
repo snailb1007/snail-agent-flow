@@ -7,7 +7,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 SPECIFY_AI_DIR="${SPECIFY_AI_DIR:-$REPO_ROOT/.ai}"
 STATE_DIR="$SPECIFY_AI_DIR/state"
 RUN_STATE_FILE="$STATE_DIR/run-state.json"
-ACTIVE_FEATURE_FILE="$STATE_DIR/active-feature.json"
+ACTIVE_FEATURE_FILE="${SPECIFY_STATE_FILE:-$REPO_ROOT/.specify/feature.json}"
 
 # Helper function to query JSON using python3
 query_json() {
@@ -120,8 +120,7 @@ cmd_init() {
     mkdir -p "$STATE_DIR"
     
     # Initialize active-feature pointer
-    update_json "$ACTIVE_FEATURE_FILE" "feature_slug" "$slug"
-    update_json "$ACTIVE_FEATURE_FILE" "spec_path" "$path"
+    update_json "$ACTIVE_FEATURE_FILE" "feature_directory" "$path"
     
     # Initialize mutable run state
     update_json "$RUN_STATE_FILE" "feature_slug" "$slug"
@@ -161,13 +160,22 @@ cmd_verify_paths() {
         exit 1
     fi
     
-    local act_slug=$(query_json "$ACTIVE_FEATURE_FILE" "feature_slug")
-    local act_path=$(query_json "$ACTIVE_FEATURE_FILE" "spec_path")
+    # Check for legacy file existence to prevent drift
+    if [ -f "$STATE_DIR/active-feature.json" ]; then
+        echo "ERROR: Path Drift detected! Redundant active feature pointer found at legacy path: .ai/state/active-feature.json" >&2
+        exit 1
+    fi
+    
+    local act_path=$(query_json "$ACTIVE_FEATURE_FILE" "feature_directory")
+    # Normalize paths by removing trailing slashes for comparison
+    local act_path_norm="${act_path%/}"
+    local act_slug=$(basename "$act_path_norm")
     local run_slug=$(query_json "$RUN_STATE_FILE" "feature_slug")
     local run_path=$(query_json "$RUN_STATE_FILE" "spec_path")
+    local run_path_norm="${run_path%/}"
     
-    if [ "$act_slug" != "$run_slug" ] || [ "$act_path" != "$run_path" ]; then
-        echo "ERROR: active-feature.json and run-state.json mismatch. Active: $act_slug, RunState: $run_slug" >&2
+    if [ "$act_slug" != "$run_slug" ] || [ "$act_path_norm" != "$run_path_norm" ]; then
+        echo "ERROR: feature.json and run-state.json mismatch. Active slug: $act_slug, RunState slug: $run_slug" >&2
         exit 1
     fi
     

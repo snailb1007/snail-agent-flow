@@ -79,16 +79,18 @@ This roadmap stabilizes the protocol before adding automation. The phase order i
 
 ## Phase 4: Templates and Runtime Adapter Alignment
 
-**Goal:** Align runtime-specific instructions and templates to the shared protocol contract.
+**Goal:** Align runtime-specific instructions and templates to the shared protocol contract:
+- `.specify/` owns templates, scripts, and the active feature pointer (`.specify/feature.json`).
+- `specs/<feature-slug>/` owns canonical Spec-Kit files (`spec.md`/`plan.md`/`tasks.md`).
+- `.ai/` owns orchestration state (`run-state.json`), reviews, sessions, and memory.
 
-**Rationale:** Claude, Gemini, Codex/GSD, local skills, and Spec-Kit scaffolds should be adapters over the same contract, not competing policy sources, reading from the same `.specify/` source of truth.
+**Rationale:** Claude, Gemini, GSD, local skills, and Spec-Kit scaffolds should align to a clean folder ownership model where the active pointer resides in `.specify/`, the specs reside in `specs/`, and orchestration state/memory reside in `.ai/`, eliminating redundant or competing pointers.
 
 **Delivers:**
-
-- Aligned `CLAUDE.md`, `GEMINI.md`, future `AGENTS.md`, `.agents/skills/`, and `.ai/constitution.md`.
-- Runtime-neutral greenfield and brownfield templates.
-- Adapter boundary documentation for Claude, Gemini, Codex/GSD, and future runtimes.
-- Spec-Kit/Gemini scaffold compatibility classification and narrow adapter rules.
+- Deprecated and deleted `.ai/state/active-feature.json` to prevent path drift.
+- Aligned `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, and `.ai/constitution.md` to the path ownership model.
+- Updated spec validators (JS and Bash) to read exclusively from `.specify/feature.json`.
+- Updated test suites and fixtures to reflect the clean boundary.
 
 **Requirements covered:** ADAPT-01, ADAPT-02, ADAPT-03, ADAPT-04
 

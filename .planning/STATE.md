@@ -6,10 +6,10 @@ status: unknown
 last_updated: "2026-05-24T18:00:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 33
+  completed_phases: 3
+  total_plans: 4
+  completed_plans: 3
+  percent: 50
 ---
 
 # Project State
@@ -21,24 +21,24 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-24)
 
 **Core value:** Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
-**Current focus:** Phase 3: Deterministic Validator, Drift Checks, and Human Review Packet
+**Current focus:** Phase 4: Templates and Runtime Adapter Alignment
 
 ## Current Status
 
-Phase 1 (Artifact Contract, Status, and Minimal Golden Path) and Phase 2 (Routing, Gates, and Memory Foundation) are complete. The pipeline state validator script and end-to-end pipeline simulation runner have been successfully implemented and verified.
+Phases 1, 2, and 3 are complete. The JS spec validator, Bash pipeline validator, and end-to-end pipeline simulation are fully verified and passing. Stale and redundant feature pointers have been cleaned up and deprecated in favor of `.specify/feature.json`.
 
 ## Active Phase
 
-**Phase 3: Deterministic Validator, Drift Checks, and Human Review Packet**
+**Phase 4: Templates and Runtime Adapter Alignment**
 
-Goal: Implement a deterministic validator and drift checker to prevent path and memory drift.
+Goal: Align runtime-specific instructions and templates to the shared protocol contract: `.specify/` owns templates/scripts/pointer; `specs/<feature-slug>/` owns canonical `spec.md`/`plan.md`/`tasks.md`; `.ai/` owns orchestration state, reviews, sessions, memory.
 
 Primary requirements:
 
-- VALID-01
-- VALID-02
-- VALID-03
-- VALID-04
+- ADAPT-01
+- ADAPT-02
+- ADAPT-03
+- ADAPT-04
 
 ## Decisions
 
@@ -59,13 +59,11 @@ Primary requirements:
 
 ## Next Action
 
-Run:
+Verify everything using the full validation suite:
 
 ```bash
-$gsd-plan-phase 3
+npm test
 ```
-
-This should create the detailed execution plan for Phase 3: Deterministic Validator, Drift Checks, and Human Review Packet.
 
 ---
 *State updated: 2026-05-24*

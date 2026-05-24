@@ -42,6 +42,12 @@ npm run test:pipeline   # Phase 2 pipeline simulation
 npm test                # full validation suite
 ```
 
+## Path Ownership & Folder Boundaries
+
+- **`.specify/`**: Owns presets, templates, validation scripts, and the active feature pointer (`.specify/feature.json`).
+- **`specs/<feature-slug>/`**: Owns canonical Spec-Kit files: `spec.md` (requirements), `plan.md` (architecture & changes), and `tasks.md` (checklist).
+- **`.ai/`**: Owns mutable orchestration state (`run-state.json`), review logs, QA results, sessions, and durable project memory.
+
 ## Project Documentation
 
 - `CONTEXT.md` defines pipeline vocabulary and current orchestration terms.

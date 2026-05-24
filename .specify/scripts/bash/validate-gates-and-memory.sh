@@ -5,7 +5,7 @@ set -euo pipefail
 # Set paths
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 SPECIFY_AI_DIR="${SPECIFY_AI_DIR:-$REPO_ROOT/.ai}"
-STATE_FILE="${SPECIFY_STATE_FILE:-$SPECIFY_AI_DIR/state/active-feature.json}"
+STATE_FILE="${SPECIFY_STATE_FILE:-$REPO_ROOT/.specify/feature.json}"
 
 echo "[validator] Checking active feature state: $STATE_FILE"
 
@@ -14,19 +14,21 @@ if [ ! -f "$STATE_FILE" ]; then
     exit 1
 fi
 
-# Parse feature slug using jq (or fallback simple grep if jq is missing)
+# Parse feature_directory using jq (or fallback simple grep if jq is missing)
 if command -v jq >/dev/null 2>&1; then
-    FEATURE_SLUG=$(jq -r '.feature_slug' "$STATE_FILE")
-    SPEC_PATH=$(jq -r '.spec_path' "$STATE_FILE")
+    SPEC_PATH=$(jq -r '.feature_directory' "$STATE_FILE")
 else
-    FEATURE_SLUG=$(grep -o '"feature_slug"[[:space:]]*:[[:space:]]*"[^"]*"' "$STATE_FILE" | cut -d'"' -f4)
-    SPEC_PATH=$(grep -o '"spec_path"[[:space:]]*:[[:space:]]*"[^"]*"' "$STATE_FILE" | cut -d'"' -f4)
+    SPEC_PATH=$(grep -o '"feature_directory"[[:space:]]*:[[:space:]]*"[^"]*"' "$STATE_FILE" | cut -d'"' -f4)
 fi
 
-if [ -z "${FEATURE_SLUG:-}" ] || [ -z "${SPEC_PATH:-}" ]; then
-    echo "ERROR: Failed to parse feature_slug or spec_path from $STATE_FILE" >&2
+if [ -z "${SPEC_PATH:-}" ]; then
+    echo "ERROR: Failed to parse feature_directory from $STATE_FILE" >&2
     exit 1
 fi
+
+# Normalize SPEC_PATH by removing trailing slashes
+SPEC_PATH_NORM="${SPEC_PATH%/}"
+FEATURE_SLUG=$(basename "$SPEC_PATH_NORM")
 
 echo "[validator] Active feature: $FEATURE_SLUG"
 echo "[validator] Spec path: $SPEC_PATH"
