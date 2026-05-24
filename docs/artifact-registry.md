@@ -13,7 +13,7 @@ This document defines the canonical artifact contract, path ownership model, and
 | `docs/artifact-registry.md` | Protocol / Human | Authoritative | `implemented` | Registry of paths, owners, and statuses. |
 | `docs/superpowers/specs/` | Superpowers / Human | Authoritative | `implemented` | Legacy/existing project specification documents. |
 | `docs/superpowers/plans/` | Superpowers / Human | Authoritative | `implemented` | Legacy/existing project implementation plans. |
-| `.ai/state/active-feature.json` | Orchestrator | Generated | `deferred` | JSON state pointer identifying the active feature. |
+| `.ai/state/active-feature.json` | Orchestrator | Generated | `implemented` | JSON state pointer identifying the active feature. |
 | `.gemini/` | Gemini CLI | Runtime-Specific | `implemented` | Runtime adapter command configuration. |
 | `.gemini/commands/` | Gemini CLI / Adapter | Runtime-Specific | `implemented` | Gemini-specific tool wrapper commands. |
 | `.claude/` | Claude CLI | Runtime-Specific | `implemented` | Runtime settings and git hooks specific to Claude. |
@@ -28,7 +28,7 @@ This document defines the canonical artifact contract, path ownership model, and
 | `.planning/ROADMAP.md` | GSD Planner | Authoritative | `implemented` | Project milestones, feature phases, and development sequencing. |
 | `.ai/sessions/` | Coding Agents | Local-Only | `implemented` | Temporary execution notes and scratchpads. |
 | `.ai/reviews/<feature-slug>/` | Critique Agents | Local-Only | `implemented` | Reviews, validation reports, and decisions. |
-| `.ai/state/` | Orchestrator | Local-Only | `deferred` | Directory storing current execution state. |
+| `.ai/state/` | Orchestrator | Local-Only | `implemented` | Directory storing current execution state. |
 | `.agents/` | Agent Skills | Authoritative | `implemented` | Houses agent capabilities and superpower skills. |
 | `.bg-shell/` | Shell Runtime | Local-Only | `implemented` | Background command shell logs and process manifests. |
 | `CLAUDE.md` | Claude CLI | Authoritative | `implemented` | Developer guide, build/test commands, and CLI constraints. |
@@ -53,7 +53,7 @@ This document defines the canonical artifact contract, path ownership model, and
 | `specs/` | Spec-Kit | `implemented` | Directory containing active feature requirements, plans, and tasks. |
 | `.ai/` | Orchestration | `implemented` | Contains constitution, memory, reviews, sessions, and state. |
 | `.ai/memory/` | Protocol / Human | `placeholder` | Durable project memory including architecture, decisions, and risks. |
-| `.ai/state/` | Orchestrator | `deferred` | Directory storing current active-feature state. |
+| `.ai/state/` | Orchestrator | `implemented` | Directory storing current active-feature state. |
 | `.planning/` | GSD Planner | `implemented` | Roadmaps, project state, phase manifests, and codebase maps. |
 | `.agents/` | Agent Skills | `implemented` | Houses agent capabilities and superpower skills. |
 | `.bg-shell/` | Shell Runtime | `implemented` | Background command shell logs and process manifests. |
