@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented here.
 
+## [0.2.0.0] - 2026-05-24
+
+### Added
+- Added the `adp` and `saf` command line tools so users can initialize protocol folders, create session logs, inspect active feature status, run doctor checks, validate specs, and verify memory handoff readiness from one local CLI.
+- Added CLI integration tests to `npm test` so validator, pipeline, and command behavior are checked together before release.
+- Added a GitHub release workflow that verifies the CLI package, creates an npm tarball, uploads it as a workflow artifact, and attaches it to tagged releases.
+- Added Phase 5 specification, planning, discussion, and ship decision artifacts for CLI packaging.
+
+### Changed
+- Advanced project state and planning context to Phase 5 CLI packaging.
+- Updated the Phase 2 pipeline simulation so it runs through the packaged validator command path.
+
+### Fixed
+- Blocked unsafe session names from writing outside `.ai/sessions` when creating new CLI session logs.
+
 ## [0.1.0.0] - 2026-05-24
 
 ### Added

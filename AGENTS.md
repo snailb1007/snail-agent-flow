@@ -15,7 +15,21 @@ node validators/scripts/validate-spec.js resume
 npm run validate        # deterministic Spec-Kit validation
 npm run test:validator  # validator unit coverage
 npm run test:pipeline   # Phase 2 pipeline simulation
+npm run test:cli        # CLI command integration coverage
 npm test                # full validation suite
+```
+
+## Local CLI Commands
+
+Use `node bin/adp.js <command>` from the repository checkout, or `adp <command>` / `saf <command>` when the package binary is installed.
+
+```bash
+node bin/adp.js init
+node bin/adp.js new-session <name>
+node bin/adp.js status
+node bin/adp.js doctor
+node bin/adp.js validate-spec
+node bin/adp.js handoff
 ```
 
 ## Path Ownership & Folder Boundaries
@@ -26,6 +40,7 @@ npm test                # full validation suite
 
 ## Project Documentation
 
+- `README.md` documents CLI usage, verification commands, and project structure.
 - `CONTEXT.md` defines pipeline vocabulary and current orchestration terms.
 - `docs/prd.md` describes the full AI delivery pipeline blueprint.
 - `docs/artifact-registry.md` owns path and artifact ownership rules.

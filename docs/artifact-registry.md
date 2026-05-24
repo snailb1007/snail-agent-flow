@@ -14,7 +14,10 @@ This document defines the canonical artifact contract, path ownership model, and
 | `specs/<feature-slug>/` | Spec-Kit / User | Authoritative | `specified` | Canonical feature source of truth containing spec.md, plan.md, and tasks.md, owned by Spec-Kit and consumed by GSD. |
 | `validators/scripts/validate-spec.js` | Protocol / Validator | Authoritative | `implemented` | Deterministic Node.js validator for active feature pointers, Spec-Kit file structure, required headings, path drift, placeholders, retry state, and human review packet generation. |
 | `validators/scripts/test-validator.js` | Protocol / Validator | Authoritative | `implemented` | Local validator test suite covering pass, failure, retry, resume, and generated review packet behavior. |
-| `package.json` | Node.js Tooling | Authoritative | `implemented` | Defines `npm run validate`, `npm run test:validator`, `npm run test:pipeline`, and `npm test`. |
+| `validators/scripts/test-cli.js` | Protocol / Validator | Authoritative | `implemented` | CLI integration test suite covering command routing, initialization, session creation, status, doctor, validate-spec, and handoff behavior. |
+| `bin/adp.js` | Node.js Tooling | Authoritative | `implemented` | Zero-dependency CLI registered as `adp` and `saf` for protocol initialization, status, validation, session logging, doctor checks, and memory handoff validation. |
+| `package.json` | Node.js Tooling | Authoritative | `implemented` | Defines package metadata, the `adp`/`saf` binary mappings, `npm run validate`, `npm run test:validator`, `npm run test:pipeline`, `npm run test:cli`, and `npm test`. |
+| `.github/workflows/release.yml` | GitHub Actions | Authoritative | `implemented` | Release workflow that runs the full validation suite, packs the CLI tarball, uploads the artifact, and attaches it to tagged releases. |
 | `docs/` | Protocol / Human | Authoritative | `implemented` | Project documentation and artifact registries. |
 | `docs/artifact-registry.md` | Protocol / Human | Authoritative | `implemented` | Registry of paths, owners, and statuses. |
 | `docs/superpowers/specs/` | Superpowers / Human | Authoritative | `implemented` | Legacy/existing project specification documents. |
@@ -36,7 +39,8 @@ This document defines the canonical artifact contract, path ownership model, and
 | `.ai/state/` | Orchestrator | Local-Only | `implemented` | Directory storing current execution state. |
 | `.agents/` | Agent Skills | Authoritative | `implemented` | Houses agent capabilities and superpower skills. |
 | `.bg-shell/` | Shell Runtime | Local-Only | `implemented` | Background command shell logs and process manifests. |
-| `CLAUDE.md` | Claude CLI | Authoritative | `implemented` | Developer guide, build/test commands, and CLI constraints. |
+| `README.md` | Protocol / Human | Authoritative | `implemented` | Entry-point documentation for CLI usage, verification commands, project structure, and documentation links. |
+| `CLAUDE.md` | Claude CLI | Authoritative | `implemented` | Developer guide, build/test commands, local CLI commands, and CLI constraints. |
 | `GEMINI.md` | Gemini CLI | Authoritative | `implemented` | Gemini-specific adapter command details and guidelines. |
 | `AGENTS.md` | Protocol / Human | Authoritative | `generated-scaffold` | High-level agent team documentation and directives. |
 | `CONTEXT.md` | Protocol / Human | Authoritative | `implemented` | Defines feature spec source of truth and state pointers. |
@@ -57,6 +61,7 @@ This document defines the canonical artifact contract, path ownership model, and
 | `.specify/` | Spec-Kit | `implemented` | Unified root for all Spec-Kit templates, presets, and scripts. |
 | `specs/` | Spec-Kit | `implemented` | Directory containing active feature requirements, plans, and tasks. |
 | `validators/` | Protocol / Validator | `implemented` | Node.js deterministic validator and local validator test suite. |
+| `bin/` | Node.js Tooling | `implemented` | Local CLI entry points for protocol operations. |
 | `.ai/` | Orchestration | `implemented` | Contains constitution, memory, reviews, sessions, and state. |
 | `.ai/memory/` | Protocol / Human | `placeholder` | Durable project memory including architecture, decisions, and risks. |
 | `.ai/state/` | Orchestrator | `implemented` | Directory storing current orchestration state (run-state.json). |
@@ -76,4 +81,3 @@ This document defines the canonical artifact contract, path ownership model, and
 - **Deterministic Validation Gate**: `validators/scripts/validate-spec.js` is the pre-implementation gate for active feature pointer validity, required Spec-Kit files, heading structure, path drift, placeholders, retry state, and human review packet generation.
 - **GStack / Matt Critique Gates**: All critique gates are owned by GStack review tools (e.g., product, architecture, QA, release readiness).
 - **GitHub Issues**: GitHub issues are strict projections of tasks in `tasks.md` (e.g., using `speckit-taskstoissues`) and must not act as a separate/divergent source of truth.
-
