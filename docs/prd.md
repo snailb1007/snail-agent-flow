@@ -427,19 +427,19 @@ Ship report should be saved as:
 ## 4. Recommended Folder Structure
 
 ```text
+specs/
+  <feature-slug>/
+    spec.md
+    plan.md
+    tasks.md
+    research.md
+    data-model.md
+    quickstart.md
+    contracts/
+
 .specify/
   memory/
     constitution.md
-
-  specs/
-    <feature-slug>/
-      spec.md
-      plan.md
-      tasks.md
-      research.md
-      data-model.md
-      quickstart.md
-      contracts/
 
 .ai/
   memory/
@@ -464,7 +464,7 @@ Ship report should be saved as:
     handoff.md
 ```
 
-`.specify/` owns feature specs and Spec-Kit templates (including a constitution template). `.ai/` owns orchestration state, session notes, reviews, and durable project memory. The active operational constitution is `.ai/constitution.md`; `.specify/memory/constitution.md` is a Spec-Kit template copy.
+`specs/` owns feature specs (including the canonical spec, plan, and tasks files). `.specify/` owns Spec-Kit templates, presets, configuration, and integration scripts. `.ai/` owns orchestration state, session notes, reviews, and durable project memory. The active operational constitution is `.ai/constitution.md`; `.specify/memory/constitution.md` is a Spec-Kit template copy.
 
 ---
 
@@ -689,6 +689,8 @@ ai-delivery-pipeline/
     base/
       CLAUDE.md
       AGENTS.md
+      specs/
+        .gitkeep
       .ai/
         sessions/
           .gitkeep
@@ -706,8 +708,6 @@ ai-delivery-pipeline/
       .specify/
         memory/
           constitution.md
-        specs/
-          .gitkeep
 
     minimal/
     typescript/

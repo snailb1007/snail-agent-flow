@@ -32,6 +32,10 @@ _Avoid_: implementation executor
 The release-readiness owner for the final handoff.
 _Avoid_: executor self-approval
 
+**Memory Handoff**:
+The transition point where durable project memory is reviewed and updated so the next pipeline step can rely on current decisions, risks, architecture, and verification history.
+_Avoid_: transcript summary, automatic memory dump
+
 **Failure-mode Policy**:
 The mandatory state-transition rules that define what must happen when the pipeline cannot proceed normally.
 _Avoid_: recovery checklist
