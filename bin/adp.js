@@ -154,6 +154,11 @@ function handleNewSession(cmdArgs) {
   }
 
   const name = cmdArgs[0];
+  if (!/^[A-Za-z0-9._-]+$/.test(name)) {
+    console.error('Error: Session name may only contain letters, numbers, dots, underscores, and hyphens.');
+    process.exit(1);
+  }
+
   const dateStr = new Date().toISOString().split('T')[0];
   const sessionDir = path.join(repoRoot, '.ai/sessions');
 

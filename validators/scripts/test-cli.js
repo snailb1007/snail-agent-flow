@@ -86,15 +86,15 @@ addTest('CLI Help Usage', () => {
 // 2. Init command
 addTest('CLI Init Command', () => {
   setupSandbox();
-  
+
   // Create mock constitution template so adp init can find it
   writeJson('.specify/templates/constitution-template.md', '# Mock Constitution Template');
-  
+
   const res = runCLI(['init']);
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on init, got ${res.code}. Stderr: ${res.stderr}`);
   }
-  
+
   // Verify directories are created
   const dirs = [
     '.ai/sessions',
@@ -109,7 +109,7 @@ addTest('CLI Init Command', () => {
       throw new Error(`Expected directory to be created: ${d}`);
     }
   }
-  
+
   // Verify files are created
   const files = [
     '.ai/constitution.md',
@@ -122,7 +122,7 @@ addTest('CLI Init Command', () => {
       throw new Error(`Expected file to be created: ${f}`);
     }
   }
-  
+
   // Verify safe overwrite policy: modify CLAUDE.md, run init again, must NOT overwrite
   writeFile('CLAUDE.md', 'Custom CLAUDE');
   const res2 = runCLI(['init']);
@@ -137,27 +137,27 @@ addTest('CLI Init Command', () => {
 // 3. Doctor command
 addTest('CLI Doctor Command', () => {
   setupSandbox();
-  
+
   // Running on uninitialized sandbox should fail
   let res = runCLI(['doctor']);
   if (res.code !== 1) {
     throw new Error(`Expected exit code 1 on uninitialized sandbox doctor, got ${res.code}`);
   }
-  
+
   // Initialize sandbox via init
   runCLI(['init']);
-  
+
   // Should still fail because specs/ is empty (no active feature spec files)
   res = runCLI(['doctor']);
   if (res.code !== 1) {
     throw new Error(`Expected exit code 1 on doctor with empty specs, got ${res.code}`);
   }
-  
+
   // Set up mock feature spec files
   const mockFeatureSlug = 'test-feature';
   const mockSpecPath = `specs/${mockFeatureSlug}`;
   writeJson('.specify/feature.json', { feature_directory: mockSpecPath });
-  
+
   const validSpecContent = `# Test Feature Spec
 ## Goal
 To implement a test feature.
@@ -180,18 +180,18 @@ Do not break anything.
 - [ ] Task 1
 - [x] Task 2
 `;
-  
+
   writeFile(`${mockSpecPath}/spec.md`, validSpecContent);
   writeFile(`${mockSpecPath}/plan.md`, validPlanContent);
   writeFile(`${mockSpecPath}/tasks.md`, validTasksContent);
-  
+
   // Now doctor should pass successfully!
   // Wait, the doctor command spawns validators/scripts/validate-spec.js.
   // We need to write a mock validate-spec.js in the sandbox, or make sure validate-spec.js is resolved relative to the real project!
   // Yes! The adp.js script will spawn path.join(__dirname, '../validators/scripts/validate-spec.js') which resides in the real repository root.
   // But wait! If we run inside sandbox, we should pass REPO_ROOT/PROJECT_ROOT env variables to validate-spec.js so it runs on our sandbox.
   // We'll design bin/adp.js to pass process.env.PROJECT_ROOT/REPO_ROOT through to the subprocess!
-  
+
   res = runCLI(['doctor']);
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on doctor with valid specs, got ${res.code}. Stderr: ${res.stderr}. Stdout: ${res.stdout}`);
@@ -201,7 +201,7 @@ Do not break anything.
 // 4. Status command
 addTest('CLI Status Command', () => {
   setupSandbox();
-  
+
   // Empty sandbox should output "No active feature"
   let res = runCLI(['status']);
   if (res.code !== 0) {
@@ -210,7 +210,7 @@ addTest('CLI Status Command', () => {
   if (!res.stdout.includes('No active feature')) {
     throw new Error(`Expected 'No active feature' message, got: ${res.stdout}`);
   }
-  
+
   // Set up mock feature pointer and run-state
   const mockFeatureSlug = 'test-feature-status';
   const mockSpecPath = `specs/${mockFeatureSlug}`;
@@ -224,7 +224,7 @@ addTest('CLI Status Command', () => {
     retry_count: 0,
     verified_artifacts: ['/some/path/artifact.md']
   });
-  
+
   res = runCLI(['status']);
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on status, got ${res.code}`);
@@ -250,31 +250,40 @@ addTest('CLI Status Command', () => {
 addTest('CLI New-Session Command', () => {
   setupSandbox();
   runCLI(['init']);
-  
+
   // Running without session name must fail
   let res = runCLI(['new-session']);
   if (res.code !== 1) {
     throw new Error(`Expected exit code 1 on new-session with no name, got ${res.code}`);
   }
-  
+
   // Set up mock feature directory
   writeJson('.specify/feature.json', { feature_directory: 'specs/test-feature' });
-  
+
   // Create session
   res = runCLI(['new-session', 'user-auth-setup']);
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on new-session, got ${res.code}`);
   }
-  
+
   const dateStr = new Date().toISOString().split('T')[0];
   const expectedFile = `.ai/sessions/${dateStr}-user-auth-setup.md`;
   if (!fileExists(expectedFile)) {
     throw new Error(`Expected session file to exist: ${expectedFile}`);
   }
-  
+
   const content = readFile(expectedFile);
   if (!content.includes('user-auth-setup')) {
     throw new Error(`Expected session file to contain session name, got: ${content}`);
+  }
+
+  // Reject path traversal and nested path attempts.
+  res = runCLI(['new-session', 'nested/../../escape']);
+  if (res.code !== 1) {
+    throw new Error(`Expected exit code 1 on unsafe session name, got ${res.code}`);
+  }
+  if (fileExists('.ai/escape.md')) {
+    throw new Error('Unsafe session name escaped the .ai/sessions directory');
   }
 });
 
@@ -282,20 +291,20 @@ addTest('CLI New-Session Command', () => {
 addTest('CLI Handoff Command', () => {
   setupSandbox();
   runCLI(['init']);
-  
+
   // Missing handoff.md should fail
   let res = runCLI(['handoff']);
   if (res.code !== 1) {
     throw new Error(`Expected exit code 1 on missing handoff file, got ${res.code}`);
   }
-  
+
   // Empty handoff.md should fail
   writeFile('.ai/state/handoff.md', '# Mock Handoff');
   res = runCLI(['handoff']);
   if (res.code !== 1) {
     throw new Error(`Expected exit code 1 on empty handoff file, got ${res.code}`);
   }
-  
+
   // Correct handoff.md should pass
   const validHandoff = `# Memory Handoff Report
 Feature: test-feature-handoff
@@ -310,11 +319,11 @@ Feature: test-feature-handoff
 - Ran validation tests.
 `;
   writeFile('.ai/state/handoff.md', validHandoff);
-  
+
   // We need the active feature to match "test-feature-handoff"
   writeJson('.specify/feature.json', { feature_directory: 'specs/test-feature-handoff' });
   writeJson('.ai/state/run-state.json', { feature_slug: 'test-feature-handoff', spec_path: 'specs/test-feature-handoff' });
-  
+
   res = runCLI(['handoff']);
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on valid handoff, got ${res.code}. Stderr: ${res.stderr}. Stdout: ${res.stdout}`);
@@ -325,12 +334,12 @@ Feature: test-feature-handoff
 addTest('CLI Validate-Spec Command', () => {
   setupSandbox();
   runCLI(['init']);
-  
+
   // Set up mock feature directory
   const mockFeatureSlug = 'test-feature-valspec';
   const mockSpecPath = `specs/${mockFeatureSlug}`;
   writeJson('.specify/feature.json', { feature_directory: mockSpecPath });
-  
+
   const validSpecContent = `# Test Feature Spec
 ## Goal
 To implement a test feature.
@@ -353,17 +362,17 @@ Do not break anything.
 - [ ] Task 1
 - [x] Task 2
 `;
-  
+
   writeFile(`${mockSpecPath}/spec.md`, validSpecContent);
   writeFile(`${mockSpecPath}/plan.md`, validPlanContent);
   writeFile(`${mockSpecPath}/tasks.md`, validTasksContent);
-  
+
   // Running validate-spec should pass
   let res = runCLI(['validate-spec']);
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on validate-spec, got ${res.code}`);
   }
-  
+
   // Remove tasks.md, should now fail
   fs.unlinkSync(path.join(testSandboxRoot, mockSpecPath, 'tasks.md'));
   res = runCLI(['validate-spec']);

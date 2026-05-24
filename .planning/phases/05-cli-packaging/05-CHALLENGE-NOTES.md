@@ -5,7 +5,7 @@
 
 ## 1. Terminology & Alignment Challenge
 
-- **Glossary Check:** The PRD proposes `adp` ("AI Delivery Pipeline") as the command line tool name, but the repository and project is named `snail-agent-flow`. 
+- **Glossary Check:** The PRD proposes `adp` ("AI Delivery Pipeline") as the command line tool name, but the repository and project is named `snail-agent-flow`.
 - **Resolution:** We will register both `adp` and `saf` in `package.json` under `"bin"`. This satisfies the PRD nomenclature while acknowledging the project's identity.
 - **State File Check:** ADR 0001 refers to `.ai/state/active-feature.json`, but Phase 4 alignment shifted the authoritative active feature identity pointer to `.specify/feature.json` and deprecated/deleted `.ai/state/active-feature.json`. The CLI must read identity ONLY from `.specify/feature.json`, ensuring zero regression.
 
