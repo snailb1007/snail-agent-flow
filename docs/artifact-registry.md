@@ -8,7 +8,13 @@ This document defines the canonical artifact contract, path ownership model, and
 |---|---|---|---|---|
 | `.specify/` | Spec-Kit | Authoritative | `implemented` | Spec-Kit root containing presets, templates, and scripts. |
 | `.specify/feature.json` | Spec-Kit | Authoritative | `implemented` | Pinned Spec-Kit feature directory state pointer. |
-| `specs/<feature-slug>/` | Spec-Kit / User | Authoritative | `specified` | Active requirements, implementation plans, and tasks. |
+| `.specify/scripts/bash/validate-pipeline-state.sh` | Spec-Kit / Protocol | Authoritative | `implemented` | Shell validator for pipeline state, gate reports, path drift, handoff reports, and verified artifact registration. |
+| `.specify/scripts/bash/simulate-phase2-pipeline.sh` | Spec-Kit / Protocol | Authoritative | `implemented` | End-to-end Phase 2 simulation covering gate validation, retry halt behavior, resume, artifact verification, and memory handoff checks. |
+| `.specify/templates/human-review-packet-template.md` | Spec-Kit / Protocol | Authoritative | `implemented` | Template used when repeated validation failures require a human review packet. |
+| `specs/<feature-slug>/` | Spec-Kit / User | Authoritative | `specified` | Canonical feature source of truth containing spec.md, plan.md, and tasks.md, owned by Spec-Kit and consumed by GSD. |
+| `validators/scripts/validate-spec.js` | Protocol / Validator | Authoritative | `implemented` | Deterministic Node.js validator for active feature pointers, Spec-Kit file structure, required headings, path drift, placeholders, retry state, and human review packet generation. |
+| `validators/scripts/test-validator.js` | Protocol / Validator | Authoritative | `implemented` | Local validator test suite covering pass, failure, retry, resume, and generated review packet behavior. |
+| `package.json` | Node.js Tooling | Authoritative | `implemented` | Defines `npm run validate`, `npm run test:validator`, `npm run test:pipeline`, and `npm test`. |
 | `docs/` | Protocol / Human | Authoritative | `implemented` | Project documentation and artifact registries. |
 | `docs/artifact-registry.md` | Protocol / Human | Authoritative | `implemented` | Registry of paths, owners, and statuses. |
 | `docs/superpowers/specs/` | Superpowers / Human | Authoritative | `implemented` | Legacy/existing project specification documents. |
@@ -51,6 +57,7 @@ This document defines the canonical artifact contract, path ownership model, and
 |---|---|---|---|
 | `.specify/` | Spec-Kit | `implemented` | Unified root for all Spec-Kit templates, presets, and scripts. |
 | `specs/` | Spec-Kit | `implemented` | Directory containing active feature requirements, plans, and tasks. |
+| `validators/` | Protocol / Validator | `implemented` | Node.js deterministic validator and local validator test suite. |
 | `.ai/` | Orchestration | `implemented` | Contains constitution, memory, reviews, sessions, and state. |
 | `.ai/memory/` | Protocol / Human | `placeholder` | Durable project memory including architecture, decisions, and risks. |
 | `.ai/state/` | Orchestrator | `implemented` | Directory storing current active-feature state. |
@@ -62,4 +69,12 @@ This document defines the canonical artifact contract, path ownership model, and
 | `.gsd/` | GSD Planner | `implemented` | GSD local database, preferences, and milestones state. |
 | `.serena/` | Serena MCP | `implemented` | Local cache, memories, and configurations for Serena. |
 | `docs/` | Protocol / Human | `implemented` | Project documentation and artifact registries. |
+
+## Path & Tool Ownership Invariants
+
+- **Spec-Kit Stack Ownership**: Spec-Kit owns `specs/<feature-slug>/` containing `spec.md`, `plan.md`, and `tasks.md`. It acts as the canonical feature specification and task source of truth.
+- **GSD Execution Layer**: GSD reads and consumes the canonical `specs/<feature-slug>/tasks.md` and other Spec-Kit files for code execution. It must not generate or maintain parallel specs or plans in this pipeline.
+- **Deterministic Validation Gate**: `validators/scripts/validate-spec.js` is the pre-implementation gate for active feature pointer validity, required Spec-Kit files, heading structure, path drift, placeholders, retry state, and human review packet generation.
+- **GStack / Matt Critique Gates**: All critique gates are owned by GStack review tools (e.g., product, architecture, QA, release readiness).
+- **GitHub Issues**: GitHub issues are strict projections of tasks in `tasks.md` (e.g., using `speckit-taskstoissues`) and must not act as a separate/divergent source of truth.
 

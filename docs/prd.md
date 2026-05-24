@@ -212,24 +212,24 @@ What exactly should be built, and how will we know it is correct?
 
 Before GSD execution starts, the generated spec must be validated.
 
-The validator checks the generated spec against:
+The deterministic validator checks the active Spec-Kit feature directory for:
 
-- Superpowers Constitution;
-- Recon Report;
-- GStack planning constraints;
-- existing memory;
-- known risks;
-- behavior-preservation rules.
+- valid active feature pointers in `.specify/feature.json` or `.ai/state/active-feature.json`;
+- required `spec.md`, `plan.md`, and `tasks.md` files;
+- required headings in spec and plan files;
+- checklist structure in `tasks.md`;
+- path drift into legacy or shadow spec locations;
+- forbidden placeholders such as `TODO`, `TBD`, `FIXME`, `XXX`, and `NEEDS CLARIFICATION`.
 
-Validation result must be one of:
+Validation state must be one of:
 
 ```text
 PASS
-FAIL
+BLOCKED
 NEEDS_HUMAN_REVIEW
 ```
 
-If validation returns `FAIL`, the system returns to Step 3 and revises the spec.
+If validation returns `BLOCKED`, the system returns to Step 3 and revises the spec.
 
 If validation fails more than 3 times for the same spec file or same validation category, the system must stop and mark the task as:
 
@@ -239,21 +239,17 @@ NEEDS_HUMAN_REVIEW
 
 The agent must not keep debating with itself indefinitely.
 
-Validation report should be saved as:
+Validation state is saved in:
 
 ```text
-.ai/reviews/<feature-slug>/spec-validation-report.md
-.ai/state/current-feature.md
-.ai/state/active-run.md
+.ai/state/run-state.json
 ```
 
-Optional implementation:
+If validation fails 3 consecutive times, the validator creates:
 
-- Promptfoo;
-- custom script;
-- LLM-as-judge with fixed rubric;
-- markdown policy checker;
-- CI preflight.
+```text
+.ai/reviews/<feature-slug>/human-review.md
+```
 
 ---
 
@@ -427,19 +423,19 @@ Ship report should be saved as:
 ## 4. Recommended Folder Structure
 
 ```text
+specs/
+  <feature-slug>/
+    spec.md
+    plan.md
+    tasks.md
+    research.md
+    data-model.md
+    quickstart.md
+    contracts/
+
 .specify/
   memory/
     constitution.md
-
-  specs/
-    <feature-slug>/
-      spec.md
-      plan.md
-      tasks.md
-      research.md
-      data-model.md
-      quickstart.md
-      contracts/
 
 .ai/
   memory/
@@ -454,17 +450,17 @@ Ship report should be saved as:
     <feature-slug>/
       gstack-ceo-review.md
       gstack-eng-review.md
-      spec-validation-report.md
+      human-review.md
       qa-review.md
       ship-decision.md
 
   state/
-    current-feature.md
-    active-run.md
+    active-feature.json
+    run-state.json
     handoff.md
 ```
 
-`.specify/` owns feature specs and Spec-Kit templates (including a constitution template). `.ai/` owns orchestration state, session notes, reviews, and durable project memory. The active operational constitution is `.ai/constitution.md`; `.specify/memory/constitution.md` is a Spec-Kit template copy.
+`specs/` owns feature specs (including the canonical spec, plan, and tasks files). `.specify/` owns Spec-Kit templates, presets, configuration, and integration scripts. `.ai/` owns orchestration state, session notes, reviews, and durable project memory. The active operational constitution is `.ai/constitution.md`; `.specify/memory/constitution.md` is a Spec-Kit template copy.
 
 ---
 
@@ -478,7 +474,7 @@ Multi-module impact        → GitNexus
 Product/scope critique     → GStack CEO mode
 Architecture critique      → GStack Eng Manager mode
 Spec generation            → Spec-Kit
-Spec validation            → Promptfoo/custom validator
+Spec validation            → Deterministic validator
 Long execution             → GSD Full
 Browser/manual QA          → GStack QA / Playwright
 Release handoff            → GStack Ship
@@ -659,13 +655,13 @@ Creates:
 
 ```text
 .ai/sessions/YYYY-MM-DD-<agent>-<task>.md
-.ai/state/current-feature.md
-.ai/state/active-run.md
+.ai/state/active-feature.json
+.ai/state/run-state.json
 ```
 
 ### `adp validate-spec`
 
-Runs spec validation gate.
+Runs the deterministic spec validation gate.
 
 ### `adp handoff`
 
@@ -673,7 +669,7 @@ Checks whether Memory Handoff has been completed before ship.
 
 ### `adp doctor`
 
-Checks missing files, broken state, missing memory, missing validation report.
+Checks missing files, broken state, missing memory, and validation gate status.
 
 ---
 
@@ -689,6 +685,8 @@ ai-delivery-pipeline/
     base/
       CLAUDE.md
       AGENTS.md
+      specs/
+        .gitkeep
       .ai/
         sessions/
           .gitkeep
@@ -706,8 +704,6 @@ ai-delivery-pipeline/
       .specify/
         memory/
           constitution.md
-        specs/
-          .gitkeep
 
     minimal/
     typescript/
@@ -726,13 +722,9 @@ ai-delivery-pipeline/
     ship.md
 
   validators/
-    promptfoo/
-      promptfooconfig.yaml
-      spec-validation-rubric.md
     scripts/
       validate-spec.js
-      check-memory-handoff.js
-      check-session-state.js
+      test-validator.js
 
   commands/
     claude/
@@ -787,10 +779,11 @@ adp status
 Add:
 
 ```bash
-adp validate-spec
+npm run validate
+npm run test:validator
 ```
 
-Support Promptfoo optionally.
+Support deterministic validation before GSD execution.
 
 ### Phase 4 — Memory Handoff Checker
 

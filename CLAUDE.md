@@ -22,6 +22,34 @@ Using gstack skills: After install, skills like /qa, /ship, /review, /investigat
 and /browse are available. Use /browse for all web browsing.
 Use ~/.claude/skills/gstack/... for gstack file paths (the global path).
 
+## Spec Validation
+
+Before starting implementation (e.g. before running GSD), you MUST validate the feature specification, plan, and checklist by running:
+```bash
+node validators/scripts/validate-spec.js
+```
+If this script fails, do not proceed with implementation. If it fails 3 times consecutively, it will halt and generate a human review packet at `.ai/reviews/<feature-slug>/human-review.md`. To resume, fix the files and run:
+```bash
+node validators/scripts/validate-spec.js resume
+```
+
+## Verification Commands
+
+```bash
+npm run validate        # deterministic Spec-Kit validation
+npm run test:validator  # validator unit coverage
+npm run test:pipeline   # Phase 2 pipeline simulation
+npm test                # full validation suite
+```
+
+## Project Documentation
+
+- `CONTEXT.md` defines pipeline vocabulary and current orchestration terms.
+- `docs/prd.md` describes the full AI delivery pipeline blueprint.
+- `docs/artifact-registry.md` owns path and artifact ownership rules.
+- `docs/tool-routing.md` maps pipeline phases to tools, validators, and stop conditions.
+- `docs/memory-versus-sessions.md` defines durable memory versus temporary session logs.
+
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
