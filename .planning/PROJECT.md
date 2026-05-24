@@ -28,8 +28,8 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 
 ### Active (v2.0)
 
-- [ ] Define a declarative flow definition format (YAML) that captures stage order, required skills, artifact gates, and revision routing.
-- [ ] Ship the built-in `rough-project-flow` as a data-driven flow definition encoding the 10-stage ledger.
+- [x] Define a declarative flow definition format (YAML) that captures stage order, required skills, artifact gates, and revision routing.
+- [x] Ship the built-in `rough-project-flow` as a data-driven flow definition encoding the 10-stage ledger.
 - [ ] Extend `adp init` to copy flow definitions into `.ai/flows/` and create the flow ledger state file.
 - [ ] Package the flow orchestrator as a Gemini skill that agents mention in chat to start, resume, or inspect the flow.
 - [ ] Implement deterministic artifact gate enforcement with circuit breaker behavior.

@@ -1,0 +1,48 @@
+# Example Custom Flow Definition
+# Users can customize stages, add or remove tasks, and define custom verification requirements.
+
+name: custom-feature-flow
+version: 1.0.0
+description: |
+  A simplified workflow for minor feature additions or bug fixes.
+  Skips planning reviews and goes directly from spec to execution and verification.
+
+prerequisites:
+  - name: Spec-Kit
+    command: speckit-specify
+    check: command -v speckit-specify || test -d .agents/skills/speckit-specify
+  - name: GSD
+    command: gsd-execute-phase
+    check: command -v gsd-execute-phase || test -d .agents/skills/gsd-execute-phase
+
+stages:
+  - id: custom_spec
+    name: Feature Specification
+    description: Formulate specification and get immediate requirements verification.
+    skill: speckit-specify
+    command: node bin/adp.js feature "{feature_slug}"
+    required_artifacts:
+      - path: "{feature_dir}/spec.md"
+        headings:
+          - "## Goal"
+          - "## Acceptance Criteria"
+
+  - id: custom_execution
+    name: Code Implementation
+    description: Implement code and required test cases.
+    skill: gsd-execute-phase
+    required_artifacts:
+      - path: "{feature_dir}/tasks.md"
+    revision_routing:
+      - on: execution_failed
+        to: custom_spec
+
+  - id: custom_verification
+    name: Tests Verification
+    description: Run validation scripts to ensure code compiles and tests pass.
+    command: npm test
+    required_artifacts:
+      - path: .ai/state/run-state.json
+    revision_routing:
+      - on: test_failures
+        to: custom_execution

@@ -22,7 +22,7 @@
   },
   "scripts": {
     "validate": "node validators/scripts/validate-spec.js",
-    "test": "npm run validate && npm run test:validator && npm run test:pipeline && npm run test:cli",
+    "test": "npm run validate && npm run test:validator && npm run test:pipeline && npm run test:cli && node validators/scripts/test-flow-parser.js",
     "test:validator": "node validators/scripts/test-validator.js",
     "test:pipeline": "bash .specify/scripts/bash/simulate-phase2-pipeline.sh",
     "test:cli": "node validators/scripts/test-cli.js"
