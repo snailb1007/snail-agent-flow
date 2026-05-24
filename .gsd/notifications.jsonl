@@ -1,0 +1,2 @@
+{"id":"fc25d642-1b78-4771-a076-d57322f6ff02","ts":"2026-05-24T08:29:49.672Z","severity":"info","message":"Migration cancelled — no files were written.","source":"notify","read":false}
+{"id":"a81eeefc-392f-4e66-8d01-6cb066e6fed4","ts":"2026-05-24T08:32:17.978Z","severity":"warning","message":"Visualizer requires an interactive terminal. Use /gsd status for a text-based overview.","source":"notify","read":false}

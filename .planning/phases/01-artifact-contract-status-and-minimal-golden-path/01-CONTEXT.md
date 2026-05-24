@@ -15,7 +15,7 @@ Establish one canonical artifact contract, path ownership model, status registry
 ### Path Reconciliation
 - **D-01:** **Spec-Kit Unified Root:** Move Spec-Kit configurations, templates, and scripts from `.specify/*` to `.specify/*` so that all Spec-Kit configuration and feature specs share a single root.
 - **D-02:** **Gemini Command TOMLs:** Keep Gemini-specific command TOMLs under `.gemini/commands/` as tool-specific wrappers, keeping the `.specify/` directory runtime-neutral.
-- **D-03:** **Legacy Spec Paths:** Completely deprecate and remove `.ai/specs/current/` and enforce `.specify/specs/<feature-slug>/` as the sole spec location.
+- **D-03:** **Legacy Spec Paths:** Completely deprecate and remove `.ai/specs/current/` and enforce `specs/<feature-slug>/` as the sole spec location.
 - **D-04:** **Script Locations:** Keep Spec-Kit scripts nested in `.specify/scripts/` and Claude hooks nested in `.claude/hooks/` to maintain tool context and isolation.
 
 ### Artifact Status & Registry Format

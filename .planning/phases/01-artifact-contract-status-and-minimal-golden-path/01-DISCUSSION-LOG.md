@@ -32,8 +32,8 @@
 ### Question 3: Legacy `.ai/specs/` path handling
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Deprecate and remove | Completely enforce `.specify/specs/<feature-slug>/` as the only specs directory, removing any legacy `.ai/specs/current` path. | ✓ |
-| Symlink compatibility | Maintain `.ai/specs/current` as a symbolic link pointing to the active feature directory under `.specify/specs/`. | |
+| Deprecate and remove | Completely enforce `specs/<feature-slug>/` as the only specs directory, removing any legacy `.ai/specs/current` path. | ✓ |
+| Symlink compatibility | Maintain `.ai/specs/current` as a symbolic link pointing to the active feature directory under `specs/`. | |
 
 **User's choice:** Deprecate and remove
 **Notes:** Removes path drift and competing sources of truth.
@@ -95,7 +95,7 @@
 | Option | Description | Selected |
 |--------|-------------|----------|
 | Active feature state file | Store the path/slug of the active feature in a JSON/Markdown file (`.specify/active-feature.json` or similar) that tools read. | ✓ |
-| Symbolic link | Create a symbolic link at `.specify/specs/current` pointing to the active feature directory. | |
+| Symbolic link | Create a symbolic link at `specs/current` pointing to the active feature directory. | |
 
 **User's choice:** Active feature state file
 **Notes:** More portable and less platform-dependent than symlinks.

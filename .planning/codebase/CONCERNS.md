@@ -43,10 +43,8 @@ Primary source material lives in `docs/prd.md`, `.ai/constitution.md`, `.ai/reco
 ## Known Bugs
 
 **Spec Kit Git extension config path mismatch:**
-- Symptoms: Git auto-commit extension scripts look for `$REPO_ROOT/.specify/extensions/git/git-config.yml`, but the checked-in config is under `.specify/extensions/git/git-config.yml`.
+- Status: Resolved. Spec-Kit has been relocated to the unified root `.specify/`, aligning the script lookup path with the checked-in config location.
 - Files: `.specify/extensions/git/scripts/bash/auto-commit.sh`, `.specify/extensions/git/git-config.yml`
-- Trigger: Running the Git extension auto-commit script from this repository layout.
-- Workaround: Auto-commit is disabled by default, so this likely fails closed. Before enabling it, either install Spec Kit at `.specify/` or update the script/config lookup for the `.specify/` layout.
 
 **Plan verification references a deleted file:**
 - Symptoms: Verification commands in the operating constitution plan read `ai-delivery-pipeline-blueprint.md`; that file is currently deleted in the working tree.

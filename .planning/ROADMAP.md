@@ -59,13 +59,13 @@ This roadmap stabilizes the protocol before adding automation. The phase order i
 
 **Goal:** Implement a deterministic validator and drift checker to prevent path and memory drift.
 
-**Rationale:** A checkable script or validator is required to make gates and human review packets operational. This acts as the gatekeeper against path drift (specifically validating `.specify/specs/<feature-slug>/...` as the requirement source of truth, and `.ai/` as orchestration/state).
+**Rationale:** A checkable script or validator is required to make gates and human review packets operational. This acts as the gatekeeper against path drift (specifically validating `specs/<feature-slug>/...` as the requirement source of truth, and `.ai/` as orchestration/state).
 
 **Delivers:**
 
 - Deterministic artifact existence and path consistency checks.
 - Required heading/field checks for specs, plans, tasks, validation reports, review packets, and memory files.
-- Path drift checks (specifically validating `.specify/specs/<feature-slug>/...` as the requirement source of truth and blocking legacy `.ai/specs/current/` or `.gemini/` drift).
+- Path drift checks (specifically validating `specs/<feature-slug>/...` as the requirement source of truth and blocking legacy `.ai/specs/current/` or `.gemini/` drift).
 - Validation for retry-count and automatic generation of the `NEEDS_HUMAN_REVIEW` packet after 3 consecutive failures.
 - Verification command documented and runnable.
 
