@@ -1,0 +1,7 @@
+- [x] Task 1: Seed durable project memory files.
+- [x] Task 2: Add documentation for boundaries and tool routing.
+- [x] Task 3: Build human review packet template.
+- [x] Task 4: Implement state validator and circuit breaker checks.
+- [x] Task 5: Create demo plan and tasks.
+- [x] Task 6: Build simulation check script.
+- [x] Task 7: Update GSD UAT and verification manifests.
