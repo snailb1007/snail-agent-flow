@@ -3,10 +3,15 @@
   "version": "0.1.0.0",
   "description": "Operating protocol for AI coding agents",
   "private": true,
+  "bin": {
+    "adp": "./bin/adp.js",
+    "saf": "./bin/adp.js"
+  },
   "scripts": {
     "validate": "node validators/scripts/validate-spec.js",
-    "test": "npm run validate && npm run test:validator && npm run test:pipeline",
+    "test": "npm run validate && npm run test:validator && npm run test:pipeline && npm run test:cli",
     "test:validator": "node validators/scripts/test-validator.js",
-    "test:pipeline": "bash .specify/scripts/bash/simulate-phase2-pipeline.sh"
+    "test:pipeline": "bash .specify/scripts/bash/simulate-phase2-pipeline.sh",
+    "test:cli": "node validators/scripts/test-cli.js"
   }
 }

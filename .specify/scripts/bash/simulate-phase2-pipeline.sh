@@ -8,6 +8,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 # Define sandbox folder for reviews, states, and logs
 SANDBOX_AI_DIR="$REPO_ROOT/.specify/fixtures/phase2-sandbox/.ai"
 export SPECIFY_AI_DIR="$SANDBOX_AI_DIR"
+export SPECIFY_STATE_FILE="$SANDBOX_AI_DIR/feature.json"
 
 cleanup() {
     echo "[simulation] Cleaning up sandbox directory..."
