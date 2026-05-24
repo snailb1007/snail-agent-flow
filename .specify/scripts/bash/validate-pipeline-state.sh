@@ -368,6 +368,11 @@ cmd_resume() {
 }
 
 # Parse subcommands
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 <init|update-phase|verify-paths|check-gate|verify-handoff|verify-artifact|resume> [args...]" >&2
+    exit 1
+fi
+
 SUB=$1
 shift
 
