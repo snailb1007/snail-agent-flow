@@ -1,14 +1,14 @@
 {
-  "feature_slug": "005-cli-packaging",
-  "spec_path": "specs/005-cli-packaging/",
-  "current_phase": "Spec-Validation",
+  "feature_slug": "006-expanded-examples-ci-matrix-and-optional-evaluation",
+  "spec_path": "specs/006-expanded-examples-ci-matrix-and-optional-evaluation/",
+  "current_phase": "Complete",
   "last_gate": "Spec-Validation",
   "consecutive_failures": 0,
   "retry_count": 0,
   "last_failed_step": null,
   "last_failed_rule": null,
   "last_validator_output": null,
-  "updated_at": "2026-05-24T16:08:34.121Z",
+  "updated_at": "2026-05-24T16:43:58.266Z",
   "last_gate_status": "PASS",
   "verified_artifacts": []
 }

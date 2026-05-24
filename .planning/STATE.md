@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-05-24T18:00:00.000Z"
+status: complete
+last_updated: "2026-05-24T23:33:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 5
-  completed_plans: 4
-  percent: 66
+  completed_phases: 6
+  total_plans: 6
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -21,24 +21,24 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-24)
 
 **Core value:** Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
-**Current focus:** Phase 5: CLI Packaging
+**Current focus:** Phase 6: Expanded Examples, CI Matrix, and Optional Evaluation
 
 ## Current Status
 
-Phases 1, 2, 3, and 4 are complete. The JS spec validator, Bash pipeline validator, end-to-end pipeline simulation, and runtime instructions alignment are fully verified and passing. Stale and redundant feature pointers have been cleaned up and deprecated in favor of `.specify/feature.json`.
+Phases 1, 2, 3, 4, 5, and 6 are complete. The Node.js CLI with `adp` and `saf` executables, the spec validation gate, memory handoff validation, expanded fixtures, CI verification matrix, and optional evaluation rubric checks are fully verified and passing.
 
 ## Active Phase
 
-**Phase 5: CLI Packaging**
+**Phase 6: Expanded Examples, CI Matrix, and Optional Evaluation**
 
-Goal: Add minimal local CLI commands to manage the Snail Agent Flow protocol (`adp` and `saf`).
+Goal: Expand integration examples, run verification in CI, and add optional evaluation.
 
 Primary requirements:
 
-- CLI-01
-- CLI-02
-- CLI-03
-- CLI-04
+- VERIFY-01
+- VERIFY-02
+- VERIFY-03
+- VERIFY-04
 
 ## Decisions
 
@@ -59,10 +59,10 @@ Primary requirements:
 
 ## Next Action
 
-Verify everything using the full validation suite:
+Ship Phase 6 from branch `006`.
 
 ```bash
-npm test
+/ship phase06
 ```
 
 ---
