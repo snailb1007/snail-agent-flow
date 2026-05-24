@@ -3,9 +3,9 @@
 **Defined:** 2026-05-24
 **Core Value:** Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
 
-## v1 Requirements
+## v1 Requirements (Complete)
 
-Requirements for the first usable local protocol release. Each maps to one roadmap phase.
+All 28 v1 requirements completed in milestone v1.0. See v1.0 archive for details.
 
 ### Artifact Contract
 
@@ -56,17 +56,53 @@ Requirements for the first usable local protocol release. Each maps to one roadm
 - [x] **VERIFY-03**: Record verification commands and results in durable project memory.
 - [x] **VERIFY-04**: Add optional evaluation/rubric checks only after deterministic checks are reliable.
 
+---
+
 ## v2 Requirements
 
-Deferred to future release. Tracked but not in the initial roadmap.
+Requirements for the Flow Engine milestone. Packages the rough-project-flow ledger into a portable, init-able Gemini skill with artifact gates.
 
-### Product Surface
+### Flow Definition
 
-- **SURFACE-01**: Hosted dashboard for visualizing sessions, gates, and memory.
-- **SURFACE-02**: MCP server for exposing protocol status to compatible agents.
-- **SURFACE-03**: Database-backed state for multi-user or team workflows.
-- **SURFACE-04**: Deep Promptfoo/LLM-as-judge evaluation suite for qualitative planning and review outputs.
-- **SURFACE-05**: Browser automation with Playwright for UI-oriented products that adopt the protocol.
+- [ ] **FLOW-01**: Define a declarative flow definition format (YAML or JSON) that specifies stage order, required skills/commands per stage, required artifacts, gate conditions, and revision routing rules.
+- [ ] **FLOW-02**: Ship a built-in `rough-project-flow` definition file encoding the 10-stage ledger: decision discovery, decision challenge, canonical spec, implementation plan, plan critique, revision loop, vertical slicing, execution, verification, release readiness.
+- [ ] **FLOW-03**: Allow custom flow definitions so users can add, remove, or reorder stages for their project needs.
+- [ ] **FLOW-04**: Document prerequisite tools (GSD, Superpowers, Spec-Kit, GStack) and verify their availability at flow start.
+
+### Flow Initialization
+
+- [ ] **INIT-01**: Extend `adp init` to copy the default flow definition into `.ai/flows/` in the target project.
+- [ ] **INIT-02**: Create an initial flow ledger state file at `.ai/state/flow-ledger.json` tracking stage status, artifact paths, timestamps, and gate results.
+- [ ] **INIT-03**: Support brownfield projects that already have `.ai/` infrastructure — merge, do not overwrite.
+- [ ] **INIT-04**: Generate a Gemini skill file (SKILL.md) that agents can mention to start or resume the flow.
+
+### Flow Engine Skill
+
+- [ ] **ENGINE-01**: Package the flow orchestrator as a Gemini skill under `.agents/skills/` that agents mention in chat to start, resume, or inspect the flow.
+- [ ] **ENGINE-02**: The skill must read the flow definition from `.ai/flows/`, read ledger state from `.ai/state/flow-ledger.json`, determine the next stage, and instruct the agent which skill/command to invoke.
+- [ ] **ENGINE-03**: After each stage completes, the skill must validate required artifacts exist, update the ledger, and advance or block.
+- [ ] **ENGINE-04**: Support revision loops — when a downstream stage detects errors, the skill routes back to the correct upstream stage and resets affected ledger entries.
+
+### Artifact Gates
+
+- [ ] **GATE-01**: Each stage must declare required output artifacts. The gate checks artifact existence and basic content validation (non-empty, required headings).
+- [ ] **GATE-02**: Gate failures must block stage advancement and log the failure reason in the ledger.
+- [ ] **GATE-03**: After 3 consecutive gate failures on the same stage, generate a `NEEDS_HUMAN_REVIEW` packet and halt the flow.
+- [ ] **GATE-04**: Gate validation must be deterministic — no LLM-as-judge for pass/fail decisions.
+
+### Flow Validator
+
+- [ ] **FVALID-01**: Add a deterministic flow validator (`adp flow validate` or `npm run validate:flow`) that checks flow definition syntax, ledger state consistency, and artifact gate status.
+- [ ] **FVALID-02**: Detect and report ledger corruption: invalid stage references, impossible state transitions, missing artifact paths.
+- [ ] **FVALID-03**: Validate that the flow definition references only known skill names or commands.
+- [ ] **FVALID-04**: Add tests for the flow validator covering happy path, gate failures, revision loops, and corruption detection.
+
+## v3 Requirements (Deferred)
+
+- **MULTI-01**: Support multiple concurrent flows per project (e.g., feature A at execution while feature B at spec stage).
+- **MULTI-02**: Flow dashboard for visualizing stage progress and artifact status.
+- **MULTI-03**: MCP server exposing flow state to compatible agents.
+- **MULTI-04**: Cross-agent flow handoff when switching between Claude, Gemini, Codex, or other runtimes mid-flow.
 
 ## Out of Scope
 
@@ -77,8 +113,8 @@ Explicitly excluded. Documented to prevent scope creep.
 | Replacing GSD, GStack, Superpowers, Spec-Kit, Serena, Semble, GitNexus, Context7, Promptfoo, or Playwright | The project coordinates existing tools rather than reimplementing them. |
 | Full IDE or hosted agent platform | The first release is a local, file-based protocol and artifact system. |
 | Database, auth, billing, or deployment stack | No end-user runtime surface exists yet. |
-| CLI polish before artifact contract | Automation must manage accepted paths and state, not define them accidentally. |
-| Broad rewrites of generated scaffolds | Generated files should be adapted narrowly and treated as compatibility layers. |
+| Automatic tool installation | Users must install prerequisites themselves; the flow validates availability. |
+| Flow step automation via subprocess | The flow skill instructs agents, it does not spawn child processes. |
 
 ## Traceability
 
@@ -86,40 +122,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ART-01 | Phase 1 | Completed |
-| ART-02 | Phase 1 | Completed |
-| ART-03 | Phase 1 | Completed |
-| ART-04 | Phase 1 | Completed |
-| ROUTE-01 | Phase 2 | Completed |
-| ROUTE-02 | Phase 2 | Completed |
-| ROUTE-03 | Phase 2 | Completed |
-| ROUTE-04 | Phase 2 | Completed |
-| MEM-01 | Phase 2 | Completed |
-| MEM-02 | Phase 2 | Completed |
-| MEM-03 | Phase 2 | Completed |
-| MEM-04 | Phase 2 | Completed |
-| VALID-01 | Phase 3 | Completed |
-| VALID-02 | Phase 3 | Completed |
-| VALID-03 | Phase 3 | Completed |
-| VALID-04 | Phase 3 | Completed |
-| ADAPT-01 | Phase 4 | Completed |
-| ADAPT-02 | Phase 4 | Completed |
-| ADAPT-03 | Phase 4 | Completed |
-| ADAPT-04 | Phase 4 | Completed |
-| CLI-01 | Phase 5, Phase 7 | Completed |
-| CLI-02 | Phase 5, Phase 7 | Completed |
-| CLI-03 | Phase 5, Phase 7 | Completed |
-| CLI-04 | Phase 5, Phase 7 | Completed |
-| VERIFY-01 | Phase 6, Phase 1 (partial) | Completed |
-| VERIFY-02 | Phase 6 | Completed |
-| VERIFY-03 | Phase 6 | Completed |
-| VERIFY-04 | Phase 6 | Completed |
+| ART-01 – ART-04 | Phase 1 (v1) | Completed |
+| ROUTE-01 – ROUTE-04 | Phase 2 (v1) | Completed |
+| MEM-01 – MEM-04 | Phase 2 (v1) | Completed |
+| VALID-01 – VALID-04 | Phase 3 (v1) | Completed |
+| ADAPT-01 – ADAPT-04 | Phase 4 (v1) | Completed |
+| CLI-01 – CLI-04 | Phase 5, 7 (v1) | Completed |
+| VERIFY-01 – VERIFY-04 | Phase 6 (v1) | Completed |
+| FLOW-01 – FLOW-04 | Phase 8 (v2) | Pending |
+| INIT-01 – INIT-04 | Phase 9 (v2) | Pending |
+| ENGINE-01 – ENGINE-04 | Phase 10 (v2) | Pending |
+| GATE-01 – GATE-04 | Phase 11 (v2) | Pending |
+| FVALID-01 – FVALID-04 | Phase 12 (v2) | Pending |
 
 **Coverage:**
-- v1 requirements: 28 total
-- Mapped to phases: 28
+- v1 requirements: 28 total, 28 completed
+- v2 requirements: 20 total, 0 completed
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-24*
-*Last updated: 2026-05-24 after vertical slice alignment*
+*Last updated: 2026-05-25 — v2 Flow Engine milestone added*

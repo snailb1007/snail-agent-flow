@@ -4,7 +4,9 @@
 
 Snail Agent Flow is a lightweight operating protocol for AI coding agents. It coordinates Superpowers, GStack, GSD, Spec-Kit/OpenSpec, Serena, Semble, GitNexus, Context7, Promptfoo, and Playwright into a repeatable spec-to-ship workflow for new and existing projects.
 
-The repository is currently documentation-first: it defines the protocol, durable artifact layout, agent instructions, and validation gates, but it does not yet contain an application runtime or CLI implementation.
+Milestone v1.0 delivered the protocol foundation: artifact contract, routing/gates, deterministic validator, runtime adapters, CLI packaging, expanded examples/CI, and one-flow feature scaffolding.
+
+Milestone v2.0 focuses on packaging the rough-project-flow ledger into a portable, init-able Gemini skill with declarative flow definitions and artifact gates. This enables any project to adopt the 10-stage sequential workflow (decision discovery → decision challenge → canonical spec → implementation plan → plan critique → revision loop → vertical slicing → execution → verification → release readiness) by installing the package and mentioning the flow skill in chat.
 
 ## Core Value
 
@@ -12,7 +14,7 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 
 ## Requirements
 
-### Validated
+### Validated (v1.0)
 
 - [x] Repository-level agent instructions exist for Claude and Gemini through `CLAUDE.md` and `GEMINI.md`.
 - [x] The core pipeline is documented in `docs/prd.md`, including recon, planning critique, spec generation, validation, execution, QA, memory handoff, and ship gates.
@@ -20,26 +22,34 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 - [x] Spec-Kit/Gemini command scaffolding exists under `.gemini/commands/` and `.specify/`.
 - [x] Local agent skill scaffolding exists under `.agents/skills/`.
 - [x] The current codebase map exists under `.planning/codebase/`.
+- [x] Deterministic spec validator with path drift checks and human review circuit breaker.
+- [x] CLI with `init`, `feature`, `run`, `new-session`, `status`, `doctor`, `validate-spec`, and `handoff` commands.
+- [x] Greenfield and brownfield fixtures, CI verification matrix, and optional evaluation rubrics.
 
-### Active
+### Active (v2.0)
 
-- [ ] Define the canonical artifact contract for `.ai/`, `.planning/`, Spec-Kit, GSD, and runtime-specific instruction files.
-- [ ] Normalize routing rules so agents know when to use recon, critique, spec generation, codebase mapping, execution, verification, and memory handoff.
-- [ ] Resolve path ownership between `.ai/specs/`, `.specify/`, and any future root `.specify/` or CLI-managed feature directories.
-- [ ] Add validation gates that can detect stale specs, broken artifact references, missing verification, and repeated self-repair loops.
-- [ ] Turn the documented protocol into usable templates, scripts, or CLI entry points without replacing the underlying tools.
-- [ ] Add a first automated verification layer for docs, scripts, artifact paths, and workflow invariants.
+- [ ] Define a declarative flow definition format (YAML) that captures stage order, required skills, artifact gates, and revision routing.
+- [ ] Ship the built-in `rough-project-flow` as a data-driven flow definition encoding the 10-stage ledger.
+- [ ] Extend `adp init` to copy flow definitions into `.ai/flows/` and create the flow ledger state file.
+- [ ] Package the flow orchestrator as a Gemini skill that agents mention in chat to start, resume, or inspect the flow.
+- [ ] Implement deterministic artifact gate enforcement with circuit breaker behavior.
+- [ ] Add a flow validator for definition syntax, ledger consistency, and gate status.
+- [ ] Add tests covering flow lifecycle: normal completion, revision routing, gate blocking, brownfield merge.
 
 ### Out of Scope
 
-- Replacing GSD, GStack, Superpowers, Spec-Kit, Serena, Semble, GitNexus, Context7, Promptfoo, or Playwright - this project orchestrates them rather than reimplementing them.
-- Building a full IDE or hosted agent platform - the near-term value is a local protocol and artifact system.
+- Replacing GSD, GStack, Superpowers, Spec-Kit, Serena, Semble, GitNexus, Context7, Promptfoo, or Playwright — this project orchestrates them rather than reimplementing them.
+- Building a full IDE or hosted agent platform — the near-term value is a local protocol and artifact system.
 - Adding an end-user authentication, database, billing, or deployment stack before a runtime product surface exists.
 - Broad rewrites of generated Spec-Kit or local skill scaffolds without a narrow compatibility reason.
+- Automatic tool installation — users must install prerequisites themselves.
+- Flow step automation via subprocess — the flow skill instructs agents, it does not spawn child processes.
 
 ## Context
 
 The motivating problem is tool-order confusion in modern AI coding workflows. The repo should help agents and users decide what happens first, which artifacts are source of truth, when specs are required, when codebase mapping is required, when self-repair must stop, and how project memory survives across sessions.
+
+Milestone v2.0 extends this to **workflow portability**: the rough-project-flow ledger pattern proved valuable during v1.0 development. Packaging it as a declarative, init-able flow definition with artifact gates allows any project to adopt the same rigorous decision → spec → plan → critique → execute → verify → ship pipeline without manually remembering the stage order.
 
 Current source material:
 
@@ -48,8 +58,8 @@ Current source material:
 - `.ai/recon.md`, `.ai/specs/`, `.ai/sessions/`, `.ai/memory/`, and `.ai/reviews/` define durable workflow memory locations.
 - `.gemini/commands/` and `.specify/` contain the current Spec-Kit/Gemini integration scaffold.
 - `.planning/codebase/` captures the current brownfield map produced during initialization.
-
-The codebase map found no app source tree, package manifest, root runtime project file, test runner, CI workflow, API layer, database schema, or deployment config. Existing files are mostly protocol documents, generated command scaffolds, local skills, and placeholder state files.
+- `bin/adp.js` implements the CLI with init, feature, run, validate, doctor, and handoff commands.
+- `.agents/skills/` contains the Gemini skill scaffolding.
 
 ## Constraints
 
@@ -59,16 +69,22 @@ The codebase map found no app source tree, package manifest, root runtime projec
 - **Verification required**: Claims of completion need checkable artifacts, commands, or review logs.
 - **No infinite self-repair**: Repeated validation failure must route to human review instead of agent debate.
 - **Security baseline**: Generated docs and code must avoid leaking secrets and must keep destructive operations explicit.
+- **Prerequisite tools**: GSD, Superpowers, Spec-Kit, and GStack must be installed by the user; the flow validates availability but does not install them.
+- **Skill, not CLI**: The flow orchestrator is a Gemini skill mentioned in chat, not a CLI subprocess runner.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Keep the project orchestration-focused | The PRD explicitly says the goal is a thin protocol, not a replacement for existing tools. | Pending |
-| Treat the current repository as brownfield documentation infrastructure | Existing files define behavior and constraints even though no app runtime exists. | Pending |
-| Use GSD recommended defaults for planning | Interactive selection is unavailable in this Codex mode, and recommended defaults keep initialization moving. | Pending |
-| Start with coarse phases | The project needs a few broad foundation phases before fine-grained implementation work makes sense. | Pending |
-| Commit planning docs | GSD config defaults to tracked planning docs and this repo is a protocol repository where planning artifacts are part of the product. | Pending |
+| Keep the project orchestration-focused | The PRD explicitly says the goal is a thin protocol, not a replacement for existing tools. | Accepted |
+| Treat the current repository as brownfield documentation infrastructure | Existing files define behavior and constraints even though no app runtime exists. | Accepted |
+| Use GSD recommended defaults for planning | Interactive selection is unavailable in this Codex mode, and recommended defaults keep initialization moving. | Accepted |
+| Start with coarse phases | The project needs a few broad foundation phases before fine-grained implementation work makes sense. | Accepted |
+| Commit planning docs | GSD config defaults to tracked planning docs and this repo is a protocol repository where planning artifacts are part of the product. | Accepted |
+| Package flow as Gemini skill, not CLI command | Users interact with the flow via agent chat mention, not terminal commands. CLI handles init/validate only. | Accepted |
+| Copy flow definition to `.ai/flows/` on init | Flow definitions live in the project, not referenced from a global package path. Allows per-project customization. | Accepted |
+| Ledger state in JSON at `.ai/state/flow-ledger.json` | Machine-readable, deterministically validatable, versioned in git. | Accepted |
+| Flow definitions are YAML data, not code | Stage order and artifact gates are declarative. Execution logic lives in the flow engine skill. | Accepted |
 
 ## Evolution
 
@@ -90,4 +106,4 @@ After each milestone:
 4. Update Context with current state, feedback, and verification results.
 
 ---
-*Last updated: 2026-05-24 after vertical slice alignment*
+*Last updated: 2026-05-25 — v2.0 Flow Engine milestone started*

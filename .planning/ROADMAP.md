@@ -6,178 +6,190 @@
 
 ## Overview
 
-This roadmap stabilizes the protocol before adding automation. The phase order is intentional: path ownership, artifact authority, and a minimal golden path come first; operational routing and durable memory second; executable validation third; runtime adapter alignment fourth; CLI packaging fifth; and expanded examples/CI last. Each phase maintains a working end-to-end "golden path", only increasing automation and rigor.
+This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the protocol, artifact contract, validators, CLI, and examples. Milestone v2.0 (Phases 8-12) packages the rough-project-flow ledger into a portable, init-able Gemini skill with declarative flow definitions and artifact gates.
 
-## Phase 1: Artifact Contract, Status, and Minimal Golden Path
+---
+
+## Milestone v1.0 — Protocol Foundation (Complete)
+
+### Phase 1: Artifact Contract, Status, and Minimal Golden Path ✅
 
 **Goal:** Establish one canonical artifact contract, path ownership model, and a runnable minimal golden path skeleton.
 
-**Rationale:** Path ownership and contracts must be proven by a running vertical slice right away, otherwise the schemas will only be clean on paper.
-
-**Delivers:**
-
-- Canonical artifact contract for `.ai/`, `.specify/`, runtime instruction files, Spec-Kit/Gemini scaffolds, and future feature directories.
-- Path ownership registry for authoritative, generated, runtime-specific, and local-only artifacts.
-- Implementation-status labels for current artifacts.
-- Current-spec convention for active spec, plan, tasks, validation, and state files.
-- A `minimal-golden-path` example/smoke test showing a sample feature request creating a session, locating a spec source of truth, establishing `DRAFT` status, enabling validator reading, and blocking ship due to incomplete gates/memory.
-
 **Requirements covered:** ART-01, ART-02, ART-03, ART-04, VERIFY-01 (partial)
 
-**Success criteria:**
+### Phase 2: Routing, Gates, and Memory Foundation ✅
 
-- Every major project artifact path has a documented owner and status.
-- Competing paths for specs/state are either reconciled or explicitly classified.
-- Future phases can reference a single source-of-truth document for artifact locations.
-- A minimal fixture task can be simulated from recon to blocked ship state using actual contract paths.
-
-## Phase 2: Routing, Gates, and Memory Foundation
-
-**Goal:** Define how agents choose tools, when gates pass or fail, when human review is required, and what durable memory must contain, running on the same Phase 1 sample.
-
-**Rationale:** Gates, limits, and memory updates need concrete operational definitions using the golden path before building a validator.
-
-**Delivers:**
-
-- Tool routing matrix for task type, input artifacts, output artifacts, validators, and stop conditions.
-- Gate outcome definitions for recon, critique, spec generation, validation, execution, QA, memory handoff, and ship.
-- Failure taxonomy, retry limits, and `NEEDS_HUMAN_REVIEW` transition rules.
-- Human review packet template.
-- Seeded `.ai/memory/` project summary, architecture, decisions, risks, and verification history.
-- `.ai/state/` shape for validation status, retry counts, active session, and current feature/spec pointers.
+**Goal:** Define how agents choose tools, when gates pass or fail, when human review is required, and what durable memory must contain.
 
 **Requirements covered:** ROUTE-01, ROUTE-02, ROUTE-03, ROUTE-04, MEM-01, MEM-02, MEM-03, MEM-04
 
-**Success criteria:**
-
-- A new agent can inspect local artifacts and determine the next correct workflow step.
-- Retry limits and human-review behavior are documented in state terms.
-- Durable memory files contain current facts rather than placeholders.
-- The Phase 1 sample runs through routing, gate block rules, and memory handoff simulation.
-
-## Phase 3: Deterministic Validator, Drift Checks, and Human Review Packet
+### Phase 3: Deterministic Validator, Drift Checks, and Human Review Packet ✅
 
 **Goal:** Implement a deterministic validator and drift checker to prevent path and memory drift.
 
-**Rationale:** A checkable script or validator is required to make gates and human review packets operational. This acts as the gatekeeper against path drift (specifically validating `specs/<feature-slug>/...` as the requirement source of truth, and `.ai/` as orchestration/state).
-
-**Delivers:**
-
-- Deterministic artifact existence and path consistency checks.
-- Required heading/field checks for specs, plans, tasks, validation reports, review packets, and memory files.
-- Path drift checks (specifically validating `specs/<feature-slug>/...` as the requirement source of truth and blocking legacy `.ai/specs/current/` or `.gemini/` drift).
-- Validation for retry-count and automatic generation of the `NEEDS_HUMAN_REVIEW` packet after 3 consecutive failures.
-- Verification command documented and runnable.
-
 **Requirements covered:** VALID-01, VALID-02, VALID-03, VALID-04
 
-**Success criteria:**
+### Phase 4: Templates and Runtime Adapter Alignment ✅
 
-- A local command or script can fail the repo when required protocol artifacts drift.
-- Missing files or path drift (e.g. legacy spec paths) fail validation deterministically.
-- Three validation failures trigger a human review packet correctly.
-
-## Phase 4: Templates and Runtime Adapter Alignment
-
-**Goal:** Align runtime-specific instructions and templates to the shared protocol contract:
-- `.specify/` owns templates, scripts, and the active feature pointer (`.specify/feature.json`).
-- `specs/<feature-slug>/` owns canonical Spec-Kit files (`spec.md`/`plan.md`/`tasks.md`).
-- `.ai/` owns orchestration state (`run-state.json`), reviews, sessions, and memory.
-
-**Rationale:** Claude, Gemini, GSD, local skills, and Spec-Kit scaffolds should align to a clean folder ownership model where the active pointer resides in `.specify/`, the specs reside in `specs/`, and orchestration state/memory reside in `.ai/`, eliminating redundant or competing pointers.
-
-**Delivers:**
-- Deprecated and deleted `.ai/state/active-feature.json` to prevent path drift.
-- Aligned `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, and `.ai/constitution.md` to the path ownership model.
-- Updated spec validators (JS and Bash) to read exclusively from `.specify/feature.json`.
-- Updated test suites and fixtures to reflect the clean boundary.
+**Goal:** Align runtime-specific instructions and templates to the shared protocol contract.
 
 **Requirements covered:** ADAPT-01, ADAPT-02, ADAPT-03, ADAPT-04
 
-**Success criteria:**
-
-- Runtime-specific files reference the same artifact contract and stop rules.
-- Generated scaffolds are not mistaken for canonical policy.
-- A project can adopt the protocol without choosing one agent runtime as the only source of truth.
-
-## Phase 5: CLI Packaging
+### Phase 5: CLI Packaging ✅
 
 **Goal:** Add minimal local CLI commands to manage the accepted protocol.
 
-**Rationale:** CLI commands automate the manual script execution steps verified in earlier phases.
-
-**Delivers:**
-
-- Minimal Node.js + TypeScript CLI or script layer for `init`, `new-session`, `status`, `doctor`, `validate`, and `handoff`.
-- CLI packaging that reads the accepted path registry and state files.
-- Automated tests for CLI/script behavior.
-
 **Requirements covered:** CLI-01, CLI-02, CLI-03, CLI-04
 
-**Success criteria:**
-
-- CLI/script commands operate on documented artifacts only.
-- Tests cover core command behavior and failure cases.
-- The project can initialize and inspect protocol state repeatably.
-
-## Phase 6: Expanded Examples, CI Matrix, and Optional Evaluation
+### Phase 6: Expanded Examples, CI Matrix, and Optional Evaluation ✅
 
 **Goal:** Expand integration examples, run verification in CI, and add optional evaluation.
 
-**Rationale:** Prevent regressions by running the golden path and drift checks inside CI, adding optional LLM-as-judge only after deterministic checks pass.
-
-**Delivers:**
-
-- Multiple greenfield and brownfield fixture projects.
-- CI matrix checking validator, path consistency, and drift.
-- Optional promptfoo/LLM evaluation rubrics.
-
 **Requirements covered:** VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04
 
-**Success criteria:**
+### Phase 7: One-Flow CLI ✅
 
-- CI fails on broken artifact references, invalid templates, or validator regressions.
-- Fixture projects demonstrate the full spec-to-ship protocol.
-- Optional evaluation is layered on top of deterministic checks, not used as a substitute.
-
-## Phase 7: One-Flow CLI
-
-**Goal:** Package the current agent-development protocol into a first-class CLI flow so a user can start a feature from one command instead of manually creating `spec.md`, `plan.md`, `tasks.md`, and the active feature pointer.
-
-**Rationale:** Users need a single entry point to bootstrap a feature with validated, spec-compliant templates without manual file creation or path-drift risks.
-
-**Delivers:**
-
-- Expanded CLI exposing `adp feature <description>` and `adp run <description>`.
-- Automatic feature slug derivation, next numeric prefix scan, and validator-compliant templates.
-- Update mechanism for `.specify/feature.json` pointer.
-- Integration tests verifying greenfield and existing repository behavior.
+**Goal:** Package the agent-development protocol into a first-class CLI flow for feature scaffolding.
 
 **Requirements covered:** CLI-01, CLI-02, CLI-03, CLI-04 (extended)
 
+---
+
+## Milestone v2.0 — Flow Engine
+
+### Phase 8: Flow Definition Format and Built-in Flow
+
+**Goal:** Define a declarative flow definition format and ship the built-in `rough-project-flow` as the first flow definition.
+
+**Rationale:** The flow must be data-driven before it can be consumed by a skill engine. A YAML definition captures stage order, required skills, artifact gates, and revision routing as structured data instead of prose instructions.
+
+**Delivers:**
+
+- Flow definition schema (YAML) specifying: stages, stage names, required skills/commands, required artifacts per stage, gate conditions, revision routing rules, and prerequisite tool declarations.
+- Built-in `rough-project-flow.yaml` encoding the 10-stage ledger: decision discovery → decision challenge → canonical spec → implementation plan → plan critique → revision loop → vertical slicing → execution → verification → release readiness.
+- Schema documentation and a custom flow example showing how to add/remove/reorder stages.
+- Prerequisite tool declaration and validation (GSD, Superpowers, Spec-Kit, GStack).
+
+**Requirements covered:** FLOW-01, FLOW-02, FLOW-03, FLOW-04
+
 **Success criteria:**
 
-- Running `adp run "Feature request"` initializes directories, creates a valid, checkable feature scaffold, and validation passes.
-- Running `adp feature "Feature request"` creates the feature subdirectory with next three-digit numeric prefix.
-- The CLI safely prevents directory name collisions.
+- The YAML schema can express the 10-stage flow with all artifact gates and revision routes.
+- A custom flow definition can be validated against the schema.
+- Prerequisite tool availability is checkable from the definition.
+
+### Phase 9: Flow Initialization and Ledger State
+
+**Goal:** Extend `adp init` to bootstrap flow infrastructure and create the ledger state file.
+
+**Rationale:** Projects need a single `init` step to install the flow definition and create the tracking ledger. Brownfield support must not overwrite existing `.ai/` infrastructure.
+
+**Delivers:**
+
+- Updated `adp init` that copies the default flow definition into `.ai/flows/rough-project-flow.yaml`.
+- Ledger state file at `.ai/state/flow-ledger.json` with fields: flow name, current stage, stage statuses (pending/in_progress/done/blocked/needs_revision), artifact paths per stage, timestamps, gate results, and revision history.
+- Brownfield merge logic — detect existing `.ai/` structure and merge without overwrite.
+- Generated Gemini skill SKILL.md stub that references the flow definition.
+
+**Requirements covered:** INIT-01, INIT-02, INIT-03, INIT-04
+
+**Success criteria:**
+
+- `adp init` on a greenfield project creates `.ai/flows/` with the default flow and `.ai/state/flow-ledger.json` with all stages pending.
+- `adp init` on a brownfield project with existing `.ai/` merges new files without destroying existing state.
+- The generated SKILL.md is valid and can be read by agents.
+
+### Phase 10: Flow Engine Skill
+
+**Goal:** Package the flow orchestrator as a Gemini skill that agents mention in chat to start, resume, or inspect the flow.
+
+**Rationale:** This is the core deliverable — a skill that reads the flow definition, reads ledger state, determines the next actionable stage, and instructs the agent which skill or command to invoke. It replaces the manual `rough-project-flow` prose orchestration with a data-driven engine.
+
+**Delivers:**
+
+- Gemini skill `flow-engine` (or `project-flow`) under `.agents/skills/` with SKILL.md.
+- Stage resolution logic: read flow definition → read ledger → find first non-done stage → check prerequisites → emit instruction.
+- Artifact gate checking after each stage: verify required artifacts exist and pass basic content checks (non-empty, required headings if specified).
+- Ledger update after each stage: advance stage status, record artifact paths, timestamps, gate results.
+- Revision loop support: when a downstream stage fails or detects errors, route back to the correct upstream stage, reset affected ledger entries, and log the revision reason.
+- Stage instruction formatting: output the stage name, required skill/command, expected artifacts, and gate conditions in a structured format agents can follow.
+
+**Requirements covered:** ENGINE-01, ENGINE-02, ENGINE-03, ENGINE-04
+
+**Success criteria:**
+
+- An agent mentioning the flow engine skill sees the current stage and knows exactly which skill to invoke next.
+- After a stage completes and artifacts exist, the ledger advances automatically.
+- Revision loops reset the correct upstream stages and preserve audit history.
+- The skill works with the built-in `rough-project-flow.yaml` end-to-end.
+
+### Phase 11: Artifact Gate Enforcement
+
+**Goal:** Implement deterministic artifact gate checks as a reusable validation layer.
+
+**Rationale:** Gates are the enforcement mechanism that prevents skipping stages. They must be deterministic (no LLM-as-judge) and must integrate with both the flow engine skill and the CLI validator.
+
+**Delivers:**
+
+- Gate checker module that validates: artifact existence, non-empty content, required headings (configurable per stage), and forbidden placeholders.
+- Gate failure logging in the ledger with failure reason, attempt count, and timestamp.
+- Circuit breaker: after 3 consecutive gate failures on the same stage, generate `NEEDS_HUMAN_REVIEW` packet and halt the flow.
+- Integration with flow engine skill so gates are checked automatically after each stage instruction is followed.
+
+**Requirements covered:** GATE-01, GATE-02, GATE-03, GATE-04
+
+**Success criteria:**
+
+- A stage with missing artifacts blocks advancement deterministically.
+- Gate failures are logged with actionable reasons.
+- Three failures trigger the human review circuit breaker.
+- No gate check uses LLM evaluation — only file existence, content checks, and heading validation.
+
+### Phase 12: Flow Validator and Tests
+
+**Goal:** Add a deterministic flow validator and comprehensive test suite.
+
+**Rationale:** The flow definition, ledger state, and gate logic all need validation to prevent corruption and catch configuration errors early.
+
+**Delivers:**
+
+- Flow validator command (`npm run validate:flow` or integrated into `adp doctor`) that checks: flow definition syntax, ledger state consistency, stage reference validity, artifact path validity, and impossible state transitions.
+- Corruption detection: invalid stage names, circular revision routes, orphaned artifact references, ledger entries referencing undefined stages.
+- Skill name validation: verify that flow definitions reference known skill names or commands available in the environment.
+- Test suite covering: happy path flow, gate failures, revision loops, corruption detection, brownfield init, custom flow definitions.
+
+**Requirements covered:** FVALID-01, FVALID-02, FVALID-03, FVALID-04
+
+**Success criteria:**
+
+- `npm run validate:flow` catches definition syntax errors, ledger corruption, and invalid references.
+- Tests cover the critical paths: normal completion, revision routing, gate blocking, circuit breaker, and brownfield merge.
+- CI can run flow validation alongside existing spec validation.
+
+---
 
 ## Requirement Coverage
 
 | Phase | Requirements |
 |-------|--------------|
-| Phase 1 | ART-01, ART-02, ART-03, ART-04, VERIFY-01 (partial) |
-| Phase 2 | ROUTE-01, ROUTE-02, ROUTE-03, ROUTE-04, MEM-01, MEM-02, MEM-03, MEM-04 |
-| Phase 3 | VALID-01, VALID-02, VALID-03, VALID-04 |
-| Phase 4 | ADAPT-01, ADAPT-02, ADAPT-03, ADAPT-04 |
-| Phase 5 | CLI-01, CLI-02, CLI-03, CLI-04 |
-| Phase 6 | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04 |
-| Phase 7 | CLI-01, CLI-02, CLI-03, CLI-04 (extended) |
+| Phase 1 (v1) | ART-01, ART-02, ART-03, ART-04, VERIFY-01 (partial) |
+| Phase 2 (v1) | ROUTE-01, ROUTE-02, ROUTE-03, ROUTE-04, MEM-01, MEM-02, MEM-03, MEM-04 |
+| Phase 3 (v1) | VALID-01, VALID-02, VALID-03, VALID-04 |
+| Phase 4 (v1) | ADAPT-01, ADAPT-02, ADAPT-03, ADAPT-04 |
+| Phase 5 (v1) | CLI-01, CLI-02, CLI-03, CLI-04 |
+| Phase 6 (v1) | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04 |
+| Phase 7 (v1) | CLI-01, CLI-02, CLI-03, CLI-04 (extended) |
+| Phase 8 (v2) | FLOW-01, FLOW-02, FLOW-03, FLOW-04 |
+| Phase 9 (v2) | INIT-01, INIT-02, INIT-03, INIT-04 |
+| Phase 10 (v2) | ENGINE-01, ENGINE-02, ENGINE-03, ENGINE-04 |
+| Phase 11 (v2) | GATE-01, GATE-02, GATE-03, GATE-04 |
+| Phase 12 (v2) | FVALID-01, FVALID-02, FVALID-03, FVALID-04 |
 
 **Coverage:**
-- v1 requirements: 28 total
-- Mapped to phases: 28
+- v1 requirements: 28 total, 28 completed
+- v2 requirements: 20 total, 0 completed
 - Unmapped: 0
-
 
 ## Research Flags
 
@@ -186,8 +198,9 @@ This roadmap stabilizes the protocol before adding automation. The phase order i
 - Do not add Playwright until there is a browser target.
 - Do not add database or hosted state until local file-based state proves insufficient.
 - Treat generated scaffolds as compatibility layers, not source-of-truth policy.
+- Flow definitions are data, not code — they describe stage order and artifact gates, not execution logic.
+- The flow engine skill instructs agents; it does not spawn subprocesses or invoke tools directly.
 
 ---
 *Roadmap defined: 2026-05-24*
-*Last updated: 2026-05-24 after vertical slice alignment*
-
+*Last updated: 2026-05-25 — v2.0 Flow Engine milestone added*
