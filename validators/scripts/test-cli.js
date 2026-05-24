@@ -381,6 +381,32 @@ Do not break anything.
   }
 });
 
+// 8. CWD-based resolution (P1 fix: CLI should default to process.cwd(), not package dir)
+addTest('CLI CWD-Based Resolution', () => {
+  setupSandbox();
+
+  // Set up a feature pointer inside the sandbox
+  writeJson('.specify/feature.json', { feature_directory: 'specs/cwd-test-feature' });
+
+  // Run CLI WITHOUT PROJECT_ROOT/REPO_ROOT env vars, using cwd=sandbox
+  const result = spawnSync('node', [cliScriptPath, 'status'], {
+    cwd: testSandboxRoot,
+    env: Object.fromEntries(
+      Object.entries(process.env).filter(([k]) => k !== 'PROJECT_ROOT' && k !== 'REPO_ROOT')
+    ),
+    encoding: 'utf8'
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`Expected exit code 0 on cwd-based status, got ${result.status}. Stderr: ${result.stderr}`);
+  }
+
+  // Must show the sandbox's feature, not the package repo's feature
+  if (!result.stdout.includes('cwd-test-feature')) {
+    throw new Error(`Expected output to contain 'cwd-test-feature' (sandbox feature), got: ${result.stdout}`);
+  }
+});
+
 // Run all tests
 let failedCount = 0;
 console.log('Running CLI tests...\n');

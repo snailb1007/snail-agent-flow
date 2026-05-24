@@ -24,7 +24,10 @@ if (!command || command === '--help' || command === '-h') {
   process.exit(command ? 0 : 1);
 }
 
-const repoRoot = process.env.PROJECT_ROOT || process.env.REPO_ROOT || path.resolve(__dirname, '..');
+// Target project directory: env override or caller's working directory
+const repoRoot = process.env.PROJECT_ROOT || process.env.REPO_ROOT || process.cwd();
+// Package install directory: for resolving bundled validators, templates, scripts
+const packageRoot = path.resolve(__dirname, '..');
 
 // Router
 switch (command) {
@@ -75,7 +78,7 @@ function handleInit() {
 
   // Copy constitution template or write default
   const constitutionPath = path.join(repoRoot, '.ai/constitution.md');
-  const constitutionTemplatePath = path.join(repoRoot, '.specify/templates/constitution-template.md');
+  const constitutionTemplatePath = path.join(packageRoot, '.specify/templates/constitution-template.md');
   if (!fs.existsSync(constitutionPath)) {
     if (fs.existsSync(constitutionTemplatePath)) {
       fs.copyFileSync(constitutionTemplatePath, constitutionPath);
@@ -296,7 +299,7 @@ function handleDoctor() {
 }
 
 function handleValidateSpec() {
-  const validatorScript = path.resolve(__dirname, '../validators/scripts/validate-spec.js');
+  const validatorScript = path.join(packageRoot, 'validators/scripts/validate-spec.js');
   const result = spawnSync('node', [validatorScript, ...args.slice(1)], {
     env: {
       ...process.env,
@@ -309,7 +312,7 @@ function handleValidateSpec() {
 }
 
 function runSpecValidatorSync(silent = false) {
-  const validatorScript = path.resolve(__dirname, '../validators/scripts/validate-spec.js');
+  const validatorScript = path.join(packageRoot, 'validators/scripts/validate-spec.js');
   const result = spawnSync('node', [validatorScript], {
     env: {
       ...process.env,

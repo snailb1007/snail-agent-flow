@@ -3,6 +3,19 @@
   "version": "0.2.0.0",
   "description": "Operating protocol for AI coding agents",
   "private": true,
+  "files": [
+    "bin/",
+    "validators/scripts/validate-spec.js",
+    ".specify/templates/",
+    ".specify/scripts/",
+    ".specify/workflows/",
+    ".specify/fixtures/",
+    "docs/",
+    "README.md",
+    "CHANGELOG.md",
+    "CONTEXT.md",
+    "VERSION"
+  ],
   "bin": {
     "adp": "./bin/adp.js",
     "saf": "./bin/adp.js"
