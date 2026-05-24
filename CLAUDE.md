@@ -22,6 +22,17 @@ Using gstack skills: After install, skills like /qa, /ship, /review, /investigat
 and /browse are available. Use /browse for all web browsing.
 Use ~/.claude/skills/gstack/... for gstack file paths (the global path).
 
+## Spec Validation
+
+Before starting implementation (e.g. before running GSD), you MUST validate the feature specification, plan, and checklist by running:
+```bash
+node validators/scripts/validate-spec.js
+```
+If this script fails, do not proceed with implementation. If it fails 3 times consecutively, it will halt and generate a human review packet at `.ai/reviews/<feature-slug>/human-review.md`. To resume, fix the files and run:
+```bash
+node validators/scripts/validate-spec.js resume
+```
+
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan

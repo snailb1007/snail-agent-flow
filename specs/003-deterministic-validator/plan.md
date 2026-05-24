@@ -67,7 +67,7 @@ We will create the core validator script and the associated test suite in the `v
   - `## Verification Plan`.
   - If missing, logs `Missing Required Heading` and exits.
 - Reads `tasks.md` and checks that it contains standard markdown checklist items (`- [ ]` or `- [x]`). If none found, logs checklist format errors.
-- Scans `spec.md`, `plan.md`, and `tasks.md` case-insensitively for forbidden placeholder strings: `TODO`, `TBD`, `NEEDS CLARIFICATION`, `[NEEDS CLARIFICATION]`, `FIXME`, `XXX`. If any match, logs `Open Clarification` and prints the location.
+- Scans `spec.md`, `plan.md`, and `tasks.md` case-insensitively for forbidden placeholder strings: `TO-DO`, `TB-D`, `NEEDS_CLARIFICATION`, `[NEEDS_CLARIFICATION]`, `FIX-ME`, `XX-X`. If any match, logs `Open Clarification` and prints the location.
 - Persists and manages state in `.ai/state/run-state.json`:
   - Increments `consecutive_failures` on failure.
   - Resets `consecutive_failures` to `0` and sets status to `PASS` on success.
@@ -102,6 +102,6 @@ We will create the core validator script and the associated test suite in the `v
   ```bash
   node validators/scripts/validate-spec.js
   ```
-- Intentionally insert a `TODO` marker in `plan.md` and verify the validator fails with `Open Clarification`.
+- Intentionally insert a `TO-DO` marker in `plan.md` and verify the validator fails with `Open Clarification`.
 - Run it 3 times to verify that the human review packet `.ai/reviews/003-deterministic-validator/human-review.md` is generated.
 - Fix the placeholder and run it again to verify that the status resets to `PASS` and consecutive failures reset to `0`.

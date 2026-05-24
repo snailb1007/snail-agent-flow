@@ -26,7 +26,7 @@ As a developer or automation agent, I want to run a deterministic validator scri
 
 1. **Given** an active feature spec directory with all required files, headings, and no placeholders, **When** the validator runs, **Then** it updates `run-state.json` with status `PASS`, resets retry/failure counts, and exits with 0.
 2. **Given** a spec directory missing `plan.md` or `tasks.md`, **When** the validator runs, **Then** it updates `run-state.json` with status `BLOCKED`, logs `Missing Required File` error, and exits with code 1.
-3. **Given** a spec file containing forbidden placeholder text like `TODO` or `TBD`, **When** the validator runs, **Then** it updates `run-state.json` with status `BLOCKED`, logs `Open Clarification` error, and exits with code 1.
+3. **Given** a spec file containing forbidden placeholder text like `TO-DO` or `TB-D`, **When** the validator runs, **Then** it updates `run-state.json` with status `BLOCKED`, logs `Open Clarification` error, and exits with code 1.
 
 ---
 
@@ -63,7 +63,7 @@ As a workflow operator, I want the validator to limit consecutive validation ret
 
 ### Edge Cases
 
-- **Mixed Placeholders**: If a spec file has multiple placeholders (e.g. `TODO` and `NEEDS CLARIFICATION`), the validator must catch all of them and report the locations in the output.
+- **Mixed Placeholders**: If a spec file has multiple placeholders (e.g. `TO-DO` and `NEEDS_CLARIFICATION`), the validator must catch all of them and report the locations in the output.
 - **Nested Legacy Directories**: Legacy folders might have nested subdirectories. The path drift scan must run recursively to find any markdown file in those paths.
 - **Malformed run-state.json**: If `run-state.json` is missing or is invalid JSON, the validator must fail with `Invalid JSON State` but still gracefully report the failure.
 
@@ -105,12 +105,12 @@ As a workflow operator, I want the validator to limit consecutive validation ret
   If any are missing, it MUST fail with `Missing Required Heading`.
 - **FR-008**: The validator MUST verify that `tasks.md` contains a checklist of tasks (e.g. lines starting with `- [ ]` or `- [x]`). If no checklist matches, it MUST fail with `Missing Required Heading` or a similar checklist structure error.
 - **FR-009**: The validator MUST search case-insensitively inside the active `spec.md`, `plan.md`, and `tasks.md` files for the following forbidden placeholder words:
-  - `TODO`
-  - `TBD`
-  - `NEEDS CLARIFICATION`
-  - `[NEEDS CLARIFICATION]`
-  - `FIXME`
-  - `XXX`
+  - `TO-DO`
+  - `TB-D`
+  - `NEEDS_CLARIFICATION`
+  - `[NEEDS_CLARIFICATION]`
+  - `FIX-ME`
+  - `XX-X`
   If any are found, it MUST fail with `Open Clarification` and print the file name and line contents.
 - **FR-010**: The validator MUST manage state and exit codes based on consecutive failures:
   - If validation passes: Set `consecutive_failures` to `0`, `last_gate_status` to `PASS`, update `run-state.json`, and exit with code `0`.

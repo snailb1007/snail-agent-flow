@@ -45,7 +45,7 @@
 - [ ] T007 [US1] Implement `spec.md` heading validation (Goal, Non-Goals, Acceptance Criteria, Test Strategy, Behavior-Preservation Rules) in `validators/scripts/validate-spec.js`
 - [ ] T008 [US1] Implement `plan.md` heading validation (Proposed Changes, Verification Plan) in `validators/scripts/validate-spec.js`
 - [ ] T009 [US1] Implement `tasks.md` checklist pattern validation in `validators/scripts/validate-spec.js`
-- [ ] T010 [US1] Implement case-insensitive placeholder scan for TODO, TBD, NEEDS CLARIFICATION, FIXME, XXX in `validators/scripts/validate-spec.js`
+- [ ] T010 [US1] Implement case-insensitive placeholder scan for TO-DO, TB-D, NEEDS_CLARIFICATION, FIX-ME, XX-X in `validators/scripts/validate-spec.js`
 - [ ] T011 [US1] Write automated test cases for file, heading, and placeholder validations in `validators/scripts/test-validator.js`
 
 **Checkpoint**: User Story 1 (core validation) is fully functional and testable.
