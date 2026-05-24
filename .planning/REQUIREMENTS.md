@@ -129,7 +129,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADAPT-01 – ADAPT-04 | Phase 4 (v1) | Completed |
 | CLI-01 – CLI-04 | Phase 5, 7 (v1) | Completed |
 | VERIFY-01 – VERIFY-04 | Phase 6 (v1) | Completed |
-| FLOW-01 – FLOW-04 | Phase 8 (v2) | Pending |
+| FLOW-01 – FLOW-04 | Phase 8 (v2) | Completed |
 | INIT-01 – INIT-04 | Phase 9 (v2) | Pending |
 | ENGINE-01 – ENGINE-04 | Phase 10 (v2) | Pending |
 | GATE-01 – GATE-04 | Phase 11 (v2) | Pending |
@@ -137,7 +137,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 **Coverage:**
 - v1 requirements: 28 total, 28 completed
-- v2 requirements: 20 total, 0 completed
+- v2 requirements: 20 total, 4 completed
 - Unmapped: 0
 
 ---

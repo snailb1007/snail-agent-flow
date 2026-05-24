@@ -1,21 +1,22 @@
 # Memory Handoff Report
 
-**Session:** 2026-05-24-phase6-integration-and-ci
-**Feature:** 006-expanded-examples-ci-matrix-and-optional-evaluation
+## Session
+2026-05-25-008-flow-definition-format-built
 
 ## Promoted to project memory
-
-- Greenfield and Brownfield fixture projects are defined under `.specify/fixtures/`.
-- CI automation workflow using GitHub Actions is configured under `.github/workflows/ci.yml`.
-- Qualitative evaluation templates are structured under `.specify/templates/evaluation-rubric.json`.
-- All CLI tests, validator tests, and simulation scenarios pass deterministically.
+- Declarative flow definitions are written in YAML and stored under `.ai/flows/` in the target project.
+- A custom, zero-dependency YAML parser is implemented in `lib/yaml-parser.js` to parse YAML configurations in light runtimes.
+- Prerequisite tool availability is checked using the `validatePrerequisites` function in `lib/tool-validator.js`, which checks skill folders in `.agents/skills/`, `.claude/skills/`, and `~/.gemini/config/skills/`, with PATH checks as a fallback.
 
 ## Architecture updated
+- Created `lib/yaml-parser.js` for lightweight line-by-line configuration parsing.
+- Created `lib/tool-validator.js` for checking prerequisite skills and commands.
+- Configured `.specify/templates/rough-project-flow.yaml` to specify the 10-stage ledger.
+- Configured `.specify/templates/custom-flow-example.yaml` as a reference for custom flows.
 
-- Test environment isolation is enforced in CLI tests by overriding the `PROJECT_ROOT` and `REPO_ROOT` environment variables when running checks against fixture folders.
-- CI pipeline is configured to use native Node.js v20.
+## Known risks updated
+- Simple YAML parser: Anchors, aliases, or advanced nested YAML syntax are not supported. If a custom flow fails to parse, it must be simplified to basic indented lists and key-values.
 
 ## Verification promoted
-
-- Automated test suite runs cleanly: `npm test`.
-- All 11 CLI checks, 15 spec-validator assertions, and phase 2 simulations are passing.
+- Added unit tests in `validators/scripts/test-flow-parser.js`.
+- Linked tests to `npm test` script in `package.json`.

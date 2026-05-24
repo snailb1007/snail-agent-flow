@@ -6,10 +6,10 @@ status: active
 last_updated: "2026-05-25T01:10:00.000Z"
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -21,26 +21,25 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-25)
 
 **Core value:** Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
-**Current focus:** Phase 8: Flow Definition Format and Built-in Flow
+**Current focus:** Phase 9: Flow Initialization and Ledger State
 
 ## Current Status
 
-Milestone v1.0 is complete (Phases 1-7). All 28 v1 requirements delivered, CLI packaged, fixtures and CI verified.
-
-Milestone v2.0 started. Phase 8 is the first active phase. No plans or execution yet.
+Milestone v1.0 is complete (Phases 1-7). All 28 v1 requirements delivered.
+Milestone v2.0 started. Phase 8 (Flow Definition Format and Built-in Flow) is complete. Phase 9 is now active.
 
 ## Active Phase
 
-**Phase 8: Flow Definition Format and Built-in Flow**
+**Phase 9: Flow Initialization and Ledger State**
 
-Goal: Define a declarative flow definition format (YAML) and ship the built-in `rough-project-flow` as the first flow definition.
+Goal: Extend `adp init` to bootstrap flow infrastructure and create the ledger state file.
 
 Primary requirements:
 
-- FLOW-01
-- FLOW-02
-- FLOW-03
-- FLOW-04
+- INIT-01
+- INIT-02
+- INIT-03
+- INIT-04
 
 ## Decisions
 
@@ -69,13 +68,14 @@ Primary requirements:
 ### v2.0 (Active)
 - v2 requirements defined: 20 total, 5 categories (FLOW, INIT, ENGINE, GATE, FVALID).
 - Roadmap phases 8-12 defined with success criteria.
+- Phase 8: Flow Definition Format and Built-in Flow completed and verified.
 
 ## Next Action
 
-Begin Phase 8 — discuss the flow definition format.
+Begin Phase 9 — discuss flow initialization and ledger state.
 
 ```bash
-/gsd-discuss-phase 08
+/rough-project-flow phase09
 ```
 
 ---
