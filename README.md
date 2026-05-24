@@ -44,15 +44,19 @@ The release workflow runs `npm test`, builds an npm tarball with `npm pack`, upl
 
 | Path | Purpose |
 |---|---|
-| `.specify/` | Spec-Kit presets, templates, validation scripts, and active feature pointer. |
+| `.specify/` | Spec-Kit presets, fixtures, templates, validation scripts, optional evaluation rubric, and active feature pointer. |
 | `specs/<feature-slug>/` | Canonical feature requirements, implementation plan, tasks, and checklists. |
 | `.ai/` | Mutable orchestration state, review logs, session logs, memory handoff state, and durable project memory. |
+| `.github/workflows/` | GitHub Actions release and CI verification workflows. |
 | `bin/adp.js` | Zero-dependency Node.js CLI for protocol setup, status, validation, and handoff checks. |
 | `validators/scripts/` | Deterministic validation and integration test scripts. |
 | `docs/` | Protocol reference docs, artifact registry, routing matrix, ADRs, and runbooks. |
 
 ## Documentation
 
+- [Claude agent instructions](CLAUDE.md)
+- [Gemini agent instructions](GEMINI.md)
+- [General agent instructions](AGENTS.md)
 - [Pipeline vocabulary](CONTEXT.md)
 - [Full pipeline blueprint](docs/prd.md)
 - [Artifact registry](docs/artifact-registry.md)

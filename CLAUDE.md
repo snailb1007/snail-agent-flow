@@ -58,9 +58,10 @@ node bin/adp.js handoff
 
 ## Path Ownership & Folder Boundaries
 
-- **`.specify/`**: Owns presets, templates, validation scripts, and the active feature pointer (`.specify/feature.json`).
+- **`.specify/`**: Owns presets, fixtures, templates, validation scripts, optional evaluation rubric, and the active feature pointer (`.specify/feature.json`).
 - **`specs/<feature-slug>/`**: Owns canonical Spec-Kit files: `spec.md` (requirements), `plan.md` (architecture & changes), and `tasks.md` (checklist).
 - **`.ai/`**: Owns mutable orchestration state (`run-state.json`), review logs, QA results, sessions, and durable project memory.
+- **`.github/workflows/`**: Owns release packaging and CI verification workflows.
 
 ## Project Documentation
 
