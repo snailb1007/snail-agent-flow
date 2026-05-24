@@ -106,10 +106,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADAPT-02 | Phase 4 | Completed |
 | ADAPT-03 | Phase 4 | Completed |
 | ADAPT-04 | Phase 4 | Completed |
-| CLI-01 | Phase 5 | Completed |
-| CLI-02 | Phase 5 | Completed |
-| CLI-03 | Phase 5 | Completed |
-| CLI-04 | Phase 5 | Completed |
+| CLI-01 | Phase 5, Phase 7 | Completed |
+| CLI-02 | Phase 5, Phase 7 | Completed |
+| CLI-03 | Phase 5, Phase 7 | Completed |
+| CLI-04 | Phase 5, Phase 7 | Completed |
 | VERIFY-01 | Phase 6, Phase 1 (partial) | Completed |
 | VERIFY-02 | Phase 6 | Completed |
 | VERIFY-03 | Phase 6 | Completed |

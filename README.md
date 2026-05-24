@@ -20,6 +20,8 @@ node bin/adp.js <command>
 | Command | Purpose |
 |---|---|
 | `init` | Create the required protocol directories and missing starter docs without overwriting existing files. |
+| `feature <description>` | Create a validated Spec-Kit feature scaffold under `specs/<feature-slug>/` and update `.specify/feature.json`. |
+| `run <description>` | Initialize the protocol if needed, create a feature scaffold, run validation, and print next steps. |
 | `new-session <name>` | Create `.ai/sessions/YYYY-MM-DD-<name>.md` for temporary execution notes. |
 | `status` | Print the active feature, feature directory, current phase, last gate, gate status, retry count, and verified artifacts. |
 | `doctor` | Check required project structure and run the deterministic spec validator. |
@@ -27,6 +29,31 @@ node bin/adp.js <command>
 | `handoff` | Validate `.ai/state/handoff.md` before release by checking required memory handoff sections. |
 
 Session names for `new-session` may contain only letters, numbers, dots, underscores, and hyphens.
+
+### One-Flow Start
+
+For a new project, run the one-command scaffold flow:
+
+```bash
+saf run "Add user login"
+```
+
+From a repository checkout, use:
+
+```bash
+node bin/adp.js run "Add user login"
+```
+
+This creates protocol directories if needed, writes `spec.md`, `plan.md`, `tasks.md`, and `checklists/requirements.md` under `specs/<feature-slug>/`, updates `.specify/feature.json`, and runs the deterministic validation gate.
+
+For a project that is already initialized, create the next feature packet with:
+
+```bash
+saf feature "Improve checkout errors"
+saf validate-spec
+```
+
+The generated packet is a validated starting point for agent-driven planning and implementation. It does not mark implementation complete.
 
 ## Verification
 

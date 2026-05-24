@@ -381,6 +381,81 @@ Do not break anything.
   }
 });
 
+// 8. Feature scaffold command
+addTest('CLI Feature Command Creates Valid Spec-Kit Scaffold', () => {
+  setupSandbox();
+
+  let res = runCLI(['init']);
+  if (res.code !== 0) {
+    throw new Error(`Expected exit code 0 on init before feature, got ${res.code}`);
+  }
+
+  res = runCLI(['feature', 'Add user login']);
+  if (res.code !== 0) {
+    throw new Error(`Expected exit code 0 on feature, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+
+  const pointer = readJson('.specify/feature.json');
+  if (!pointer || pointer.feature_directory !== 'specs/001-add-user-login') {
+    throw new Error(`Expected active feature pointer to specs/001-add-user-login, got ${JSON.stringify(pointer)}`);
+  }
+
+  const expectedFiles = [
+    'specs/001-add-user-login/spec.md',
+    'specs/001-add-user-login/plan.md',
+    'specs/001-add-user-login/tasks.md',
+    'specs/001-add-user-login/checklists/requirements.md'
+  ];
+  for (const file of expectedFiles) {
+    if (!fileExists(file)) {
+      throw new Error(`Expected generated file: ${file}`);
+    }
+  }
+
+  res = runCLI(['validate-spec']);
+  if (res.code !== 0) {
+    throw new Error(`Expected generated feature scaffold to pass validation, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+});
+
+// 9. One-command run flow
+addTest('CLI Run Command Initializes Creates And Validates Feature', () => {
+  setupSandbox();
+
+  const res = runCLI(['run', 'Create project dashboard']);
+  if (res.code !== 0) {
+    throw new Error(`Expected exit code 0 on run, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+
+  const pointer = readJson('.specify/feature.json');
+  if (!pointer || pointer.feature_directory !== 'specs/001-project-dashboard') {
+    throw new Error(`Expected active feature pointer to specs/001-project-dashboard, got ${JSON.stringify(pointer)}`);
+  }
+
+  if (!fileExists('.ai/constitution.md')) {
+    throw new Error('Expected run command to initialize protocol files');
+  }
+  if (!fileExists('specs/001-project-dashboard/tasks.md')) {
+    throw new Error('Expected run command to create tasks.md');
+  }
+  if (!res.stdout.includes('Spec validation gate PASSED')) {
+    throw new Error(`Expected run output to report validation pass, got: ${res.stdout}`);
+  }
+});
+
+// 10. Feature command input validation
+addTest('CLI Feature Command Requires Description', () => {
+  setupSandbox();
+
+  const res = runCLI(['feature']);
+  if (res.code !== 1) {
+    throw new Error(`Expected exit code 1 without feature description, got ${res.code}`);
+  }
+  if (!res.stderr.includes('Missing feature description')) {
+    throw new Error(`Expected missing description error, got: ${res.stderr}`);
+  }
+});
+
 // 8. CWD-based resolution (P1 fix: CLI should default to process.cwd(), not package dir)
 addTest('CLI CWD-Based Resolution', () => {
   setupSandbox();

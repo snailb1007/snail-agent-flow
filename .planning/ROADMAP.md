@@ -140,6 +140,27 @@ This roadmap stabilizes the protocol before adding automation. The phase order i
 - Fixture projects demonstrate the full spec-to-ship protocol.
 - Optional evaluation is layered on top of deterministic checks, not used as a substitute.
 
+## Phase 7: One-Flow CLI
+
+**Goal:** Package the current agent-development protocol into a first-class CLI flow so a user can start a feature from one command instead of manually creating `spec.md`, `plan.md`, `tasks.md`, and the active feature pointer.
+
+**Rationale:** Users need a single entry point to bootstrap a feature with validated, spec-compliant templates without manual file creation or path-drift risks.
+
+**Delivers:**
+
+- Expanded CLI exposing `adp feature <description>` and `adp run <description>`.
+- Automatic feature slug derivation, next numeric prefix scan, and validator-compliant templates.
+- Update mechanism for `.specify/feature.json` pointer.
+- Integration tests verifying greenfield and existing repository behavior.
+
+**Requirements covered:** CLI-01, CLI-02, CLI-03, CLI-04 (extended)
+
+**Success criteria:**
+
+- Running `adp run "Feature request"` initializes directories, creates a valid, checkable feature scaffold, and validation passes.
+- Running `adp feature "Feature request"` creates the feature subdirectory with next three-digit numeric prefix.
+- The CLI safely prevents directory name collisions.
+
 ## Requirement Coverage
 
 | Phase | Requirements |
@@ -150,11 +171,13 @@ This roadmap stabilizes the protocol before adding automation. The phase order i
 | Phase 4 | ADAPT-01, ADAPT-02, ADAPT-03, ADAPT-04 |
 | Phase 5 | CLI-01, CLI-02, CLI-03, CLI-04 |
 | Phase 6 | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04 |
+| Phase 7 | CLI-01, CLI-02, CLI-03, CLI-04 (extended) |
 
 **Coverage:**
 - v1 requirements: 28 total
 - Mapped to phases: 28
 - Unmapped: 0
+
 
 ## Research Flags
 

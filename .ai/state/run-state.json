@@ -1,6 +1,6 @@
 {
-  "feature_slug": "006-expanded-examples-ci-matrix-and-optional-evaluation",
-  "spec_path": "specs/006-expanded-examples-ci-matrix-and-optional-evaluation/",
+  "feature_slug": "007-one-flow-cli",
+  "spec_path": "specs/007-one-flow-cli/",
   "current_phase": "Complete",
   "last_gate": "Spec-Validation",
   "consecutive_failures": 0,
@@ -8,7 +8,7 @@
   "last_failed_step": null,
   "last_failed_rule": null,
   "last_validator_output": null,
-  "updated_at": "2026-05-24T17:12:37.810Z",
+  "updated_at": "2026-05-24T17:55:11.520Z",
   "last_gate_status": "PASS",
   "verified_artifacts": []
 }
