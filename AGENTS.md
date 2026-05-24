@@ -9,6 +9,23 @@ If this script fails, do not proceed with implementation. If it fails 3 times co
 node validators/scripts/validate-spec.js resume
 ```
 
+## Verification Commands
+
+```bash
+npm run validate        # deterministic Spec-Kit validation
+npm run test:validator  # validator unit coverage
+npm run test:pipeline   # Phase 2 pipeline simulation
+npm test                # full validation suite
+```
+
+## Project Documentation
+
+- `CONTEXT.md` defines pipeline vocabulary and current orchestration terms.
+- `docs/prd.md` describes the full AI delivery pipeline blueprint.
+- `docs/artifact-registry.md` owns path and artifact ownership rules.
+- `docs/tool-routing.md` maps pipeline phases to tools, validators, and stop conditions.
+- `docs/memory-versus-sessions.md` defines durable memory versus temporary session logs.
+
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
