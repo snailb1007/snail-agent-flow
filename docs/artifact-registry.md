@@ -8,7 +8,7 @@ This document defines the canonical artifact contract, path ownership model, and
 |---|---|---|---|---|
 | `.specify/` | Spec-Kit | Authoritative | `implemented` | Spec-Kit root containing presets, templates, and scripts. |
 | `.specify/feature.json` | Spec-Kit | Authoritative | `implemented` | Pinned Spec-Kit feature directory state pointer. |
-| `specs/<feature-slug>/` | Spec-Kit / User | Authoritative | `specified` | Active requirements, implementation plans, and tasks. |
+| `specs/<feature-slug>/` | Spec-Kit / User | Authoritative | `specified` | Canonical feature source of truth containing spec.md, plan.md, and tasks.md, owned by Spec-Kit and consumed by GSD. |
 | `docs/` | Protocol / Human | Authoritative | `implemented` | Project documentation and artifact registries. |
 | `docs/artifact-registry.md` | Protocol / Human | Authoritative | `implemented` | Registry of paths, owners, and statuses. |
 | `docs/superpowers/specs/` | Superpowers / Human | Authoritative | `implemented` | Legacy/existing project specification documents. |
@@ -62,4 +62,12 @@ This document defines the canonical artifact contract, path ownership model, and
 | `.gsd/` | GSD Planner | `implemented` | GSD local database, preferences, and milestones state. |
 | `.serena/` | Serena MCP | `implemented` | Local cache, memories, and configurations for Serena. |
 | `docs/` | Protocol / Human | `implemented` | Project documentation and artifact registries. |
+
+## Path & Tool Ownership Invariants
+
+- **Spec-Kit Stack Ownership**: Spec-Kit owns `specs/<feature-slug>/` containing `spec.md`, `plan.md`, and `tasks.md`. It acts as the canonical feature specification and task source of truth.
+- **GSD Execution Layer**: GSD reads and consumes the canonical `specs/<feature-slug>/tasks.md` and other Spec-Kit files for code execution. It must not generate or maintain parallel specs or plans in this pipeline.
+- **GStack / Matt Critique Gates**: All critique gates are owned by GStack review tools (e.g., product, architecture, QA, release readiness).
+- **GitHub Issues**: GitHub issues are strict projections of tasks in `tasks.md` (e.g., using `speckit-taskstoissues`) and must not act as a separate/divergent source of truth.
+
 

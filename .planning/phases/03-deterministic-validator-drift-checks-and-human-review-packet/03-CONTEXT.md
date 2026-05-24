@@ -20,29 +20,37 @@ Implement a deterministic validator and drift checker script (`validators/script
 - **D-17:** **Validator Tool Execution**: The validator must be implemented as a Node.js script located at `validators/scripts/validate-spec.js`. It must be runnable via `node validators/scripts/validate-spec.js`.
 
 ### 2. State Tracking & Retry Schema
-- **D-18:** **Active Run State File**: The execution state must be persisted in `.ai/state/active-run.json`.
-- **D-19:** **Active Run Schema**: The file must contain:
+- **D-18:** **Run State File**: The execution state must be persisted in `.ai/state/run-state.json` (as defined in Phase 2 and ADR 0001).
+- **D-19:** **Run State Schema Extensions**: The run state file must contain:
   ```json
   {
     "feature_slug": "002-routing-gates-memory",
-    "current_step": "spec-validation",
-    "status": "PASS" | "BLOCKED" | "NEEDS_HUMAN_REVIEW",
+    "spec_path": "specs/002-routing-gates-memory/",
+    "current_phase": "Spec-Validation",
+    "last_gate": "Spec-Validation",
+    "last_gate_status": "PASS" | "BLOCKED" | "NEEDS_HUMAN_REVIEW",
     "consecutive_failures": 0,
     "last_failed_step": null | string,
     "last_failed_rule": null | string,
     "last_validator_output": null | string,
+    "retry_count": 0,
+    "retry_scope": "none" | string,
+    "verified_artifacts": [],
     "updated_at": "YYYY-MM-DDTHH:mm:ss.sssZ"
   }
   ```
 - **D-20:** **Retry Reset & Transition Rules**:
-  - Any successful validation resets `consecutive_failures` to `0` and sets `status` to `PASS`.
+  - Any successful validation resets `consecutive_failures` to `0` and sets `last_gate_status` to `PASS`.
   - Any validation failure increments `consecutive_failures` by `1`.
-  - If `consecutive_failures < 3`, the validator updates `.ai/state/active-run.json` with status `BLOCKED`, logs the failure classification, and exits with code `1`.
-  - If `consecutive_failures >= 3`, the validator updates `.ai/state/active-run.json` with status `NEEDS_HUMAN_REVIEW`, automatically generates `.ai/reviews/<feature-slug>/human-review.md`, and exits with code `10` (Blocked).
+  - If `consecutive_failures < 3`, the validator updates `.ai/state/run-state.json` with `last_gate_status` as `BLOCKED`, logs the failure classification, and exits with code `1`.
+  - If `consecutive_failures >= 3`, the validator updates `.ai/state/run-state.json` with `last_gate_status` as `NEEDS_HUMAN_REVIEW`, automatically generates `.ai/reviews/<feature-slug>/human-review.md`, and exits with code `10` (Blocked).
 
 ### 3. Canonical Specs & Path Drift Check
 - **D-21:** **Canonical Feature Spec Paths**: Feature specifications, plans, and checklists must reside under `specs/<feature-slug>/{spec.md,plan.md,tasks.md}`.
 - **D-22:** **Legacy Specs Exclusion**: The script must verify that no markdown specs are written under legacy/shadow locations such as `.specify/specs/`, `specs/current`, or `.ai/specs/`. Any matching files trigger a `Path Drift` failure classification.
+- **D-22a:** **Canonical Spec-Kit Ownership**: The validator must verify that the spec stack (`spec.md`, `plan.md`, `tasks.md`) under `specs/<feature-slug>/` is owned by Spec-Kit, and GSD consumes these files. Any competing spec/plan files are treated as path drift violations.
+- **D-22b:** **Issue-Task Syncing**: The validator must verify that GitHub issues are projected from tasks in `tasks.md` and do not diverge from the canonical tasks checklist.
+
 
 ### 4. Flexible Heading Checks
 - **D-23:** **spec.md Heading Rules**:
