@@ -40,7 +40,7 @@
 **Independent Test**: Verify that `docs/artifact-registry.md` exists and contains a complete matrix of all files/directories and their owners
 
 - [ ] T006 [P] [US1] Create the registry document `docs/artifact-registry.md` defining ownership categories (Authoritative, Generated, Runtime-Specific, Local-Only)
-- [ ] T007 [US1] Deprecate and delete the legacy spec folder `.ai/specs/` and update references in `.ai/constitution.md` to point to `.specify/specs/`
+- [ ] T007 [US1] Deprecate and delete the legacy spec folder `.ai/specs/` and update references in `.ai/constitution.md` to point to `specs/`
 
 ---
 

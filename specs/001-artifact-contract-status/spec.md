@@ -21,7 +21,7 @@ As an AI agent or human developer, I want a single canonical registry defining t
 **Acceptance Scenarios**:
 
 1. **Given** a clean repo with the ADP protocol, **When** listing active files, **Then** all files fit into the canonical `.ai/` and `.specify/` contracts with no duplicated or competing spec directories.
-2. **Given** the path ownership registry, **When** any tool attempts to resolve the spec file, **Then** it references `.specify/specs/<feature-slug>/spec.md` instead of legacy paths like `.ai/specs/current/spec.md`.
+2. **Given** the path ownership registry, **When** any tool attempts to resolve the spec file, **Then** it references `specs/<feature-slug>/spec.md` instead of legacy paths like `.ai/specs/current/spec.md`.
 
 ---
 
@@ -50,11 +50,11 @@ As an orchestrator, I want a runnable minimal golden path script/fixture that si
 
 **Acceptance Scenarios**:
 
-1. **Given** a sample feature request, **When** running the golden path script, **Then** it establishes the correct spec feature directory under `.specify/specs/`, writes status `DRAFT`, enables validator checks, and successfully blocks ship at the gating step due to incomplete requirements or memory.
+1. **Given** a sample feature request, **When** running the golden path script, **Then** it establishes the correct spec feature directory under `specs/`, writes status `DRAFT`, enables validator checks, and successfully blocks ship at the gating step due to incomplete requirements or memory.
 
 ### Edge Cases
 
-- **Path Drift Detection**: If a tool attempts to read a legacy spec path like `.ai/specs/current/spec.md`, the system must detect this path drift, report it, and guide the user/agent to `.specify/specs/<feature-slug>/spec.md`.
+- **Path Drift Detection**: If a tool attempts to read a legacy spec path like `.ai/specs/current/spec.md`, the system must detect this path drift, report it, and guide the user/agent to `specs/<feature-slug>/spec.md`.
 - **Non-Git Fallback**: If the git repository is not initialized or we are not on a feature branch, the minimal golden path must handle the non-git fallback gracefully (as supported by `common.sh`).
 
 ## Requirements *(mandatory)*
@@ -62,14 +62,14 @@ As an orchestrator, I want a runnable minimal golden path script/fixture that si
 ### Functional Requirements
 
 - **FR-001**: System MUST define the canonical directory layout for `.specify/` (owning feature specs/plans/tasks) and `.ai/` (owning state, session notes, reviews, and durable project memory).
-- **FR-002**: System MUST define a path ownership registry document mapping every path (e.g., `.specify/specs/<feature-slug>/spec.md`, `.ai/sessions/`, `.ai/memory/`) to its owner tool/role and lifecycle status.
+- **FR-002**: System MUST define a path ownership registry document mapping every path (e.g., `specs/<feature-slug>/spec.md`, `.ai/sessions/`, `.ai/memory/`) to its owner tool/role and lifecycle status.
 - **FR-003**: System MUST label all existing repository files (including custom scripts, markdown docs, and templates) by their implementation status (Implemented, Specified, Placeholder, Generated Scaffold, or Deferred) to establish an unambiguous baseline.
 - **FR-004**: System MUST establish the "current-spec" convention: the active feature's specs/plans/tasks are pinned via `.specify/feature.json` (or `.ai/state/active-feature.json` or both as decided by the plan), and downstream tools must read from that pinned directory.
 - **FR-005**: System MUST include a `minimal-golden-path` smoke test script (e.g., `scripts/smoke-test.sh`) that simulates a feature request, verifies path routing, checks that it enters `DRAFT` status, validates that a mock validator can read the spec, and asserts that shipping is blocked if gates/memory are incomplete.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Feature Specification (Spec)**: The canonical requirement document under `.specify/specs/<feature-slug>/spec.md` defining the what/why of a feature.
+- **Feature Specification (Spec)**: The canonical requirement document under `specs/<feature-slug>/spec.md` defining the what/why of a feature.
 - **Path Ownership Registry**: A markdown or JSON document that catalogs every path in the workspace, its owner, its status, and authority level.
 - **Feature State (`.specify/feature.json`)**: Pins the active feature's directory path so downstream tools can resolve it.
 - **Golden Path Smoke Test**: An executable script that simulates the lifecycle of a feature from specification to blocked-ship state.

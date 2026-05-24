@@ -13,7 +13,7 @@ The canonical spec system for the MVP.
 _Avoid_: OpenSpec as parallel source of truth
 
 **Feature Spec Source of Truth**:
-The `.specify/specs/<feature-slug>/` directory that owns feature requirements, plan, tasks, and related design artifacts.
+The `specs/<feature-slug>/` directory that owns feature requirements, plan, tasks, and related design artifacts.
 _Avoid_: `.ai/specs/current`
 
 **Orchestration State**:
