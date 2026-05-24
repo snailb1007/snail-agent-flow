@@ -6,7 +6,7 @@ This document defines the canonical artifact contract, path ownership model, and
 
 | Path | Owner Tool / Role | Category | Status | Description |
 |---|---|---|---|---|
-| `.specify/` | Spec-Kit / OpenSpec | Authoritative | `implemented` | Spec-Kit root containing presets, templates, and scripts. |
+| `.specify/` | Spec-Kit | Authoritative | `implemented` | Spec-Kit root containing presets, templates, and scripts. |
 | `.specify/feature.json` | Spec-Kit | Authoritative | `implemented` | Pinned Spec-Kit feature directory state pointer. |
 | `specs/<feature-slug>/` | Spec-Kit / User | Authoritative | `specified` | Active requirements, implementation plans, and tasks. |
 | `docs/` | Protocol / Human | Authoritative | `implemented` | Project documentation and artifact registries. |
@@ -33,7 +33,7 @@ This document defines the canonical artifact contract, path ownership model, and
 | `.bg-shell/` | Shell Runtime | Local-Only | `implemented` | Background command shell logs and process manifests. |
 | `CLAUDE.md` | Claude CLI | Authoritative | `implemented` | Developer guide, build/test commands, and CLI constraints. |
 | `GEMINI.md` | Gemini CLI | Authoritative | `implemented` | Gemini-specific adapter command details and guidelines. |
-| `AGENTS.md` | Protocol / Human | Authoritative | `implemented` | High-level agent team documentation and directives. |
+| `AGENTS.md` | Protocol / Human | Authoritative | `generated-scaffold` | High-level agent team documentation and directives. |
 | `CONTEXT.md` | Protocol / Human | Authoritative | `implemented` | Defines feature spec source of truth and state pointers. |
 | `.gitignore` | Git | Authoritative | `implemented` | Workspace path exclusion settings. |
 

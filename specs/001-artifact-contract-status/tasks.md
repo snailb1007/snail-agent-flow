@@ -18,9 +18,9 @@
 
 **Purpose**: Move Spec-Kit files to the unified root `.specify/`
 
-- [ ] T001 Create directory structure for `.specify/` and its subdirectories
-- [ ] T002 Move Spec-Kit configurations, templates, and scripts from `.gemini/.specify/` to `.specify/`
-- [ ] T003 Update script import paths in `.specify/scripts/bash/check-prerequisites.sh` to point to `.specify/scripts/bash/common.sh`
+- [x] T001 Create directory structure for `.specify/` and its subdirectories
+- [x] T002 Move Spec-Kit configurations, templates, and scripts from `.gemini/.specify/` to `.specify/`
+- [x] T003 Update script import paths in `.specify/scripts/bash/check-prerequisites.sh` to point to `.specify/scripts/bash/common.sh`
 
 ---
 
@@ -28,8 +28,8 @@
 
 **Purpose**: Update command paths and references to use the new `.specify/` location
 
-- [ ] T004 Update path references in all `.gemini/commands/` TOML files from `.gemini/.specify/` to `.specify/`
-- [ ] T005 Update path references in `.planning/codebase/` documentation to point to `.specify/` instead of `.gemini/.specify/`
+- [x] T004 Update path references in all `.gemini/commands/` TOML files from `.gemini/.specify/` to `.specify/`
+- [x] T005 Update path references in `.planning/codebase/` documentation to point to `.specify/` instead of `.gemini/.specify/`
 
 ---
 
@@ -39,8 +39,8 @@
 
 **Independent Test**: Verify that `docs/artifact-registry.md` exists and contains a complete matrix of all files/directories and their owners
 
-- [ ] T006 [P] [US1] Create the registry document `docs/artifact-registry.md` defining ownership categories (Authoritative, Generated, Runtime-Specific, Local-Only)
-- [ ] T007 [US1] Deprecate and delete the legacy spec folder `.ai/specs/` and update references in `.ai/constitution.md` to point to `specs/`
+- [x] T006 [P] [US1] Create the registry document `docs/artifact-registry.md` defining ownership categories (Authoritative, Generated, Runtime-Specific, Local-Only)
+- [x] T007 [US1] Deprecate and delete the legacy spec folder `.ai/specs/` and update references in `.ai/constitution.md` to point to `specs/`
 
 ---
 
@@ -50,7 +50,7 @@
 
 **Independent Test**: Verify that the registry table contains a status column mapping each path to its implementation status
 
-- [ ] T008 [P] [US2] Update `docs/artifact-registry.md` status table to assign status labels (implemented, specified, placeholder, generated-scaffold, deferred) for all files
+- [x] T008 [P] [US2] Update `docs/artifact-registry.md` status table to assign status labels (implemented, specified, placeholder, generated-scaffold, deferred) for all files
 - [ ] T009 [US2] Add status headers to scripts in `.specify/scripts/bash/` indicating they are implemented
 
 ---
@@ -61,11 +61,11 @@
 
 **Independent Test**: Running `bash .specify/scripts/bash/smoke-test.sh` exits with code 0
 
-- [ ] T010 [P] [US3] Create feature state JSON initialization support at `.ai/state/active-feature.json`
+- [x] T010 [P] [US3] Create feature state JSON initialization support at `.ai/state/active-feature.json`
 - [ ] T011 [US3] Update `.specify/scripts/bash/common.sh` functions to read feature directory from `.ai/state/active-feature.json` with env var override support
-- [ ] T012 [P] [US3] Create mock feature fixture specifications in `.specify/fixtures/minimal-golden-path/`
-- [ ] T013 [US3] Create the validator script `.specify/scripts/bash/validate-gate.sh` that exits with code 1 if gates/memory are incomplete
-- [ ] T014 [US3] Create the executable simulation script `.specify/scripts/bash/smoke-test.sh` that sets up mock files, runs validation, and asserts exit code behavior
+- [x] T012 [P] [US3] Create mock feature fixture specifications in `.specify/fixtures/minimal-golden-path/`
+- [x] T013 [US3] Create the validator script `.specify/scripts/bash/validate-gates-and-memory.sh` that exits with code 1 if gates/memory are incomplete
+- [x] T014 [US3] Create the executable simulation script `.specify/scripts/bash/smoke-test.sh` that sets up mock files, runs validation, and asserts exit code behavior
 
 ---
 

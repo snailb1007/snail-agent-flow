@@ -56,7 +56,7 @@ It aims to provide:
    ↓
 2. GStack CEO / Eng Manager Review
    ↓
-3. Spec-Kit / OpenSpec
+3. Spec-Kit
    ↓
 3.5 Spec Validation Gate
    ↓
@@ -464,7 +464,7 @@ Ship report should be saved as:
     handoff.md
 ```
 
-`.specify/` owns feature specs. `.ai/` owns orchestration state, session notes, reviews, and durable project memory.
+`.specify/` owns feature specs and Spec-Kit templates (including a constitution template). `.ai/` owns orchestration state, session notes, reviews, and durable project memory. The active operational constitution is `.ai/constitution.md`; `.specify/memory/constitution.md` is a Spec-Kit template copy.
 
 ---
 

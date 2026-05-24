@@ -35,7 +35,7 @@ As a developer, I want to clearly label the implementation status (e.g. "Impleme
 
 **Acceptance Scenarios**:
 
-1. **Given** placeholder files like `.ai/specs/plan.md` or `.ai/memory/*`, **When** auditing implementation status, **Then** these are labeled as placeholders or reconciled/deleted, preventing drift.
+1. **Given** placeholder files like `.ai/memory/*` or `.ai/pipeline.md`, **When** auditing implementation status, **Then** these are labeled as placeholders or reconciled/deleted, preventing drift.
 2. **Given** active runtime configurations and scripts, **When** checking their status, **Then** they are labeled as implemented and match the documentation.
 
 ---
@@ -64,14 +64,14 @@ As an orchestrator, I want a runnable minimal golden path script/fixture that si
 - **FR-001**: System MUST define the canonical directory layout for `.specify/` (owning feature specs/plans/tasks) and `.ai/` (owning state, session notes, reviews, and durable project memory).
 - **FR-002**: System MUST define a path ownership registry document mapping every path (e.g., `specs/<feature-slug>/spec.md`, `.ai/sessions/`, `.ai/memory/`) to its owner tool/role and lifecycle status.
 - **FR-003**: System MUST label all existing repository files (including custom scripts, markdown docs, and templates) by their implementation status (Implemented, Specified, Placeholder, Generated Scaffold, or Deferred) to establish an unambiguous baseline.
-- **FR-004**: System MUST establish the "current-spec" convention: the active feature's specs/plans/tasks are pinned via `.specify/feature.json` (or `.ai/state/active-feature.json` or both as decided by the plan), and downstream tools must read from that pinned directory.
+- **FR-004**: System MUST establish the "current-spec" convention: the active feature's specs/plans/tasks are pinned via `.specify/feature.json` (Spec-Kit internal) and `.ai/state/active-feature.json` (orchestration state pointer), and downstream tools must read from the pinned directory.
 - **FR-005**: System MUST include a `minimal-golden-path` smoke test script (e.g., `scripts/smoke-test.sh`) that simulates a feature request, verifies path routing, checks that it enters `DRAFT` status, validates that a mock validator can read the spec, and asserts that shipping is blocked if gates/memory are incomplete.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Feature Specification (Spec)**: The canonical requirement document under `specs/<feature-slug>/spec.md` defining the what/why of a feature.
 - **Path Ownership Registry**: A markdown or JSON document that catalogs every path in the workspace, its owner, its status, and authority level.
-- **Feature State (`.specify/feature.json`)**: Pins the active feature's directory path so downstream tools can resolve it.
+- **Feature State (`.specify/feature.json` and `.ai/state/active-feature.json`)**: Pins the active feature's directory path so downstream tools can resolve it.
 - **Golden Path Smoke Test**: An executable script that simulates the lifecycle of a feature from specification to blocked-ship state.
 
 ## Success Criteria *(mandatory)*
@@ -85,6 +85,6 @@ As an orchestrator, I want a runnable minimal golden path script/fixture that si
 
 ## Assumptions
 
-- The repository has git initialized, and the workspace contains `.gemini/.specify/` containing the Spec-Kit templates/scripts.
+- The repository has git initialized, and the workspace contains `.specify/` as the unified Spec-Kit root containing templates and scripts.
 - We will use local files for storing feature state and registry information. No external databases or APIs are required.
 - The smoke test can run in a standard Bash shell environment (compatible with Mac and Linux).

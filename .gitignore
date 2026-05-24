@@ -67,6 +67,8 @@ temp/
 
 # ── GSD baseline (auto-generated) ──
 .gsd-id
+.gsd/gsd.db
+.gsd/notifications.jsonl
 .mcp.json
 .bg-shell/
 nul

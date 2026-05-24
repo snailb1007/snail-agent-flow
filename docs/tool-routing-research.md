@@ -10,7 +10,7 @@ This note zooms out from the current pipeline and checks the named tools against
 0. Superpowers Constitution
 1. Recon
 2. GStack CEO / Eng Manager Review
-3. Spec-Kit / OpenSpec
+3. Spec-Kit
 3.5 Spec Validation Gate
 4. GSD Full Execution
 4.5 Failure Feedback Loop
@@ -108,7 +108,7 @@ Recommendation:
 - GSD is the executor and must not be the release owner.
 - `gsd-ship` can provide supporting evidence if useful, but final release/PR handoff ownership stays with GStack Ship.
 
-## Spec-Kit / OpenSpec Placement
+## Spec-Kit Placement (OpenSpec Deferred)
 
 Context7 docs confirm:
 
