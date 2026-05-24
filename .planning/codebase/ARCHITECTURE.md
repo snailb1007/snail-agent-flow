@@ -15,7 +15,7 @@
 - The repo defines a thin orchestration protocol for AI coding workflows rather than an application runtime.
 - Source of truth is stored in Markdown and configuration under `.ai/`, `docs/`, `.gemini/`, `.agents/`, `CLAUDE.md`, and `GEMINI.md`.
 - The intended flow is gate-based: constitution -> recon -> critique -> spec -> validation -> execution -> QA -> memory handoff -> ship.
-- Spec-Kit/Gemini scaffolding is vendored under `.gemini/.specify/` and `.gemini/commands/`; it is operational scaffolding, not the product architecture itself.
+- Spec-Kit/Gemini scaffolding is vendored under `.specify/` and `.gemini/commands/`; it is operational scaffolding, not the product architecture itself.
 
 ## Layers
 
@@ -43,11 +43,11 @@
 
 **Spec-Kit/Gemini Integration Layer:**
 - Purpose: Provide command prompts, templates, and scripts for specify -> plan -> tasks -> implement.
-- Location: `.gemini/commands/`, `.gemini/.specify/`
-- Contains: command TOML files such as `.gemini/commands/speckit.specify.toml`, `.gemini/commands/speckit.plan.toml`, `.gemini/commands/speckit.implement.toml`; workflow metadata in `.gemini/.specify/workflows/speckit/workflow.yml`; shell scripts in `.gemini/.specify/scripts/bash/`; templates in `.gemini/.specify/templates/`; integration manifest in `.gemini/.specify/integrations/speckit.manifest.json`.
+- Location: `.gemini/commands/`, `.specify/`
+- Contains: command TOML files such as `.gemini/commands/speckit.specify.toml`, `.gemini/commands/speckit.plan.toml`, `.gemini/commands/speckit.implement.toml`; workflow metadata in `.specify/workflows/speckit/workflow.yml`; shell scripts in `.specify/scripts/bash/`; templates in `.specify/templates/`; integration manifest in `.specify/integrations/speckit.manifest.json`.
 - Depends on: Spec-Kit conventions, shell scripts, generated feature directories, `.specify/feature.json`, `.specify/memory/constitution.md`.
 - Used by: Gemini slash commands and future spec-driven development cycles.
-- Implementation note: these files reference `.specify/...` paths in command text, while the checked-in files are under `.gemini/.specify/...`; future work should verify runtime path resolution before depending on those commands.
+- Implementation note: these files reference `.specify/...` paths in command text, while the checked-in files are under `.specify/...`; future work should verify runtime path resolution before depending on those commands.
 
 **Project Skill Layer:**
 - Purpose: Provide local agent operating skills copied into the repo.
@@ -84,7 +84,7 @@
 2. `.gemini/commands/speckit.plan.toml` runs setup, reads the feature spec plus constitution memory, then produces plan/design artifacts.
 3. `.gemini/commands/speckit.tasks.toml` is expected to turn plan artifacts into executable tasks.
 4. `.gemini/commands/speckit.implement.toml` loads prerequisites and executes tasks phase by phase.
-5. `.gemini/.specify/workflows/speckit/workflow.yml` sequences `speckit.specify`, review gate, `speckit.plan`, review gate, `speckit.tasks`, and `speckit.implement`.
+5. `.specify/workflows/speckit/workflow.yml` sequences `speckit.specify`, review gate, `speckit.plan`, review gate, `speckit.tasks`, and `speckit.implement`.
 
 **State Management:**
 - Durable state is Markdown-first and file-based under `.ai/`.
@@ -125,7 +125,7 @@
 
 **Spec-Kit Script:**
 - Purpose: Resolve feature paths and prerequisites for generated specs/plans/tasks.
-- Examples: `.gemini/.specify/scripts/bash/create-new-feature.sh`, `.gemini/.specify/scripts/bash/check-prerequisites.sh`, `.gemini/.specify/scripts/bash/setup-plan.sh`, `.gemini/.specify/scripts/bash/setup-tasks.sh`
+- Examples: `.specify/scripts/bash/create-new-feature.sh`, `.specify/scripts/bash/check-prerequisites.sh`, `.specify/scripts/bash/setup-plan.sh`, `.specify/scripts/bash/setup-tasks.sh`
 - Pattern: Bash scripts emit paths or JSON for command prompts to consume.
 
 ## Entry Points
@@ -156,7 +156,7 @@
 - Responsibilities: create specs, plans, tasks, validations, and feature implementation workflows.
 
 **Spec-Kit Shell Scripts:**
-- Location: `.gemini/.specify/scripts/bash/*.sh`
+- Location: `.specify/scripts/bash/*.sh`
 - Triggers: command prompts and workflows.
 - Responsibilities: create feature branches/directories, resolve paths, validate prerequisites, and prepare task/plan artifacts.
 

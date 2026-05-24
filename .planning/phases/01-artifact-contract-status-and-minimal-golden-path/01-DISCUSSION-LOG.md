@@ -15,10 +15,10 @@
 | Option | Description | Selected |
 |--------|-------------|----------|
 | Unified under `.specify/` | Move config, templates, and scripts to `.specify/` so all Spec-Kit configurations and feature specs share a single root. | ✓ |
-| Separated | Keep `.gemini/.specify/` for Gemini-specific workflows/templates and only use `.specify/` for feature specs. | |
+| Separated | Keep `.specify/` for Gemini-specific workflows/templates and only use `.specify/` for feature specs. | |
 
 **User's choice:** Unified under `.specify/`
-**Notes:** Move `.gemini/.specify/*` to `.specify/*` (except provider-specific commands in `.gemini/commands`), so there is a single spec directory.
+**Notes:** Move `.specify/*` to `.specify/*` (except provider-specific commands in `.gemini/commands`), so there is a single spec directory.
 
 ### Question 2: Location of Gemini-specific command TOMLs
 | Option | Description | Selected |

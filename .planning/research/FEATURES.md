@@ -29,7 +29,7 @@ Features users expect. Missing means the protocol feels incomplete or unsafe.
 | QA and verification report | Ship requires evidence, not a chat claim. | Medium | `docs/prd.md` Step 5 and Step 6; `.ai/constitution.md` "Verify before claiming completion"; `.planning/codebase/CONCERNS.md` "No automated tests detected" | Support build/test/lint/typecheck/manual logs even before runtime automation exists. |
 | Memory handoff | Future agents need durable project facts, decisions, risks, and verification history. | Medium | `docs/prd.md` Step 5.5; `.ai/constitution.md` memory artifacts; `.planning/codebase/CONCERNS.md` "Durable memory files are placeholders" | MVP should seed and validate `.ai/memory/*` rather than leave placeholders. |
 | Health check command or checklist | Users need a fast way to detect missing files, stale paths, and broken workflow state. | Medium | `.planning/codebase/CONCERNS.md` "No health check command"; `docs/prd.md` proposed health checks | Can begin as `snail doctor` later; first phase can be a docs-backed checklist. |
-| Documentation consistency checks | A docs-first repo fails if path references drift. | Medium | `.planning/codebase/CONCERNS.md` deleted blueprint path, path mismatches, no doc consistency checks | Check references to `docs/prd.md`, `.ai/constitution.md`, `.ai/specs/current/*`, `.gemini/.specify/*`, and legacy `ai-delivery-pipeline-blueprint.md`. |
+| Documentation consistency checks | A docs-first repo fails if path references drift. | Medium | `.planning/codebase/CONCERNS.md` deleted blueprint path, path mismatches, no doc consistency checks | Check references to `docs/prd.md`, `.ai/constitution.md`, `.ai/specs/current/*`, `.specify/*`, and legacy `ai-delivery-pipeline-blueprint.md`. |
 | Safe git/change handling | Local workflow tooling must avoid broad staging, destructive operations, or secret leakage. | Medium | `.ai/constitution.md` destructive operation rule; `.planning/codebase/CONCERNS.md` git automation stages all changes; `.gitignore` summary in `.planning/codebase/STRUCTURE.md` | Prefer explicit path staging and visible permission gates. |
 
 ## Differentiators
@@ -40,14 +40,14 @@ Features that make Snail Agent Flow more valuable than a plain prompt pack or ge
 |---------|-------------------|------------|------------------|-------|
 | Cross-tool orchestration contract | Gives each tool a narrow role and prevents framework soup. | Medium | `docs/prd.md` core idea and routing rules; `.ai/constitution.md` "Use tools for their strongest role"; `.planning/PROJECT.md` out-of-scope replacement rule | This is the product's sharpest positioning: coordinate, do not replace. |
 | Brownfield-first mode | Most agent failures happen when existing behavior, source-of-truth code, or path ownership is skipped. | High | `.planning/PROJECT.md` brownfield documentation-first context; `.ai/constitution.md` no blind rewrite; `.planning/codebase/CONCERNS.md` fragile instruction layering | Differentiate from greenfield-only spec templates by requiring recon and impact analysis before broad work. |
-| Artifact authority resolver | Resolves conflicts between `.ai/specs/`, `.gemini/.specify/`, future `.specify/`, docs, memory, and runtime instructions. | High | `.planning/PROJECT.md` path consistency constraint; `.planning/codebase/CONCERNS.md` artifact layout mismatch and Spec-Kit config path mismatch | This should become a concrete validator/doctor capability, not just prose. |
+| Artifact authority resolver | Resolves conflicts between `.ai/specs/`, `.specify/`, future `.specify/`, docs, memory, and runtime instructions. | High | `.planning/PROJECT.md` path consistency constraint; `.planning/codebase/CONCERNS.md` artifact layout mismatch and Spec-Kit config path mismatch | This should become a concrete validator/doctor capability, not just prose. |
 | Loop-state and retry accounting | Tracks validation failures by category and stops after repeated failures. | Medium | `docs/prd.md` Step 3.5 and section 6; `.ai/constitution.md` no infinite self-repair | Many workflows say "human in the loop"; Snail should make the loop state explicit in `.ai/state/spec-validation-state.json`. |
 | Human review packet generator | Converts blocked autonomous work into an actionable packet with failed rule, attempts, evidence, and decision options. | Medium | `docs/prd.md` section 6 and example packet; `.ai/reviews/` in `.planning/codebase/STRUCTURE.md` | This is a strong differentiator because it turns "agent got stuck" into a resumable review artifact. |
 | Memory promotion rules | Separates temporary session logs from durable project memory. | Medium | `docs/prd.md` memory handoff rules; `.ai/constitution.md` "Update memory or state only with durable decisions"; `.planning/codebase/CONCERNS.md` placeholder memory files | Avoids polluted memory and stale chat summaries. |
 | Multi-runtime template pack | Generates or validates consistent instruction files for Claude, Gemini, Codex/GSD, and future runtimes. | High | `CLAUDE.md`/`GEMINI.md` described in `.planning/codebase/STRUCTURE.md`; `.planning/PROJECT.md` runtime neutrality | Useful only if backed by consistency checks; otherwise it becomes more files to drift. |
 | Protocol health dashboard in files | A local status artifact showing current phase, gate status, validation state, memory status, stale references, and next action. | Medium | `.ai/state/current-session.json` proposed in `docs/prd.md`; `.planning/PROJECT.md` core value "what should run next" | Can start as Markdown/JSON output before UI or CLI polish. |
 | Failure taxonomy library | Standard categories for validation, spec, execution, QA, security, data loss, path drift, and memory conflicts. | Medium | `docs/prd.md` failure feedback loop; `.ai/constitution.md` failure rules | Makes validation and review packets consistent across agents. |
-| Compatibility bridge for generated scaffolds | Treats `.gemini/.specify/` as vendored/generated and overlays project-specific Snail rules without hand-editing generated internals. | Medium | `.planning/codebase/CONCERNS.md` "Generated integration files are committed as project logic"; `.planning/codebase/STRUCTURE.md` `.gemini/.specify/` purpose | Important for long-term maintainability when Spec-Kit updates. |
+| Compatibility bridge for generated scaffolds | Treats `.specify/` as vendored/generated and overlays project-specific Snail rules without hand-editing generated internals. | Medium | `.planning/codebase/CONCERNS.md` "Generated integration files are committed as project logic"; `.planning/codebase/STRUCTURE.md` `.specify/` purpose | Important for long-term maintainability when Spec-Kit updates. |
 
 ## Anti-Features
 
@@ -94,7 +94,7 @@ Generated scaffold ownership decision -> Compatibility bridge for Spec-Kit/Gemin
 
 Prioritize:
 
-1. **Canonical artifact contract and path migration decision** - unblock every other phase by choosing `.ai/specs/current/` vs flat `.ai/specs/` and reconciling `docs/prd.md`, `.ai/constitution.md`, and `.gemini/.specify/` expectations.
+1. **Canonical artifact contract and path migration decision** - unblock every other phase by choosing `.ai/specs/current/` vs flat `.ai/specs/` and reconciling `docs/prd.md`, `.ai/constitution.md`, and `.specify/` expectations.
 2. **Tool routing and gate templates** - give agents the exact next-step protocol for recon, critique, spec, validation, execution, QA, memory, and ship.
 3. **Health/checklist validator** - detect missing artifacts, stale references, placeholder memory, missing validation reports, and repeated self-repair state before adding a full CLI.
 4. **Memory seed and handoff rules** - make future recon useful by replacing placeholder durable memory with verified current facts.
@@ -112,7 +112,7 @@ Defer:
 
 Suggested feature phase structure:
 
-1. **Artifact Contract Foundation** - define canonical `.ai/`, `.planning/`, `.gemini/.specify/`, and future `.specify/` ownership; resolve deleted/stale blueprint references.
+1. **Artifact Contract Foundation** - define canonical `.ai/`, `.planning/`, `.specify/`, and future `.specify/` ownership; resolve deleted/stale blueprint references.
 2. **Protocol Templates and Routing** - create concise templates for recon, critique, spec, validation, execution, QA, memory handoff, ship, and human review.
 3. **Doctor and Drift Checks** - add checks for required files, placeholder memory, broken references, path mismatches, and missing validation state.
 4. **Validation and Circuit Breaker** - implement PASS/FAIL/NEEDS_HUMAN_REVIEW with retry counts and review packet creation.

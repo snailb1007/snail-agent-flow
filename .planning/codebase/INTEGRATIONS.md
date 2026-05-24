@@ -10,13 +10,13 @@
   - Auth: Not detected
   - Status: Enforced by `CLAUDE.md`, `.claude/settings.json`, and `.claude/hooks/check-gstack.sh`
 - Gemini Spec Kit integration - Active Spec Kit integration for command prompts/workflows.
-  - SDK/Client: Spec Kit integration files under `.gemini/.specify/` and Gemini command TOML files under `.gemini/commands/`
+  - SDK/Client: Spec Kit integration files under `.specify/` and Gemini command TOML files under `.gemini/commands/`
   - Auth: Not detected in repo
-  - Status: Configured in `.gemini/.specify/integration.json` and `.gemini/.specify/init-options.json`
+  - Status: Configured in `.specify/integration.json` and `.specify/init-options.json`
 - Git / GitHub Spec Kit extension - Provides feature branch, remote detection, validation, initialization, and auto-commit commands.
-  - SDK/Client: Git CLI commands described by `.gemini/.specify/extensions/git/extension.yml`
+  - SDK/Client: Git CLI commands described by `.specify/extensions/git/extension.yml`
   - Auth: Uses local Git/GitHub setup if remote operations are used; no repo secrets detected
-  - Status: Installed/configured through `.gemini/.specify/extensions.yml`
+  - Status: Installed/configured through `.specify/extensions.yml`
 
 **Specified Routing Tools:**
 - Context7 - Specified for third-party API/library documentation lookup in `docs/prd.md` and `.ai/constitution.md`.

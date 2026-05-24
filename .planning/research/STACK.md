@@ -15,10 +15,10 @@ The current practical stack is therefore:
 | Layer | Current Technology | Evidence | Status |
 |-------|--------------------|----------|--------|
 | Source format | Markdown | `docs/prd.md`, `.ai/constitution.md`, `.planning/codebase/*.md` | Active |
-| Workflow config | JSON, YAML, TOML | `.claude/settings.json`, `.gemini/.specify/*.json`, `.gemini/.specify/*.yml`, `.gemini/commands/*.toml` | Active |
-| Compatibility scripts | Bash | `.gemini/.specify/scripts/bash/*.sh`, `.claude/hooks/check-gstack.sh` | Active |
+| Workflow config | JSON, YAML, TOML | `.claude/settings.json`, `.specify/*.json`, `.specify/*.yml`, `.gemini/commands/*.toml` | Active |
+| Compatibility scripts | Bash | `.specify/scripts/bash/*.sh`, `.claude/hooks/check-gstack.sh` | Active |
 | Agent instructions | Claude/Gemini/agent skill Markdown | `CLAUDE.md`, `GEMINI.md`, `.agents/skills/*/SKILL.md` | Active |
-| Spec workflow | Spec Kit / Gemini scaffold | `.gemini/.specify/integration.json` records Spec Kit `0.8.14.dev0` with Gemini integration | Active |
+| Spec workflow | Spec Kit / Gemini scaffold | `.specify/integration.json` records Spec Kit `0.8.14.dev0` with Gemini integration | Active |
 | Runtime package | None | No `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `.csproj`, or equivalent | Missing by design |
 | Test runner | None | No test config or package manifest | Missing |
 
@@ -104,7 +104,7 @@ Build deterministic checks for:
 - validation report outcome values: `PASS`, `FAIL`, `NEEDS_HUMAN_REVIEW`;
 - failure retry counters and human-review thresholds;
 - memory handoff status before ship;
-- path drift between `.ai/specs/`, `.gemini/.specify/`, and future root `.specify/`.
+- path drift between `.ai/specs/`, `.specify/`, and future root `.specify/`.
 
 Add Promptfoo only after deterministic validation is not enough. Promptfoo is appropriate for rubric-style spec validation because its current docs support `promptfoo eval`, YAML config, assertions, output files, and model/prompt evaluation workflows. Keep it optional because not every repo should need model-backed evals to run `doctor`.
 

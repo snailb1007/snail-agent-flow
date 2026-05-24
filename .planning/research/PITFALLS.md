@@ -172,7 +172,7 @@ Mistakes that can make the protocol unreliable, confusing, or impossible to vali
 
 ### Pitfall 8: Generated Scaffolds Are Mistaken for Product Code
 
-**What goes wrong:** Generated `.gemini/.specify/` scripts and command files become de facto product behavior before the repo decides whether they are vendor scaffolding, editable templates, or runtime implementation.
+**What goes wrong:** Generated `.specify/` scripts and command files become de facto product behavior before the repo decides whether they are vendor scaffolding, editable templates, or runtime implementation.
 
 **Warning signs:**
 - Generated files are patched directly to fix protocol behavior.
@@ -248,7 +248,7 @@ Mistakes that can make the protocol unreliable, confusing, or impossible to vali
 
 | Phase Topic | Likely Pitfall | Mitigation |
 |-------------|----------------|------------|
-| Artifact contract | Path drift between `.ai/specs/`, `.ai/specs/current/`, `.gemini/.specify/`, and deleted blueprint paths | Create canonical path registry and fail validation on stale references |
+| Artifact contract | Path drift between `.ai/specs/`, `.ai/specs/current/`, `.specify/`, and deleted blueprint paths | Create canonical path registry and fail validation on stale references |
 | Routing rules | Framework soup and unclear ownership | Add routing matrix with input, output, owner, validator, and stop conditions |
 | Validation foundation | Aspirational gates without executable checks | Build minimal local validator before CLI or template expansion |
 | Failure feedback loop | Infinite self-repair and scope mutation | Persist failure category and retry count; stop at `NEEDS_HUMAN_REVIEW` |

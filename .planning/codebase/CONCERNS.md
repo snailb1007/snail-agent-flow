@@ -6,7 +6,7 @@
 
 This repository currently contains mostly planning, policy, and agent workflow documents. No application source tree, package manifest, runtime project file, or test suite was detected under paths such as `src/`, `app/`, `tests/`, `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, or `*.csproj`.
 
-Primary source material lives in `docs/prd.md`, `.ai/constitution.md`, `.ai/recon.md`, `docs/superpowers/specs/2026-05-23-operating-constitution-design.md`, `docs/superpowers/plans/2026-05-24-operating-constitution-design.md`, `.gemini/.specify/`, `.gemini/commands/`, `.agents/skills/`, `CLAUDE.md`, and `GEMINI.md`.
+Primary source material lives in `docs/prd.md`, `.ai/constitution.md`, `.ai/recon.md`, `docs/superpowers/specs/2026-05-23-operating-constitution-design.md`, `docs/superpowers/plans/2026-05-24-operating-constitution-design.md`, `.specify/`, `.gemini/commands/`, `.agents/skills/`, `CLAUDE.md`, and `GEMINI.md`.
 
 ## Tech Debt
 
@@ -35,18 +35,18 @@ Primary source material lives in `docs/prd.md`, `.ai/constitution.md`, `.ai/reco
 - Fix approach: Mark current implementation status clearly in `.planning/PROJECT.md` or `.ai/pipeline.md`, then plan separate phases for template-only artifacts, validators, and CLI automation.
 
 **Generated integration files are committed as project logic:**
-- Issue: `.gemini/.specify/` contains a full Spec Kit integration scaffold alongside project-specific docs.
-- Files: `.gemini/.specify/scripts/bash/common.sh`, `.gemini/.specify/extensions/git/scripts/bash/auto-commit.sh`, `.gemini/commands/speckit.implement.toml`
+- Issue: `.specify/` contains a full Spec Kit integration scaffold alongside project-specific docs.
+- Files: `.specify/scripts/bash/common.sh`, `.specify/extensions/git/scripts/bash/auto-commit.sh`, `.gemini/commands/speckit.implement.toml`
 - Impact: It is easy to confuse vendored/generated Spec Kit behavior with project-specific pipeline design. Updates may create noisy diffs or local drift.
-- Fix approach: Document whether `.gemini/.specify/` is vendored, generated, or project-owned. If generated, avoid hand edits and record the regeneration command.
+- Fix approach: Document whether `.specify/` is vendored, generated, or project-owned. If generated, avoid hand edits and record the regeneration command.
 
 ## Known Bugs
 
 **Spec Kit Git extension config path mismatch:**
-- Symptoms: Git auto-commit extension scripts look for `$REPO_ROOT/.specify/extensions/git/git-config.yml`, but the checked-in config is under `.gemini/.specify/extensions/git/git-config.yml`.
-- Files: `.gemini/.specify/extensions/git/scripts/bash/auto-commit.sh`, `.gemini/.specify/extensions/git/git-config.yml`
+- Symptoms: Git auto-commit extension scripts look for `$REPO_ROOT/.specify/extensions/git/git-config.yml`, but the checked-in config is under `.specify/extensions/git/git-config.yml`.
+- Files: `.specify/extensions/git/scripts/bash/auto-commit.sh`, `.specify/extensions/git/git-config.yml`
 - Trigger: Running the Git extension auto-commit script from this repository layout.
-- Workaround: Auto-commit is disabled by default, so this likely fails closed. Before enabling it, either install Spec Kit at `.specify/` or update the script/config lookup for the `.gemini/.specify/` layout.
+- Workaround: Auto-commit is disabled by default, so this likely fails closed. Before enabling it, either install Spec Kit at `.specify/` or update the script/config lookup for the `.specify/` layout.
 
 **Plan verification references a deleted file:**
 - Symptoms: Verification commands in the operating constitution plan read `ai-delivery-pipeline-blueprint.md`; that file is currently deleted in the working tree.
@@ -58,8 +58,8 @@ Primary source material lives in `docs/prd.md`, `.ai/constitution.md`, `.ai/reco
 
 **Git automation stages all changes:**
 - Risk: The Spec Kit auto-commit script uses `git add .` when enabled, which can stage unrelated edits or accidentally include newly created sensitive files if ignore rules are incomplete.
-- Files: `.gemini/.specify/extensions/git/scripts/bash/auto-commit.sh`, `.gemini/.specify/extensions/git/git-config.yml`, `.gitignore`
-- Current mitigation: `.gitignore` excludes `.env`, `*.env`, `*.pem`, `*.key`, common dependency folders, logs, and Serena cache. Auto-commit is disabled by default in `.gemini/.specify/extensions/git/git-config.yml`.
+- Files: `.specify/extensions/git/scripts/bash/auto-commit.sh`, `.specify/extensions/git/git-config.yml`, `.gitignore`
+- Current mitigation: `.gitignore` excludes `.env`, `*.env`, `*.pem`, `*.key`, common dependency folders, logs, and Serena cache. Auto-commit is disabled by default in `.specify/extensions/git/git-config.yml`.
 - Recommendations: Keep auto-commit disabled unless a phase explicitly opts in. Prefer explicit `git add <paths>` in GSD workflows and expand `.gitignore` before adding tools that generate credentials.
 
 **Security baseline is policy-only:**
@@ -78,7 +78,7 @@ Primary source material lives in `docs/prd.md`, `.ai/constitution.md`, `.ai/reco
 
 **Remote branch discovery can be slow:**
 - Problem: Feature branch creation may query all remotes with `git ls-remote --heads` when not using the fetch path.
-- Files: `.gemini/.specify/extensions/git/scripts/bash/create-new-feature.sh`
+- Files: `.specify/extensions/git/scripts/bash/create-new-feature.sh`
 - Cause: Sequential branch numbering inspects existing branches and remote refs to compute the next prefix.
 - Improvement path: Prefer timestamp branch numbering for large repos or make remote inspection opt-in when creating new features.
 
@@ -134,7 +134,7 @@ Primary source material lives in `docs/prd.md`, `.ai/constitution.md`, `.ai/reco
 - Migration plan: Keep the Claude hook, but document runtime-neutral prerequisites and alternatives in `.planning/PROJECT.md`.
 
 **Spec Kit / Gemini scaffold:**
-- Risk: `.gemini/.specify/` scripts and `.gemini/commands/` are tightly coupled to a generated layout and may not match the repo's chosen `.ai/` artifact structure.
+- Risk: `.specify/` scripts and `.gemini/commands/` are tightly coupled to a generated layout and may not match the repo's chosen `.ai/` artifact structure.
 - Impact: Spec Kit commands can write to paths different from the PRD's `.ai/specs/current/` contract.
 - Migration plan: Decide whether Spec Kit owns `specs/`, `.specify/`, or `.ai/specs/current/`, then adapt templates and commands consistently.
 
@@ -159,7 +159,7 @@ Primary source material lives in `docs/prd.md`, `.ai/constitution.md`, `.ai/reco
 
 **No automated tests detected:**
 - What's not tested: Script behavior, artifact layout checks, validation-gate logic, memory handoff logic, and instruction consistency.
-- Files: `.gemini/.specify/extensions/git/scripts/bash/auto-commit.sh`, `.gemini/.specify/extensions/git/scripts/bash/create-new-feature.sh`, `.ai/constitution.md`, `docs/prd.md`
+- Files: `.specify/extensions/git/scripts/bash/auto-commit.sh`, `.specify/extensions/git/scripts/bash/create-new-feature.sh`, `.ai/constitution.md`, `docs/prd.md`
 - Risk: The documented workflow can drift from generated scripts and local artifact paths without failing a check.
 - Priority: High
 

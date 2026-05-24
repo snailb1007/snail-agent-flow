@@ -65,10 +65,10 @@ snail-agent-flow/
 - Contains: `.gemini/commands/speckit.specify.toml`, `.gemini/commands/speckit.plan.toml`, `.gemini/commands/speckit.tasks.toml`, `.gemini/commands/speckit.implement.toml`, plus Git helper command definitions.
 - Key files: use these as the source of command behavior when maintaining Gemini integration prompts.
 
-**`.gemini/.specify/`:**
+**`.specify/`:**
 - Purpose: Vendored Spec-Kit scaffolding and templates.
-- Contains: `.gemini/.specify/scripts/bash/`, `.gemini/.specify/templates/`, `.gemini/.specify/workflows/`, `.gemini/.specify/integrations/`, `.gemini/.specify/extensions/`.
-- Key files: `.gemini/.specify/workflows/speckit/workflow.yml` defines the full SDD cycle; `.gemini/.specify/integrations/speckit.manifest.json` records installed files and Spec-Kit version; `.gemini/.specify/scripts/bash/create-new-feature.sh` and `.gemini/.specify/scripts/bash/check-prerequisites.sh` support feature setup and prerequisites.
+- Contains: `.specify/scripts/bash/`, `.specify/templates/`, `.specify/workflows/`, `.specify/integrations/`, `.specify/extensions/`.
+- Key files: `.specify/workflows/speckit/workflow.yml` defines the full SDD cycle; `.specify/integrations/speckit.manifest.json` records installed files and Spec-Kit version; `.specify/scripts/bash/create-new-feature.sh` and `.specify/scripts/bash/check-prerequisites.sh` support feature setup and prerequisites.
 
 **`.planning/codebase/`:**
 - Purpose: Generated codebase maps for GSD planning and execution.
@@ -86,25 +86,25 @@ snail-agent-flow/
 - `.gemini/commands/speckit.plan.toml`: Spec-Kit planning command.
 - `.gemini/commands/speckit.tasks.toml`: Spec-Kit task generation command.
 - `.gemini/commands/speckit.implement.toml`: Spec-Kit implementation command.
-- `.gemini/.specify/workflows/speckit/workflow.yml`: end-to-end specify -> plan -> tasks -> implement workflow.
+- `.specify/workflows/speckit/workflow.yml`: end-to-end specify -> plan -> tasks -> implement workflow.
 
 **Configuration:**
 - `.gitignore`: repository ignore rules, including secrets and local cache.
 - `.claude/settings.json`: Claude local settings.
 - `.claude/hooks/check-gstack.sh`: Claude hook for gstack checking.
-- `.gemini/.specify/init-options.json`: Spec-Kit initialization options.
-- `.gemini/.specify/integration.json`: Spec-Kit integration metadata.
-- `.gemini/.specify/integrations/speckit.manifest.json`: installed Spec-Kit integration manifest.
+- `.specify/init-options.json`: Spec-Kit initialization options.
+- `.specify/integration.json`: Spec-Kit integration metadata.
+- `.specify/integrations/speckit.manifest.json`: installed Spec-Kit integration manifest.
 - `.serena/project.yml`: Serena project metadata.
 
 **Core Logic:**
 - `docs/prd.md`: current main blueprint and source for future implementation shape.
 - `.ai/constitution.md`: current operating rules and artifact contract.
 - `.ai/recon.md`: current recon notes and MVP boundary.
-- `.gemini/.specify/scripts/bash/create-new-feature.sh`: feature setup script.
-- `.gemini/.specify/scripts/bash/check-prerequisites.sh`: prerequisite resolution script.
-- `.gemini/.specify/scripts/bash/setup-plan.sh`: plan setup script.
-- `.gemini/.specify/scripts/bash/setup-tasks.sh`: task setup script.
+- `.specify/scripts/bash/create-new-feature.sh`: feature setup script.
+- `.specify/scripts/bash/check-prerequisites.sh`: prerequisite resolution script.
+- `.specify/scripts/bash/setup-plan.sh`: plan setup script.
+- `.specify/scripts/bash/setup-tasks.sh`: task setup script.
 
 **Testing:**
 - Not detected as application test code.
@@ -118,7 +118,7 @@ snail-agent-flow/
 - Durable AI artifacts use lowercase kebab-case Markdown: `.ai/current-task.md`, `.ai/recon.md`, `.ai/memory/current-architecture.md`, `.ai/memory/known-risks.md`.
 - Superpowers docs use dated kebab-case names: `docs/superpowers/specs/2026-05-23-operating-constitution-design.md`, `docs/superpowers/plans/2026-05-24-operating-constitution-design.md`.
 - Gemini commands use dotted command names: `.gemini/commands/speckit.specify.toml`, `.gemini/commands/speckit.git.commit.toml`.
-- Spec-Kit shell scripts use kebab-case: `.gemini/.specify/scripts/bash/create-new-feature.sh`, `.gemini/.specify/scripts/bash/check-prerequisites.sh`.
+- Spec-Kit shell scripts use kebab-case: `.specify/scripts/bash/create-new-feature.sh`, `.specify/scripts/bash/check-prerequisites.sh`.
 - GSD map documents use uppercase names: `.planning/codebase/ARCHITECTURE.md`, `.planning/codebase/STRUCTURE.md`.
 
 **Directories:**
@@ -144,10 +144,10 @@ snail-agent-flow/
 
 **New Spec-Kit/Gemini Command:**
 - Command definition: `.gemini/commands/`
-- Workflow definition: `.gemini/.specify/workflows/`
-- Template: `.gemini/.specify/templates/`
-- Shell helper: `.gemini/.specify/scripts/bash/`
-- Integration metadata: `.gemini/.specify/integrations/`
+- Workflow definition: `.specify/workflows/`
+- Template: `.specify/templates/`
+- Shell helper: `.specify/scripts/bash/`
+- Integration metadata: `.specify/integrations/`
 
 **New Agent Skill:**
 - Implementation: `.agents/skills/<skill-name>/SKILL.md`
@@ -167,7 +167,7 @@ snail-agent-flow/
 **New Tests:**
 - Not detected yet.
 - When runtime code is added, place tests according to the chosen stack and document the convention in `.planning/codebase/TESTING.md`.
-- For shell helpers under `.gemini/.specify/scripts/bash/`, prefer script-level fixtures or integration checks near the future validator/test structure rather than inside `.ai/`.
+- For shell helpers under `.specify/scripts/bash/`, prefer script-level fixtures or integration checks near the future validator/test structure rather than inside `.ai/`.
 
 ## Special Directories
 

@@ -13,7 +13,7 @@ Establish one canonical artifact contract, path ownership model, status registry
 ## Implementation Decisions
 
 ### Path Reconciliation
-- **D-01:** **Spec-Kit Unified Root:** Move Spec-Kit configurations, templates, and scripts from `.gemini/.specify/*` to `.specify/*` so that all Spec-Kit configuration and feature specs share a single root.
+- **D-01:** **Spec-Kit Unified Root:** Move Spec-Kit configurations, templates, and scripts from `.specify/*` to `.specify/*` so that all Spec-Kit configuration and feature specs share a single root.
 - **D-02:** **Gemini Command TOMLs:** Keep Gemini-specific command TOMLs under `.gemini/commands/` as tool-specific wrappers, keeping the `.specify/` directory runtime-neutral.
 - **D-03:** **Legacy Spec Paths:** Completely deprecate and remove `.ai/specs/current/` and enforce `.specify/specs/<feature-slug>/` as the sole spec location.
 - **D-04:** **Script Locations:** Keep Spec-Kit scripts nested in `.specify/scripts/` and Claude hooks nested in `.claude/hooks/` to maintain tool context and isolation.
@@ -63,14 +63,14 @@ None.
 ### Reusable Assets
 - [gsd-tools.cjs](file:///Volumes/D/snail-agent-flow/get-shit-done/bin/gsd-tools.cjs) — GSD helper SDK.
 - [check-gstack.sh](file:///Volumes/D/snail-agent-flow/.claude/hooks/check-gstack.sh) — Claude hook scripts.
-- [.gemini/.specify/scripts/bash/](file:///Volumes/D/snail-agent-flow/.gemini/.specify/scripts/bash/) — Spec-Kit runner scripts.
+- [.specify/scripts/bash/](file:///Volumes/D/snail-agent-flow/.specify/scripts/bash/) — Spec-Kit runner scripts.
 
 ### Established Patterns
 - **Durable Codebase Maps:** Mappings stored in [.planning/codebase/](file:///Volumes/D/snail-agent-flow/.planning/codebase/).
 - **Durable AI Memory:** Session notes, reviews, and architecture facts stored in [.ai/](file:///Volumes/D/snail-agent-flow/.ai/).
 
 ### Integration Points
-- **Spec-Kit Workflows:** Relocating `.gemini/.specify/` to `.specify/` will be the new entry point for spec-driven workflows.
+- **Spec-Kit Workflows:** Relocating `.specify/` to `.specify/` will be the new entry point for spec-driven workflows.
 - **Tool Routing:** Standardizing symbols lookup via Serena, and libraries via Context7.
 
 </code_context>
