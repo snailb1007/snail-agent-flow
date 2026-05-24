@@ -179,7 +179,7 @@ cmd_verify_paths() {
     
     # Path Drift Check: scan for legacy paths
     local drift_found=false
-    for path in "$REPO_ROOT/.specify/specs" "$REPO_ROOT/.ai/specs"; do
+    for path in "$REPO_ROOT/.specify/specs" "$SPECIFY_AI_DIR/specs"; do
         if [ -d "$path" ] && [ -n "$(ls -A "$path" 2>/dev/null)" ]; then
             echo "ERROR: Path Drift detected! Files exist in legacy folder: $path" >&2
             drift_found=true
