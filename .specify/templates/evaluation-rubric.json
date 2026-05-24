@@ -1,0 +1,30 @@
+{
+  "name": "Snail Agent Flow Qualitative Evaluation Rubric",
+  "version": "1.0.0",
+  "criteria": [
+    {
+      "id": "RUBRIC-01",
+      "name": "Specification Completeness",
+      "description": "Checks if the feature specification includes comprehensive user stories, edge cases, functional requirements, and success criteria without using forbidden placeholder terms.",
+      "weight": 0.3
+    },
+    {
+      "id": "RUBRIC-02",
+      "name": "Implementation Plan Feasibility",
+      "description": "Checks if the plan proposed is technically sound, minimally invasive, identifies exact code changes, and defines a clear testable verification strategy.",
+      "weight": 0.3
+    },
+    {
+      "id": "RUBRIC-03",
+      "name": "Architectural Compliance",
+      "description": "Checks if the proposed changes respect directory boundaries, path ownership rules, and keep external integrations (such as databases or third-party APIs) optional and modular.",
+      "weight": 0.2
+    },
+    {
+      "id": "RUBRIC-04",
+      "name": "Verification Parity",
+      "description": "Checks if the verification steps outlined in the spec match the test execution logs and automated CI matrix configurations.",
+      "weight": 0.2
+    }
+  ]
+}

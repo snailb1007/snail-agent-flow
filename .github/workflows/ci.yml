@@ -1,0 +1,34 @@
+name: CI Verification
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: spec validation
+            command: npm run validate
+          - suite: validator unit tests
+            command: npm run test:validator
+          - suite: pipeline simulation
+            command: npm run test:pipeline
+          - suite: CLI integration tests
+            command: npm run test:cli
+          - suite: full verification
+            command: npm test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run ${{ matrix.suite }}
+        run: ${{ matrix.command }}

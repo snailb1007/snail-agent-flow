@@ -6,10 +6,12 @@ This document defines the canonical artifact contract, path ownership model, and
 
 | Path | Owner Tool / Role | Category | Status | Description |
 |---|---|---|---|---|
-| `.specify/` | Spec-Kit | Authoritative | `implemented` | Spec-Kit root containing presets, templates, and scripts. |
+| `.specify/` | Spec-Kit | Authoritative | `implemented` | Spec-Kit root containing presets, fixtures, templates, and scripts. |
 | `.specify/feature.json` | Spec-Kit | Authoritative | `implemented` | Pinned Spec-Kit feature directory state pointer. |
 | `.specify/scripts/bash/validate-pipeline-state.sh` | Spec-Kit / Protocol | Authoritative | `implemented` | Shell validator for pipeline state, gate reports, path drift, handoff reports, and verified artifact registration. |
 | `.specify/scripts/bash/simulate-phase2-pipeline.sh` | Spec-Kit / Protocol | Authoritative | `implemented` | End-to-end Phase 2 simulation covering gate validation, retry halt behavior, resume, artifact verification, and memory handoff checks. |
+| `.specify/fixtures/` | Spec-Kit / Protocol | Authoritative | `implemented` | Greenfield and brownfield fixture projects used by CLI integration coverage. |
+| `.specify/templates/evaluation-rubric.json` | Spec-Kit / Protocol | Authoritative | `implemented` | Optional qualitative evaluation rubric template for structured LLM-as-judge review criteria. |
 | `.specify/templates/human-review-packet-template.md` | Spec-Kit / Protocol | Authoritative | `implemented` | Template used when repeated validation failures require a human review packet. |
 | `specs/<feature-slug>/` | Spec-Kit / User | Authoritative | `specified` | Canonical feature source of truth containing spec.md, plan.md, and tasks.md, owned by Spec-Kit and consumed by GSD. |
 | `validators/scripts/validate-spec.js` | Protocol / Validator | Authoritative | `implemented` | Deterministic Node.js validator for active feature pointers, Spec-Kit file structure, required headings, path drift, placeholders, retry state, and human review packet generation. |
@@ -17,6 +19,7 @@ This document defines the canonical artifact contract, path ownership model, and
 | `validators/scripts/test-cli.js` | Protocol / Validator | Authoritative | `implemented` | CLI integration test suite covering command routing, initialization, session creation, status, doctor, validate-spec, and handoff behavior. |
 | `bin/adp.js` | Node.js Tooling | Authoritative | `implemented` | Zero-dependency CLI registered as `adp` and `saf` for protocol initialization, status, validation, session logging, doctor checks, and memory handoff validation. |
 | `package.json` | Node.js Tooling | Authoritative | `implemented` | Defines package metadata, the `adp`/`saf` binary mappings, `npm run validate`, `npm run test:validator`, `npm run test:pipeline`, `npm run test:cli`, and `npm test`. |
+| `.github/workflows/ci.yml` | GitHub Actions | Authoritative | `implemented` | CI workflow matrix that runs spec validation, validator tests, pipeline simulation, CLI integration tests, and the full verification suite. |
 | `.github/workflows/release.yml` | GitHub Actions | Authoritative | `implemented` | Release workflow that runs the full validation suite, packs the CLI tarball, uploads the artifact, and attaches it to tagged releases. |
 | `docs/` | Protocol / Human | Authoritative | `implemented` | Project documentation and artifact registries. |
 | `docs/artifact-registry.md` | Protocol / Human | Authoritative | `implemented` | Registry of paths, owners, and statuses. |
@@ -58,7 +61,7 @@ This document defines the canonical artifact contract, path ownership model, and
 
 | Directory | Primary Owner | Status | Notes |
 |---|---|---|---|
-| `.specify/` | Spec-Kit | `implemented` | Unified root for all Spec-Kit templates, presets, and scripts. |
+| `.specify/` | Spec-Kit | `implemented` | Unified root for all Spec-Kit fixtures, templates, presets, and scripts. |
 | `specs/` | Spec-Kit | `implemented` | Directory containing active feature requirements, plans, and tasks. |
 | `validators/` | Protocol / Validator | `implemented` | Node.js deterministic validator and local validator test suite. |
 | `bin/` | Node.js Tooling | `implemented` | Local CLI entry points for protocol operations. |

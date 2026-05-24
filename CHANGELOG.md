@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here.
 
+## [0.3.0.0] - 2026-05-24
+
+### Added
+- Added greenfield and brownfield fixture projects so users can verify protocol setup on fresh repositories and safe adoption in existing repositories.
+- Added CLI integration coverage for fixture initialization, brownfield preservation, post-adoption doctor checks, evaluation rubric validation, and CI workflow matrix structure.
+- Added a GitHub Actions CI matrix that runs spec validation, validator tests, pipeline simulation, CLI integration tests, and the full verification suite on pushes and pull requests.
+- Added an optional qualitative evaluation rubric template for teams that want structured LLM-as-judge review criteria without adding runtime dependencies.
+- Added Phase 6 specification, planning, discussion, UAT, verification, review, and ship decision artifacts for expanded examples, CI, and optional evaluation.
+
+### Changed
+- Advanced project state and active feature pointers to mark Phase 6 complete and ready to ship.
+- Updated verification memory to record the expanded 12-check CLI suite and CI matrix coverage.
+
 ## [0.2.0.0] - 2026-05-24
 
 ### Added

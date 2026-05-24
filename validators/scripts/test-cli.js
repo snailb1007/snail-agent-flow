@@ -407,6 +407,225 @@ addTest('CLI CWD-Based Resolution', () => {
   }
 });
 
+// 9. Greenfield Fixture Test
+addTest('Greenfield Project Fixture Integration', () => {
+  const greenfieldSandbox = path.join(testSandboxRoot, 'greenfield-sandbox');
+  if (fs.existsSync(greenfieldSandbox)) {
+    fs.rmSync(greenfieldSandbox, { recursive: true, force: true });
+  }
+  fs.mkdirSync(greenfieldSandbox, { recursive: true });
+
+  // Copy mock package.json from fixture
+  const fixturePkg = path.resolve(__dirname, '../../.specify/fixtures/greenfield-project/package.json');
+  fs.copyFileSync(fixturePkg, path.join(greenfieldSandbox, 'package.json'));
+
+  // Run init in greenfield sandbox
+  const resultInit = spawnSync('node', [cliScriptPath, 'init'], {
+    cwd: greenfieldSandbox,
+    env: {
+      ...process.env,
+      PROJECT_ROOT: greenfieldSandbox,
+      REPO_ROOT: greenfieldSandbox
+    },
+    encoding: 'utf8'
+  });
+
+  if (resultInit.status !== 0) {
+    throw new Error(`Expected exit code 0 on greenfield init, got ${resultInit.status}. Stderr: ${resultInit.stderr}`);
+  }
+
+  // Verify that CLAUDE.md was initialized
+  if (!fs.existsSync(path.join(greenfieldSandbox, 'CLAUDE.md'))) {
+    throw new Error('Expected CLAUDE.md to be initialized in greenfield project');
+  }
+
+  // Create an active feature pointer and specs files to run doctor successfully
+  const mockFeatureSlug = 'greenfield-feature';
+  const mockSpecPath = `specs/${mockFeatureSlug}`;
+  const specDirFull = path.join(greenfieldSandbox, mockSpecPath);
+  fs.mkdirSync(specDirFull, { recursive: true });
+
+  fs.writeFileSync(path.join(greenfieldSandbox, '.specify/feature.json'), JSON.stringify({ feature_directory: mockSpecPath }), 'utf8');
+
+  const validSpecContent = `# Greenfield Spec\n## Goal\nTest.\n## Non-Goals\nNone.\n## Acceptance Criteria\n- Pass.\n## Test Strategy\nManual.\n## Behavior-Preservation Rules\nNone.\n`;
+  const validPlanContent = `# Greenfield Plan\n## Proposed Changes\n- Change.\n## Verification Plan\n- Test.\n`;
+  const validTasksContent = `# Greenfield Tasks\n- [ ] Task 1\n`;
+
+  fs.writeFileSync(path.join(specDirFull, 'spec.md'), validSpecContent, 'utf8');
+  fs.writeFileSync(path.join(specDirFull, 'plan.md'), validPlanContent, 'utf8');
+  fs.writeFileSync(path.join(specDirFull, 'tasks.md'), validTasksContent, 'utf8');
+
+  // Run doctor in greenfield sandbox
+  const resultDoctor = spawnSync('node', [cliScriptPath, 'doctor'], {
+    cwd: greenfieldSandbox,
+    env: {
+      ...process.env,
+      PROJECT_ROOT: greenfieldSandbox,
+      REPO_ROOT: greenfieldSandbox
+    },
+    encoding: 'utf8'
+  });
+
+  if (resultDoctor.status !== 0) {
+    throw new Error(`Expected exit code 0 on greenfield doctor, got ${resultDoctor.status}. Stderr: ${resultDoctor.stderr}`);
+  }
+});
+
+// 10. Brownfield Fixture Test
+addTest('Brownfield Project Fixture Integration', () => {
+  const brownfieldSandbox = path.join(testSandboxRoot, 'brownfield-sandbox');
+  if (fs.existsSync(brownfieldSandbox)) {
+    fs.rmSync(brownfieldSandbox, { recursive: true, force: true });
+  }
+  fs.mkdirSync(brownfieldSandbox, { recursive: true });
+
+  // Copy package.json, README.md, and src/index.js from brownfield fixture
+  const fixtureDir = path.resolve(__dirname, '../../.specify/fixtures/brownfield-project');
+  fs.copyFileSync(path.join(fixtureDir, 'package.json'), path.join(brownfieldSandbox, 'package.json'));
+  fs.copyFileSync(path.join(fixtureDir, 'README.md'), path.join(brownfieldSandbox, 'README.md'));
+
+  fs.mkdirSync(path.join(brownfieldSandbox, 'src'), { recursive: true });
+  fs.copyFileSync(path.join(fixtureDir, 'src/index.js'), path.join(brownfieldSandbox, 'src/index.js'));
+
+  // Run init in brownfield sandbox
+  const resultInit = spawnSync('node', [cliScriptPath, 'init'], {
+    cwd: brownfieldSandbox,
+    env: {
+      ...process.env,
+      PROJECT_ROOT: brownfieldSandbox,
+      REPO_ROOT: brownfieldSandbox
+    },
+    encoding: 'utf8'
+  });
+
+  if (resultInit.status !== 0) {
+    throw new Error(`Expected exit code 0 on brownfield init, got ${resultInit.status}. Stderr: ${resultInit.stderr}`);
+  }
+
+  // Verify that new files are created
+  if (!fs.existsSync(path.join(brownfieldSandbox, 'CLAUDE.md'))) {
+    throw new Error('Expected CLAUDE.md to be initialized in brownfield project');
+  }
+
+  // Verify that pre-existing application files are NOT changed or destroyed
+  const readmeContent = fs.readFileSync(path.join(brownfieldSandbox, 'README.md'), 'utf8');
+  if (!readmeContent.includes('Mock Brownfield Project')) {
+    throw new Error('Brownfield README.md was overwritten or corrupted during initialization');
+  }
+
+  const srcContent = fs.readFileSync(path.join(brownfieldSandbox, 'src/index.js'), 'utf8');
+  if (!srcContent.includes('Hello from pre-existing brownfield application!')) {
+    throw new Error('Brownfield src/index.js was overwritten or corrupted during initialization');
+  }
+
+  // Create an active feature pointer and specs files to verify doctor on adopted projects.
+  const mockFeatureSlug = 'brownfield-feature';
+  const mockSpecPath = `specs/${mockFeatureSlug}`;
+  const specDirFull = path.join(brownfieldSandbox, mockSpecPath);
+  fs.mkdirSync(specDirFull, { recursive: true });
+
+  fs.writeFileSync(path.join(brownfieldSandbox, '.specify/feature.json'), JSON.stringify({ feature_directory: mockSpecPath }), 'utf8');
+
+  const validSpecContent = `# Brownfield Spec\n## Goal\nTest.\n## Non-Goals\nNone.\n## Acceptance Criteria\n- Pass.\n## Test Strategy\nManual.\n## Behavior-Preservation Rules\nNone.\n`;
+  const validPlanContent = `# Brownfield Plan\n## Proposed Changes\n- Change.\n## Verification Plan\n- Test.\n`;
+  const validTasksContent = `# Brownfield Tasks\n- [ ] Task 1\n`;
+
+  fs.writeFileSync(path.join(specDirFull, 'spec.md'), validSpecContent, 'utf8');
+  fs.writeFileSync(path.join(specDirFull, 'plan.md'), validPlanContent, 'utf8');
+  fs.writeFileSync(path.join(specDirFull, 'tasks.md'), validTasksContent, 'utf8');
+
+  const resultDoctor = spawnSync('node', [cliScriptPath, 'doctor'], {
+    cwd: brownfieldSandbox,
+    env: {
+      ...process.env,
+      PROJECT_ROOT: brownfieldSandbox,
+      REPO_ROOT: brownfieldSandbox
+    },
+    encoding: 'utf8'
+  });
+
+  if (resultDoctor.status !== 0) {
+    throw new Error(`Expected exit code 0 on brownfield doctor, got ${resultDoctor.status}. Stderr: ${resultDoctor.stderr}`);
+  }
+});
+
+// 11. Evaluation Rubric Structural Check
+addTest('Evaluation Rubric Schema Conformance', () => {
+  const rubricPath = path.resolve(__dirname, '../../.specify/templates/evaluation-rubric.json');
+  if (!fs.existsSync(rubricPath)) {
+    throw new Error(`Evaluation rubric file missing at: ${rubricPath}`);
+  }
+
+  const data = JSON.parse(fs.readFileSync(rubricPath, 'utf8'));
+
+  // Validate required fields
+  if (!data.name || typeof data.name !== 'string') {
+    throw new Error('Evaluation rubric must contain a "name" string');
+  }
+  if (!data.version || typeof data.version !== 'string') {
+    throw new Error('Evaluation rubric must contain a "version" string');
+  }
+  if (!Array.isArray(data.criteria) || data.criteria.length === 0) {
+    throw new Error('Evaluation rubric must contain a non-empty "criteria" array');
+  }
+
+  const criterionIds = new Set();
+  let weightTotal = 0;
+
+  // Validate each criterion
+  for (const c of data.criteria) {
+    if (!c.id || typeof c.id !== 'string') {
+      throw new Error('Each criterion must have an "id" string');
+    }
+    if (criterionIds.has(c.id)) {
+      throw new Error(`Evaluation rubric criterion id must be unique: ${c.id}`);
+    }
+    criterionIds.add(c.id);
+    if (!c.name || typeof c.name !== 'string') {
+      throw new Error('Each criterion must have a "name" string');
+    }
+    if (!c.description || typeof c.description !== 'string') {
+      throw new Error('Each criterion must have a "description" string');
+    }
+    if (typeof c.weight !== 'number' || c.weight < 0 || c.weight > 1) {
+      throw new Error('Each criterion must have a "weight" number between 0 and 1');
+    }
+    weightTotal += c.weight;
+  }
+
+  if (Math.abs(weightTotal - 1) > 0.000001) {
+    throw new Error(`Evaluation rubric weights must sum to 1.0, got ${weightTotal}`);
+  }
+});
+
+// 12. CI Workflow Structure Check
+addTest('CI Workflow Matrix Structure', () => {
+  const workflowPath = path.resolve(__dirname, '../../.github/workflows/ci.yml');
+  if (!fs.existsSync(workflowPath)) {
+    throw new Error(`CI workflow file missing at: ${workflowPath}`);
+  }
+
+  const workflow = fs.readFileSync(workflowPath, 'utf8');
+  const requiredSnippets = [
+    'push:',
+    'pull_request:',
+    'node-version: "20"',
+    'strategy:',
+    'matrix:',
+    'npm run validate',
+    'npm run test:validator',
+    'npm run test:pipeline',
+    'npm run test:cli',
+    'npm test'
+  ];
+
+  for (const snippet of requiredSnippets) {
+    if (!workflow.includes(snippet)) {
+      throw new Error(`CI workflow missing required snippet: ${snippet}`);
+    }
+  }
+});
+
 // Run all tests
 let failedCount = 0;
 console.log('Running CLI tests...\n');
