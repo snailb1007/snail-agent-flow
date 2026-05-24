@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 FIXTURE_DIR="$REPO_ROOT/.specify/fixtures/minimal-golden-path"
-MOCK_STATE="$FIXTURE_DIR/state/active-feature.json"
+MOCK_STATE="$FIXTURE_DIR/feature.json"
 SESSION_LOG="$REPO_ROOT/.ai/sessions/smoke-test-run.log"
 
 export SPECIFY_AI_DIR="$FIXTURE_DIR/.ai"

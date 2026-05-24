@@ -281,25 +281,22 @@ addTest('Malformed JSON State', () => {
   if (state.last_failed_rule !== 'Invalid JSON State') throw new Error(`Expected last_failed_rule to be Invalid JSON State, got ${state.last_failed_rule}`);
 });
 
-// 9. active-feature.json fallback
-addTest('Active Feature Fallback Pointer', () => {
+// 9. active-feature.json drift block
+addTest('Active Feature Stale Pointer Drift', () => {
   setupSandbox();
-  writeFile(`${mockSpecPath}/spec.md`, validSpecContent);
-  writeFile(`${mockSpecPath}/plan.md`, validPlanContent);
-  writeFile(`${mockSpecPath}/tasks.md`, validTasksContent);
+  writeValidSpecFolder();
   writeJson('.ai/state/active-feature.json', {
     feature_slug: mockFeatureSlug,
     spec_path: mockSpecPath
   });
 
   const res = runValidator();
-  if (res.code !== 0) {
-    throw new Error(`Expected exit code 0, got ${res.code}. Stderr: ${res.stderr}`);
+  if (res.code !== 1) {
+    throw new Error(`Expected exit code 1, got ${res.code}. Stderr: ${res.stderr}`);
   }
 
   const state = readJson('.ai/state/run-state.json');
-  if (state.feature_slug !== mockFeatureSlug) throw new Error(`Expected feature_slug ${mockFeatureSlug}, got ${state.feature_slug}`);
-  if (state.spec_path !== `${mockSpecPath}/`) throw new Error(`Expected spec_path ${mockSpecPath}/, got ${state.spec_path}`);
+  if (state.last_failed_rule !== 'Path Drift') throw new Error(`Expected last_failed_rule to be Path Drift, got ${state.last_failed_rule}`);
 });
 
 // 10. invalid active feature pointer

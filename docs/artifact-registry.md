@@ -19,7 +19,6 @@ This document defines the canonical artifact contract, path ownership model, and
 | `docs/artifact-registry.md` | Protocol / Human | Authoritative | `implemented` | Registry of paths, owners, and statuses. |
 | `docs/superpowers/specs/` | Superpowers / Human | Authoritative | `implemented` | Legacy/existing project specification documents. |
 | `docs/superpowers/plans/` | Superpowers / Human | Authoritative | `implemented` | Legacy/existing project implementation plans. |
-| `.ai/state/active-feature.json` | Orchestrator | Generated | `implemented` | JSON state pointer identifying the active feature. |
 | `.gemini/` | Gemini CLI | Runtime-Specific | `implemented` | Runtime adapter command configuration. |
 | `.gemini/commands/` | Gemini CLI / Adapter | Runtime-Specific | `implemented` | Gemini-specific tool wrapper commands. |
 | `.claude/` | Claude CLI | Runtime-Specific | `implemented` | Runtime settings and git hooks specific to Claude. |
@@ -60,7 +59,7 @@ This document defines the canonical artifact contract, path ownership model, and
 | `validators/` | Protocol / Validator | `implemented` | Node.js deterministic validator and local validator test suite. |
 | `.ai/` | Orchestration | `implemented` | Contains constitution, memory, reviews, sessions, and state. |
 | `.ai/memory/` | Protocol / Human | `placeholder` | Durable project memory including architecture, decisions, and risks. |
-| `.ai/state/` | Orchestrator | `implemented` | Directory storing current active-feature state. |
+| `.ai/state/` | Orchestrator | `implemented` | Directory storing current orchestration state (run-state.json). |
 | `.planning/` | GSD Planner | `implemented` | Roadmaps, project state, phase manifests, and codebase maps. |
 | `.agents/` | Agent Skills | `implemented` | Houses agent capabilities and superpower skills. |
 | `.bg-shell/` | Shell Runtime | `implemented` | Background command shell logs and process manifests. |

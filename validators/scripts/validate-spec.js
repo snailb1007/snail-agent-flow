@@ -100,28 +100,6 @@ if (fs.existsSync(specifyFeaturePath)) {
   }
 }
 
-// Check .ai/state/active-feature.json if not found
-if (!featureSlug && fs.existsSync(activeFeaturePath)) {
-  try {
-    const raw = fs.readFileSync(activeFeaturePath, 'utf8');
-    const data = JSON.parse(raw);
-    if (data.spec_path) {
-      const normPath = data.spec_path.replace(/\/+$/, '');
-      specPath = normPath + '/';
-      featureSlug = data.feature_slug || path.basename(normPath);
-      featureDirectory = specPath;
-      pointerSource = '.ai/state/active-feature.json';
-    } else if (data.feature_slug) {
-      featureSlug = data.feature_slug;
-      specPath = `specs/${featureSlug}/`;
-      featureDirectory = specPath;
-      pointerSource = '.ai/state/active-feature.json';
-    }
-  } catch (e) {
-    // ignore
-  }
-}
-
 // Setup state tracking variables
 let runState = {};
 let runStateValid = true;
@@ -336,6 +314,11 @@ for (const file of competingFiles) {
   if (fs.existsSync(specifyFilePath)) {
     fail('Path Drift', `Path Drift detected! Competing Spec-Kit file found in .specify/: ${file}`);
   }
+}
+
+// Check: Competing / stale active-feature.json
+if (fs.existsSync(activeFeaturePath)) {
+  fail('Path Drift', `Path Drift detected! Redundant active feature pointer found at legacy path: .ai/state/active-feature.json`);
 }
 
 // Check 2: Spec-Kit Ownership & Existence of Files (FR-005)
