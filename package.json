@@ -5,6 +5,7 @@
   "private": true,
   "files": [
     "bin/",
+    "lib/",
     "validators/scripts/validate-spec.js",
     ".specify/templates/",
     ".specify/scripts/",

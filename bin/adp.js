@@ -69,6 +69,7 @@ function handleInit() {
     '.ai/memory',
     '.ai/reviews',
     '.ai/state',
+    '.ai/flows',
     '.specify/templates',
     'specs'
   ];
@@ -153,6 +154,61 @@ function handleInit() {
     console.log('[init] Created AGENTS.md');
   } else {
     console.log('[init] AGENTS.md already exists, skipping.');
+  }
+
+  // Copy default flow definition
+  const flowDestPath = path.join(repoRoot, '.ai/flows/rough-project-flow.yaml');
+  const flowTemplatePath = path.join(packageRoot, '.specify/templates/rough-project-flow.yaml');
+  if (!fs.existsSync(flowDestPath)) {
+    if (fs.existsSync(flowTemplatePath)) {
+      fs.copyFileSync(flowTemplatePath, flowDestPath);
+      console.log('[init] Created .ai/flows/rough-project-flow.yaml (copied from template)');
+    } else {
+      console.warn('[init] WARNING: Flow template not found at .specify/templates/rough-project-flow.yaml, skipping flow definition copy.');
+    }
+  } else {
+    console.log('[init] .ai/flows/rough-project-flow.yaml already exists, skipping.');
+  }
+
+  // Generate flow ledger state
+  const ledgerPath = path.join(repoRoot, '.ai/state/flow-ledger.json');
+  if (!fs.existsSync(ledgerPath)) {
+    try {
+      const { parseYaml } = require('../lib/yaml-parser');
+      const { createLedgerFromFlow } = require('../lib/flow-ledger');
+      // Read the flow definition (prefer the just-copied project copy, fall back to package template)
+      const flowSource = fs.existsSync(flowDestPath) ? flowDestPath : flowTemplatePath;
+      if (fs.existsSync(flowSource)) {
+        const flowYaml = fs.readFileSync(flowSource, 'utf8');
+        const flowDef = parseYaml(flowYaml);
+        const ledger = createLedgerFromFlow(flowDef, '.ai/flows/rough-project-flow.yaml');
+        fs.writeFileSync(ledgerPath, JSON.stringify(ledger, null, 2) + '\n', 'utf8');
+        console.log('[init] Created .ai/state/flow-ledger.json (initialized from flow definition)');
+      } else {
+        console.warn('[init] WARNING: No flow definition available, skipping ledger generation.');
+      }
+    } catch (e) {
+      console.warn(`[init] WARNING: Could not generate flow ledger: ${e.message}`);
+      console.warn('[init] Flow definition may be malformed. Ledger generation skipped.');
+    }
+  } else {
+    console.log('[init] .ai/state/flow-ledger.json already exists, skipping.');
+  }
+
+  // Generate project-flow SKILL.md stub
+  const skillDir = path.join(repoRoot, '.agents/skills/project-flow');
+  const skillPath = path.join(skillDir, 'SKILL.md');
+  const skillTemplatePath = path.join(packageRoot, '.specify/templates/project-flow-skill-template.md');
+  if (!fs.existsSync(skillPath)) {
+    if (fs.existsSync(skillTemplatePath)) {
+      fs.mkdirSync(skillDir, { recursive: true });
+      fs.copyFileSync(skillTemplatePath, skillPath);
+      console.log('[init] Created .agents/skills/project-flow/SKILL.md (copied from template)');
+    } else {
+      console.warn('[init] WARNING: SKILL.md template not found, skipping skill stub generation.');
+    }
+  } else {
+    console.log('[init] .agents/skills/project-flow/SKILL.md already exists, skipping.');
   }
 
   console.log('[init] Initialization complete.');
@@ -559,6 +615,7 @@ function handleDoctor() {
     '.ai/memory',
     '.ai/reviews',
     '.ai/state',
+    '.ai/flows',
     '.specify/templates',
     'specs'
   ];

@@ -90,6 +90,13 @@ Requirements for the Flow Engine milestone. Packages the rough-project-flow ledg
 - [ ] **GATE-03**: After 3 consecutive gate failures on the same stage, generate a `NEEDS_HUMAN_REVIEW` packet and halt the flow.
 - [ ] **GATE-04**: Gate validation must be deterministic — no LLM-as-judge for pass/fail decisions.
 
+### Tool Verification and Onboarding
+
+- [ ] **WARN-01**: Define prerequisite tools required for skills in the flow (e.g. GSD, Superpowers, Spec-Kit, GStack).
+- [ ] **WARN-02**: Implement a checker that checks if these required tools are available on the user's system and warns them if missing.
+- [ ] **WARN-03**: Provide platform-specific installation instructions (macOS brew/npm directions) to guide the user in setting up missing tools.
+- [ ] **WARN-04**: Integrate tool verification with the flow engine startup sequence, halting or warning the user before attempting to execute stages requiring missing tools.
+
 ### Flow Validator
 
 - [ ] **FVALID-01**: Add a deterministic flow validator (`adp flow validate` or `npm run validate:flow`) that checks flow definition syntax, ledger state consistency, and artifact gate status.
@@ -133,11 +140,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INIT-01 – INIT-04 | Phase 9 (v2) | Pending |
 | ENGINE-01 – ENGINE-04 | Phase 10 (v2) | Pending |
 | GATE-01 – GATE-04 | Phase 11 (v2) | Pending |
-| FVALID-01 – FVALID-04 | Phase 12 (v2) | Pending |
+| WARN-01 – WARN-04 | Phase 12 (v2) | Pending |
+| FVALID-01 – FVALID-04 | Phase 13 (v2) | Pending |
 
 **Coverage:**
 - v1 requirements: 28 total, 28 completed
-- v2 requirements: 20 total, 4 completed
+- v2 requirements: 24 total, 4 completed
 - Unmapped: 0
 
 ---

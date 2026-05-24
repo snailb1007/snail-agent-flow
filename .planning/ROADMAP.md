@@ -6,7 +6,7 @@
 
 ## Overview
 
-This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the protocol, artifact contract, validators, CLI, and examples. Milestone v2.0 (Phases 8-12) packages the rough-project-flow ledger into a portable, init-able Gemini skill with declarative flow definitions and artifact gates.
+This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the protocol, artifact contract, validators, CLI, and examples. Milestone v2.0 (Phases 8-13) packages the rough-project-flow ledger into a portable, init-able Gemini skill with declarative flow definitions and artifact gates.
 
 ---
 
@@ -146,7 +146,28 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 - Three failures trigger the human review circuit breaker.
 - No gate check uses LLM evaluation — only file existence, content checks, and heading validation.
 
-### Phase 12: Flow Validator and Tests
+### Phase 12: Prerequisite Tool Checker and Installation Guide
+
+**Goal:** Warn users or guide the installation of required tools if they are missing from the system to use agent skills.
+
+**Rationale:** To successfully run agent skills (GSD, Superpowers, Spec-Kit, GStack, etc.), prerequisite command-line tools must be installed on the user's system. While auto-installation is out of scope, providing a checker that warns and gives guidance ensures users can resolve environment issues before starting execution.
+
+**Delivers:**
+
+- Standalone CLI/skill command to check prerequisite tool availability (e.g. `adp doctor` extension or `check-prerequisites` function).
+- Structured error warnings indicating which tools are missing and their purpose.
+- Platform-specific installation instructions (macOS brew/npm directions) to guide the user in setting up missing tools.
+- Integration into the `flow-engine` startup sequence to check tool prerequisites before advancing stages.
+
+**Requirements covered:** WARN-01, WARN-02, WARN-03, WARN-04
+
+**Success criteria:**
+
+- Running the tool checker correctly reports status (installed / missing) for each required tool.
+- Missing tools trigger helpful, platform-specific installation instructions (macOS brew/npm directions).
+- Flow engine halts and warns the user if they try to execute a stage requiring missing tools.
+
+### Phase 13: Flow Validator and Tests
 
 **Goal:** Add a deterministic flow validator and comprehensive test suite.
 
@@ -184,11 +205,12 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 | Phase 9 (v2) | INIT-01, INIT-02, INIT-03, INIT-04 |
 | Phase 10 (v2) | ENGINE-01, ENGINE-02, ENGINE-03, ENGINE-04 |
 | Phase 11 (v2) | GATE-01, GATE-02, GATE-03, GATE-04 |
-| Phase 12 (v2) | FVALID-01, FVALID-02, FVALID-03, FVALID-04 |
+| Phase 12 (v2) | WARN-01, WARN-02, WARN-03, WARN-04 |
+| Phase 13 (v2) | FVALID-01, FVALID-02, FVALID-03, FVALID-04 |
 
 **Coverage:**
 - v1 requirements: 28 total, 28 completed
-- v2 requirements: 20 total, 0 completed
+- v2 requirements: 24 total, 0 completed
 - Unmapped: 0
 
 ## Research Flags

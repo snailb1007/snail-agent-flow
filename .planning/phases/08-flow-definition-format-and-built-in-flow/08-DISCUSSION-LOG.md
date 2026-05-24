@@ -81,4 +81,4 @@
 
 ## Deferred Ideas
 
-- Full JSON Schema specification and publication to SchemaStore (deferred to Phase 12 or post-v2.0).
+- Full JSON Schema specification and publication to SchemaStore (deferred to Phase 13 or post-v2.0).
