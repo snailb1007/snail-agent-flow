@@ -89,7 +89,7 @@ describe('unit under test', () => {
 
 **Patterns:**
 - Test observable behavior and accepted requirements from `.ai/specs/spec.md`, not implementation details.
-- Keep each user story independently testable, matching the task guidance in `.gemini/.specify/templates/tasks-template.md`.
+- Keep each user story independently testable, matching the task guidance in `.specify/templates/tasks-template.md`.
 - Include validation steps in implementation plans and task lists, not only in final summaries.
 - For async behavior, prefer condition-based waits over arbitrary sleeps, following `.agents/skills/systematic-debugging/condition-based-waiting-example.ts`.
 

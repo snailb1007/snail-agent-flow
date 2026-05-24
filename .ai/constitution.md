@@ -108,14 +108,15 @@ Source-of-truth and handoff artifacts include:
 - `ai-delivery-pipeline-blueprint.md`: canonical pipeline phases and artifact shape.
 - `docs/superpowers/specs/`: durable specs.
 - `docs/superpowers/plans/`: implementation plans.
-- `.ai/sessions/<session-id>/agent-recon.md`: session recon.
-- `.ai/sessions/<session-id>/gstack-plan-review.md`: product and engineering review packet.
-- `.ai/sessions/<session-id>/agent-execution.md`: execution notes.
-- `.ai/specs/current/spec.md`: accepted implementation spec when using the `.ai/specs` layout.
-- `.ai/specs/current/plan.md`: accepted implementation plan when using the `.ai/specs` layout.
-- `.ai/specs/current/tasks.md`: executable task list when using the `.ai/specs` layout.
-- `.ai/specs/current/validation-report.md`: validation report.
-- `.ai/state/spec-validation-state.json`: validation status and retry state.
+- `.ai/sessions/YYYY-MM-DD-recon-<feature-slug>.md`: session recon.
+- `.ai/reviews/<feature-slug>/gstack-ceo-review.md`: product review packet.
+- `.ai/reviews/<feature-slug>/gstack-eng-review.md`: engineering review packet.
+- `.ai/sessions/YYYY-MM-DD-gsd-execution-<feature-slug>.md`: execution notes.
+- `specs/<feature-slug>/spec.md`: accepted implementation spec.
+- `specs/<feature-slug>/plan.md`: accepted implementation plan.
+- `specs/<feature-slug>/tasks.md`: executable task list.
+- `.ai/reviews/<feature-slug>/spec-validation-report.md`: validation report.
+- `.ai/state/active-feature.json`: active feature state pointer.
 - `.ai/memory/project-summary.md`: durable project summary.
 - `.ai/memory/current-architecture.md`: durable architecture notes.
 - `.ai/memory/known-risks.md`: durable known risks.

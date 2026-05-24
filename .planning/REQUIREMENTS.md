@@ -110,7 +110,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLI-02 | Phase 5 | Pending |
 | CLI-03 | Phase 5 | Pending |
 | CLI-04 | Phase 5 | Pending |
-| VERIFY-01 | Phase 6 | Pending |
+| VERIFY-01 | Phase 6, Phase 1 (partial) | Pending |
 | VERIFY-02 | Phase 6 | Pending |
 | VERIFY-03 | Phase 6 | Pending |
 | VERIFY-04 | Phase 6 | Pending |
@@ -122,4 +122,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-05-24*
-*Last updated: 2026-05-24 after initialization*
+*Last updated: 2026-05-24 after vertical slice alignment*

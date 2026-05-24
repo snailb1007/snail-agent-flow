@@ -56,7 +56,7 @@ It aims to provide:
    ↓
 2. GStack CEO / Eng Manager Review
    ↓
-3. Spec-Kit / OpenSpec
+3. Spec-Kit
    ↓
 3.5 Spec Validation Gate
    ↓
@@ -126,7 +126,7 @@ Recommended tools:
 Recon output should be saved as:
 
 ```text
-.ai/sessions/<session-id>/agent-recon.md
+.ai/sessions/YYYY-MM-DD-recon-<feature-slug>.md
 ```
 
 ---
@@ -161,7 +161,8 @@ This step should consume:
 Output should be saved as:
 
 ```text
-.ai/sessions/<session-id>/gstack-plan-review.md
+.ai/reviews/<feature-slug>/gstack-ceo-review.md
+.ai/reviews/<feature-slug>/gstack-eng-review.md
 ```
 
 ---
@@ -170,13 +171,21 @@ Output should be saved as:
 
 This step creates the technical blueprint.
 
+For the MVP, Spec-Kit is the canonical spec system.
+
 Required artifacts:
 
 ```text
-.ai/specs/current/spec.md
-.ai/specs/current/plan.md
-.ai/specs/current/tasks.md
+specs/<feature-slug>/spec.md
+specs/<feature-slug>/plan.md
+specs/<feature-slug>/tasks.md
+specs/<feature-slug>/research.md
+specs/<feature-slug>/data-model.md
+specs/<feature-slug>/quickstart.md
+specs/<feature-slug>/contracts/
 ```
+
+The `specs/<feature-slug>/` directory is the source of truth for feature requirements, plan, and tasks. The `.ai/` directory must not duplicate or shadow these artifacts.
 
 The spec must include:
 
@@ -233,8 +242,9 @@ The agent must not keep debating with itself indefinitely.
 Validation report should be saved as:
 
 ```text
-.ai/specs/current/validation-report.md
-.ai/state/spec-validation-state.json
+.ai/reviews/<feature-slug>/spec-validation-report.md
+.ai/state/current-feature.md
+.ai/state/active-run.md
 ```
 
 Optional implementation:
@@ -251,6 +261,8 @@ Optional implementation:
 
 GSD Full receives the validated spec and performs implementation.
 
+GSD consumes the Spec-Kit artifacts from Step 3. It must not create a competing feature spec or plan for the same work.
+
 GSD must:
 
 - follow `tasks.md`;
@@ -264,7 +276,7 @@ GSD must:
 Execution notes should be saved as:
 
 ```text
-.ai/sessions/<session-id>/agent-execution.md
+.ai/sessions/YYYY-MM-DD-gsd-execution-<feature-slug>.md
 ```
 
 ---
@@ -317,7 +329,7 @@ Re-run Spec Validation Gate.
 Spec failure report should be saved as:
 
 ```text
-.ai/sessions/<session-id>/spec-failure-report.md
+.ai/reviews/<feature-slug>/spec-failure-report.md
 ```
 
 ---
@@ -340,8 +352,8 @@ Recommended checks:
 QA report should be saved as:
 
 ```text
-.ai/sessions/<session-id>/agent-qa.md
-.ai/sessions/<session-id>/verification.md
+.ai/reviews/<feature-slug>/qa-review.md
+.ai/sessions/YYYY-MM-DD-qa-<feature-slug>.md
 ```
 
 ---
@@ -355,7 +367,8 @@ Session notes are temporary. Project memory is the source of truth for future Re
 The agent must read short Markdown files in:
 
 ```text
-.ai/sessions/<session-id>/
+.ai/sessions/
+.ai/reviews/<feature-slug>/
 ```
 
 Then update:
@@ -364,8 +377,6 @@ Then update:
 .ai/memory/project-summary.md
 .ai/memory/current-architecture.md
 .ai/memory/known-risks.md
-.ai/memory/decisions.md
-.ai/memory/verification-history.md
 ```
 
 Rules:
@@ -382,7 +393,7 @@ Rules:
 Memory handoff report should be saved as:
 
 ```text
-.ai/sessions/<session-id>/memory-handoff-report.md
+.ai/state/handoff.md
 ```
 
 ---
@@ -390,6 +401,8 @@ Memory handoff report should be saved as:
 ### Step 6 — GStack Ship
 
 The final ship step creates the release/PR handoff.
+
+GStack Ship owns release readiness. The executor must not be the release owner.
 
 Required output:
 
@@ -406,53 +419,52 @@ Required output:
 Ship report should be saved as:
 
 ```text
-.ai/sessions/<session-id>/ship-report.md
+.ai/reviews/<feature-slug>/ship-decision.md
 ```
 
 ---
 
-## 4. Recommended `.ai` Folder Structure
+## 4. Recommended Folder Structure
 
 ```text
-.ai/
-  pipeline.md
-  rules.md
-  constitution.md
-  tool-routing.md
+.specify/
+  memory/
+    constitution.md
 
   specs/
-    current/
+    <feature-slug>/
       spec.md
       plan.md
       tasks.md
-      validation-report.md
+      research.md
+      data-model.md
+      quickstart.md
+      contracts/
 
-  sessions/
-    <session-id>/
-      agent-recon.md
-      gstack-plan-review.md
-      agent-spec.md
-      agent-execution.md
-      spec-failure-report.md
-      agent-qa.md
-      verification.md
-      memory-handoff-report.md
-      ship-report.md
-
+.ai/
   memory/
     project-summary.md
     current-architecture.md
     known-risks.md
-    decisions.md
-    verification-history.md
+
+  sessions/
+    YYYY-MM-DD-<agent>-<task>.md
 
   reviews/
-    <session-id>-human-review.md
+    <feature-slug>/
+      gstack-ceo-review.md
+      gstack-eng-review.md
+      spec-validation-report.md
+      qa-review.md
+      ship-decision.md
 
   state/
-    current-session.json
-    spec-validation-state.json
+    current-feature.md
+    active-run.md
+    handoff.md
 ```
+
+`.specify/` owns feature specs and Spec-Kit templates (including a constitution template). `.ai/` owns orchestration state, session notes, reviews, and durable project memory. The active operational constitution is `.ai/constitution.md`; `.specify/memory/constitution.md` is a Spec-Kit template copy.
 
 ---
 
@@ -465,12 +477,41 @@ External API/library docs  → Context7
 Multi-module impact        → GitNexus
 Product/scope critique     → GStack CEO mode
 Architecture critique      → GStack Eng Manager mode
-Spec generation            → Spec-Kit / OpenSpec
+Spec generation            → Spec-Kit
 Spec validation            → Promptfoo/custom validator
 Long execution             → GSD Full
 Browser/manual QA          → GStack QA / Playwright
 Release handoff            → GStack Ship
 ```
+
+OpenSpec may be added later as an adapter for proposal/change/archive lifecycle. It is not a competing source of truth in the MVP.
+
+Operational handling details are defined in:
+
+- `docs/runbooks/failure-modes.md`
+
+## 5.5 Failure-mode Policy
+
+Failure-mode rules must exist in both this PRD and operational runbooks.
+
+The PRD owns mandatory policy, invariants, and state transitions. The runbooks own concrete handling procedures, fallback behavior, examples, forbidden actions, and recovery checklists.
+
+Rules:
+
+- If interactive tool gates are unavailable, the agent must not silently bypass them.
+- If implementation reveals spec drift, the flow must return to Step 3.
+- If QA detects release-blocking issues, the flow must return to the responsible execution or spec stage.
+- Before Ship, Memory Handoff must be complete.
+
+Required transitions:
+
+| Failure mode | Required transition |
+|---|---|
+| Interactive gate unavailable | Enter `BLOCKED` state |
+| Spec drift | Return to Step 3 |
+| Local implementation bug | Return to Step 4 |
+| Context fragmentation | Run handoff/restore |
+| QA release blocker | Return to Step 4 or Step 3, depending on root cause |
 
 ---
 
@@ -489,7 +530,7 @@ Rules:
 When this happens, create:
 
 ```text
-.ai/reviews/<session-id>-human-review.md
+.ai/reviews/<feature-slug>/human-review.md
 ```
 
 The Human Review Packet must include:
@@ -522,7 +563,7 @@ Optional notification channels:
 NEEDS_HUMAN_REVIEW
 
 ## Spec file
-.ai/specs/current/spec.md
+specs/<feature-slug>/spec.md
 
 ## Failure count
 3 consecutive validation failures
@@ -607,6 +648,7 @@ Creates:
 
 ```text
 .ai/
+.specify/
 CLAUDE.md
 AGENTS.md
 ```
@@ -616,8 +658,9 @@ AGENTS.md
 Creates:
 
 ```text
-.ai/sessions/<date>-<slug>/
-.ai/state/current-session.json
+.ai/sessions/YYYY-MM-DD-<agent>-<task>.md
+.ai/state/current-feature.md
+.ai/state/active-run.md
 ```
 
 ### `adp validate-spec`
@@ -647,29 +690,24 @@ ai-delivery-pipeline/
       CLAUDE.md
       AGENTS.md
       .ai/
-        pipeline.md
-        rules.md
-        constitution.md
-        tool-routing.md
-        specs/
-          current/
-            spec.md
-            plan.md
-            tasks.md
-            validation-report.md
         sessions/
           .gitkeep
         memory/
           project-summary.md
           current-architecture.md
           known-risks.md
-          decisions.md
-          verification-history.md
         reviews/
           .gitkeep
         state/
-          current-session.json
-          spec-validation-state.json
+          current-feature.md
+          active-run.md
+          handoff.md
+
+      .specify/
+        memory/
+          constitution.md
+        specs/
+          .gitkeep
 
     minimal/
     typescript/

@@ -17,7 +17,7 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 - [x] Repository-level agent instructions exist for Claude and Gemini through `CLAUDE.md` and `GEMINI.md`.
 - [x] The core pipeline is documented in `docs/prd.md`, including recon, planning critique, spec generation, validation, execution, QA, memory handoff, and ship gates.
 - [x] Durable AI state folders exist under `.ai/` for constitution, recon, specs, sessions, memory, and review artifacts.
-- [x] Spec-Kit/Gemini command scaffolding exists under `.gemini/commands/` and `.gemini/.specify/`.
+- [x] Spec-Kit/Gemini command scaffolding exists under `.gemini/commands/` and `.specify/`.
 - [x] Local agent skill scaffolding exists under `.agents/skills/`.
 - [x] The current codebase map exists under `.planning/codebase/`.
 
@@ -25,7 +25,7 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 
 - [ ] Define the canonical artifact contract for `.ai/`, `.planning/`, Spec-Kit, GSD, and runtime-specific instruction files.
 - [ ] Normalize routing rules so agents know when to use recon, critique, spec generation, codebase mapping, execution, verification, and memory handoff.
-- [ ] Resolve path ownership between `.ai/specs/`, `.gemini/.specify/`, and any future root `.specify/` or CLI-managed feature directories.
+- [ ] Resolve path ownership between `.ai/specs/`, `.specify/`, and any future root `.specify/` or CLI-managed feature directories.
 - [ ] Add validation gates that can detect stale specs, broken artifact references, missing verification, and repeated self-repair loops.
 - [ ] Turn the documented protocol into usable templates, scripts, or CLI entry points without replacing the underlying tools.
 - [ ] Add a first automated verification layer for docs, scripts, artifact paths, and workflow invariants.
@@ -46,7 +46,7 @@ Current source material:
 - `docs/prd.md` defines the product direction and recommended pipeline.
 - `.ai/constitution.md` defines non-negotiable operating rules and failure boundaries.
 - `.ai/recon.md`, `.ai/specs/`, `.ai/sessions/`, `.ai/memory/`, and `.ai/reviews/` define durable workflow memory locations.
-- `.gemini/commands/` and `.gemini/.specify/` contain the current Spec-Kit/Gemini integration scaffold.
+- `.gemini/commands/` and `.specify/` contain the current Spec-Kit/Gemini integration scaffold.
 - `.planning/codebase/` captures the current brownfield map produced during initialization.
 
 The codebase map found no app source tree, package manifest, root runtime project file, test runner, CI workflow, API layer, database schema, or deployment config. Existing files are mostly protocol documents, generated command scaffolds, local skills, and placeholder state files.
@@ -55,7 +55,7 @@ The codebase map found no app source tree, package manifest, root runtime projec
 
 - **Documentation-first state**: Initial work must treat `docs/prd.md`, `.ai/constitution.md`, and `.planning/codebase/` as source context because no runtime implementation exists yet.
 - **Runtime neutrality**: The protocol must support multiple agent runtimes rather than assuming Claude-only or Gemini-only behavior.
-- **Path consistency**: `.ai/specs/`, `.gemini/.specify/`, and future Spec-Kit feature paths must not drift into competing sources of truth.
+- **Path consistency**: `.ai/specs/`, `.specify/`, and future Spec-Kit feature paths must not drift into competing sources of truth.
 - **Verification required**: Claims of completion need checkable artifacts, commands, or review logs.
 - **No infinite self-repair**: Repeated validation failure must route to human review instead of agent debate.
 - **Security baseline**: Generated docs and code must avoid leaking secrets and must keep destructive operations explicit.
@@ -90,4 +90,4 @@ After each milestone:
 4. Update Context with current state, feedback, and verification results.
 
 ---
-*Last updated: 2026-05-24 after initialization*
+*Last updated: 2026-05-24 after vertical slice alignment*

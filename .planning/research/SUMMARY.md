@@ -42,7 +42,7 @@ Must have:
 
 Should have:
 
-- Artifact authority resolver for `.ai/specs/`, `.gemini/.specify/`, future `.specify/`, docs, and memory.
+- Artifact authority resolver for `.ai/specs/`, `.specify/`, future `.specify/`, docs, and memory.
 - Human review packet generator with category, attempt count, evidence, changed files, options, and recommended decision.
 - Multi-runtime template pack for Claude, Gemini, Codex/GSD, and future agents.
 - Compatibility bridge for generated Spec-Kit/Gemini scaffolds without treating vendored internals as canonical policy.
@@ -67,7 +67,7 @@ Architecture rules for requirements and roadmap:
 
 - Stabilize `.ai/specs/current/` or another single current-spec convention before automation.
 - Keep `.planning/` as GSD planning context, not runtime state consumed by agents during execution.
-- Treat `.gemini/.specify/` as adapter/generated scaffold unless explicitly classified otherwise.
+- Treat `.specify/` as adapter/generated scaffold unless explicitly classified otherwise.
 - Make every pipeline phase name its input paths, output paths, validator, and failure route.
 - Prefer deterministic validation before LLM-judged validation.
 
