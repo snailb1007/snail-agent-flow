@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: flow-engine
 status: active
-last_updated: "2026-05-25T01:50:00.000Z"
+last_updated: "2026-05-25T02:40:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 17
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 5
+  percent: 83
 ---
 
 # Project State
@@ -21,25 +21,25 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-25)
 
 **Core value:** Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
-**Current focus:** Phase 9: Flow Initialization and Ledger State
+**Current focus:** Phase 13: Flow Validator and Tests
 
 ## Current Status
 
 Milestone v1.0 is complete (Phases 1-7). All 28 v1 requirements delivered.
-Milestone v2.0 started. Phase 8 (Flow Definition Format and Built-in Flow) is complete. Phase 9 is now active.
+Milestone v2.0 started. Phases 8-12 are complete and verified. Phase 13 (Flow Validator and Tests) is now active.
 
 ## Active Phase
 
-**Phase 9: Flow Initialization and Ledger State**
+**Phase 13: Flow Validator and Tests**
 
-Goal: Extend `adp init` to bootstrap flow infrastructure and create the ledger state file.
+Goal: Add a deterministic flow validator and comprehensive test suite.
 
 Primary requirements:
 
-- INIT-01
-- INIT-02
-- INIT-03
-- INIT-04
+- FVALID-01
+- FVALID-02
+- FVALID-03
+- FVALID-04
 
 ## Decisions
 
@@ -56,6 +56,8 @@ Primary requirements:
 - Flow definitions are YAML data, not code.
 - All 10 stages are mandatory in the built-in flow.
 - Prerequisite tools (GSD, Superpowers, Spec-Kit, GStack) are validated, not installed.
+- Platform-specific installation instructions (macOS brew/npm) are structured in a helper database.
+- Halting and warning the user/agent is enforced inside the flow engine skill when tool prerequisites are missing.
 
 ## Verification Log
 
@@ -68,15 +70,17 @@ Primary requirements:
 ### v2.0 (Active)
 - v2 requirements defined: 24 total, 6 categories (FLOW, INIT, ENGINE, GATE, WARN, FVALID).
 - Roadmap phases 8-13 defined with success criteria.
-- Phase 8: Flow Definition Format and Built-in Flow completed and verified.
+- Phases 8-11: Completed and verified in PR #44.
+- Phase 12: Prerequisite Tool Checker and Installation Guide completed and verified.
 
 ## Next Action
 
-Begin Phase 9 — discuss flow initialization and ledger state.
+Begin Phase 13 — discuss flow validator and tests.
 
 ```bash
-/rough-project-flow phase09
+/rough-project-flow phase13
 ```
+
 
 ---
 *State updated: 2026-05-25*

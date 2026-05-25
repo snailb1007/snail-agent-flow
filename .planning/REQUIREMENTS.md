@@ -64,38 +64,38 @@ Requirements for the Flow Engine milestone. Packages the rough-project-flow ledg
 
 ### Flow Definition
 
-- [ ] **FLOW-01**: Define a declarative flow definition format (YAML or JSON) that specifies stage order, required skills/commands per stage, required artifacts, gate conditions, and revision routing rules.
-- [ ] **FLOW-02**: Ship a built-in `rough-project-flow` definition file encoding the 10-stage ledger: decision discovery, decision challenge, canonical spec, implementation plan, plan critique, revision loop, vertical slicing, execution, verification, release readiness.
-- [ ] **FLOW-03**: Allow custom flow definitions so users can add, remove, or reorder stages for their project needs.
-- [ ] **FLOW-04**: Document prerequisite tools (GSD, Superpowers, Spec-Kit, GStack) and verify their availability at flow start.
+- [x] **FLOW-01**: Define a declarative flow definition format (YAML or JSON) that specifies stage order, required skills/commands per stage, required artifacts, gate conditions, and revision routing rules.
+- [x] **FLOW-02**: Ship a built-in `rough-project-flow` definition file encoding the 10-stage ledger: decision discovery, decision challenge, canonical spec, implementation plan, plan critique, revision loop, vertical slicing, execution, verification, release readiness.
+- [x] **FLOW-03**: Allow custom flow definitions so users can add, remove, or reorder stages for their project needs.
+- [x] **FLOW-04**: Document prerequisite tools (GSD, Superpowers, Spec-Kit, GStack) and verify their availability at flow start.
 
 ### Flow Initialization
 
-- [ ] **INIT-01**: Extend `adp init` to copy the default flow definition into `.ai/flows/` in the target project.
-- [ ] **INIT-02**: Create an initial flow ledger state file at `.ai/state/flow-ledger.json` tracking stage status, artifact paths, timestamps, and gate results.
-- [ ] **INIT-03**: Support brownfield projects that already have `.ai/` infrastructure — merge, do not overwrite.
-- [ ] **INIT-04**: Generate a Gemini skill file (SKILL.md) that agents can mention to start or resume the flow.
+- [x] **INIT-01**: Extend `adp init` to copy the default flow definition into `.ai/flows/` in the target project.
+- [x] **INIT-02**: Create an initial flow ledger state file at `.ai/state/flow-ledger.json` tracking stage status, artifact paths, timestamps, and gate results.
+- [x] **INIT-03**: Support brownfield projects that already have `.ai/` infrastructure — merge, do not overwrite.
+- [x] **INIT-04**: Generate a Gemini skill file (SKILL.md) that agents can mention to start or resume the flow.
 
 ### Flow Engine Skill
 
-- [ ] **ENGINE-01**: Package the flow orchestrator as a Gemini skill under `.agents/skills/` that agents mention in chat to start, resume, or inspect the flow.
-- [ ] **ENGINE-02**: The skill must read the flow definition from `.ai/flows/`, read ledger state from `.ai/state/flow-ledger.json`, determine the next stage, and instruct the agent which skill/command to invoke.
-- [ ] **ENGINE-03**: After each stage completes, the skill must validate required artifacts exist, update the ledger, and advance or block.
-- [ ] **ENGINE-04**: Support revision loops — when a downstream stage detects errors, the skill routes back to the correct upstream stage and resets affected ledger entries.
+- [x] **ENGINE-01**: Package the flow orchestrator as a Gemini skill under `.agents/skills/` that agents mention in chat to start, resume, or inspect the flow.
+- [x] **ENGINE-02**: The skill must read the flow definition from `.ai/flows/`, read ledger state from `.ai/state/flow-ledger.json`, determine the next stage, and instruct the agent which skill/command to invoke.
+- [x] **ENGINE-03**: After each stage completes, the skill must validate required artifacts exist, update the ledger, and advance or block.
+- [x] **ENGINE-04**: Support revision loops — when a downstream stage detects errors, the skill routes back to the correct upstream stage and resets affected ledger entries.
 
 ### Artifact Gates
 
-- [ ] **GATE-01**: Each stage must declare required output artifacts. The gate checks artifact existence and basic content validation (non-empty, required headings).
-- [ ] **GATE-02**: Gate failures must block stage advancement and log the failure reason in the ledger.
-- [ ] **GATE-03**: After 3 consecutive gate failures on the same stage, generate a `NEEDS_HUMAN_REVIEW` packet and halt the flow.
-- [ ] **GATE-04**: Gate validation must be deterministic — no LLM-as-judge for pass/fail decisions.
+- [x] **GATE-01**: Each stage must declare required output artifacts. The gate checks artifact existence and basic content validation (non-empty, required headings).
+- [x] **GATE-02**: Gate failures must block stage advancement and log the failure reason in the ledger.
+- [x] **GATE-03**: After 3 consecutive gate failures on the same stage, generate a `NEEDS_HUMAN_REVIEW` packet and halt the flow.
+- [x] **GATE-04**: Gate validation must be deterministic — no LLM-as-judge for pass/fail decisions.
 
 ### Tool Verification and Onboarding
 
-- [ ] **WARN-01**: Define prerequisite tools required for skills in the flow (e.g. GSD, Superpowers, Spec-Kit, GStack).
-- [ ] **WARN-02**: Implement a checker that checks if these required tools are available on the user's system and warns them if missing.
-- [ ] **WARN-03**: Provide platform-specific installation instructions (macOS brew/npm directions) to guide the user in setting up missing tools.
-- [ ] **WARN-04**: Integrate tool verification with the flow engine startup sequence, halting or warning the user before attempting to execute stages requiring missing tools.
+- [x] **WARN-01**: Define prerequisite tools required for skills in the flow (e.g. GSD, Superpowers, Spec-Kit, GStack).
+- [x] **WARN-02**: Implement a checker that checks if these required tools are available on the user's system and warns them if missing.
+- [x] **WARN-03**: Provide platform-specific installation instructions (macOS brew/npm directions) to guide the user in setting up missing tools.
+- [x] **WARN-04**: Integrate tool verification with the flow engine startup sequence, halting or warning the user before attempting to execute stages requiring missing tools.
 
 ### Flow Validator
 
@@ -137,15 +137,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLI-01 – CLI-04 | Phase 5, 7 (v1) | Completed |
 | VERIFY-01 – VERIFY-04 | Phase 6 (v1) | Completed |
 | FLOW-01 – FLOW-04 | Phase 8 (v2) | Completed |
-| INIT-01 – INIT-04 | Phase 9 (v2) | Pending |
-| ENGINE-01 – ENGINE-04 | Phase 10 (v2) | Pending |
-| GATE-01 – GATE-04 | Phase 11 (v2) | Pending |
-| WARN-01 – WARN-04 | Phase 12 (v2) | Pending |
+| INIT-01 – INIT-04 | Phase 9 (v2) | Completed |
+| ENGINE-01 – ENGINE-04 | Phase 10 (v2) | Completed |
+| GATE-01 – GATE-04 | Phase 11 (v2) | Completed |
+| WARN-01 – WARN-04 | Phase 12 (v2) | Completed |
 | FVALID-01 – FVALID-04 | Phase 13 (v2) | Pending |
 
 **Coverage:**
 - v1 requirements: 28 total, 28 completed
-- v2 requirements: 24 total, 4 completed
+- v2 requirements: 24 total, 20 completed
 - Unmapped: 0
 
 ---

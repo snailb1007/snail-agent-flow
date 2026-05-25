@@ -16,7 +16,8 @@ const {
   checkArtifacts,
   advanceStage,
   triggerRevision,
-  formatStageInstruction
+  formatStageInstruction,
+  checkStagePrerequisites
 } = require('../../lib/flow-engine');
 
 let passed = 0;
@@ -495,6 +496,56 @@ console.log('--- formatStageInstruction ---');
   assert(output.includes('challenge_failed'), 'formatStageInstruction: should include revision routing');
   assert(output.includes('decision_discovery'), 'formatStageInstruction: should include revision target');
   assert(output.includes('needs_revision'), 'formatStageInstruction: should include current status');
+}
+
+// ============================================================
+// checkStagePrerequisites tests
+// ============================================================
+
+console.log('--- checkStagePrerequisites ---');
+
+{
+  // Stage with no skill and no command passes automatically
+  const flowStage = { id: 'test_stage' };
+  const prerequisites = [{ name: 'GSD', command: 'gsd-discuss-phase' }];
+  const result = checkStagePrerequisites(flowStage, prerequisites);
+  assert(result.passed === true, 'checkStagePrerequisites: stage with no skill passes');
+  assert(result.results.length === 0, 'checkStagePrerequisites: stage with no skill returns no results');
+}
+
+{
+  // Substring/case-insensitive matching works (gsd-discuss-phase matches GSD)
+  const flowStage = { id: 'decision_discovery', skill: 'gsd-discuss-phase' };
+  const prerequisites = [
+    {
+      name: 'GSD',
+      command: 'gsd-discuss-phase',
+      check: 'node -v' // Dummy check command that will always pass
+    }
+  ];
+  const result = checkStagePrerequisites(flowStage, prerequisites, __dirname);
+  assert(result.passed === true, 'checkStagePrerequisites: matched prerequisite passes check');
+  assert(result.results.length === 1, 'checkStagePrerequisites: returns exactly 1 result');
+  assert(result.results[0].name === 'GSD', 'checkStagePrerequisites: result maps to matched prerequisite name');
+  assert(result.results[0].available === true, 'checkStagePrerequisites: matches status as available');
+}
+
+{
+  // Matched prerequisite is missing
+  const flowStage = { id: 'decision_discovery', skill: 'gsd-discuss-phase' };
+  const prerequisites = [
+    {
+      name: 'GSD',
+      command: 'nonexistent-gsd-command',
+      check: 'command -v nonexistent-gsd-command'
+    }
+  ];
+  const result = checkStagePrerequisites(flowStage, prerequisites, __dirname);
+  assert(result.passed === false, 'checkStagePrerequisites: failed prerequisite fails stage');
+  assert(result.results.length === 1, 'checkStagePrerequisites: returns result for missing prerequisite');
+  assert(result.results[0].available === false, 'checkStagePrerequisites: missing prerequisite is marked unavailable');
+  assert(result.results[0].instructions !== undefined, 'checkStagePrerequisites: returns instructions for missing prerequisite');
+  assert(result.results[0].description !== undefined, 'checkStagePrerequisites: returns description for missing prerequisite');
 }
 
 // ============================================================

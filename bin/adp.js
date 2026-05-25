@@ -640,6 +640,53 @@ function handleDoctor() {
     console.error('[doctor] Static checks FAILED.');
     process.exit(1);
   }
+
+  // Active flow prerequisite checks
+  const flowPath = path.join(repoRoot, '.ai/flows/rough-project-flow.yaml');
+  if (fs.existsSync(flowPath)) {
+    console.log('[doctor] Running flow prerequisite tool checks...');
+    try {
+      const { parseYaml } = require(path.join(packageRoot, 'lib/yaml-parser'));
+      const { validatePrerequisites, getToolInstructions } = require(path.join(packageRoot, 'lib/tool-validator'));
+
+      const flowYaml = fs.readFileSync(flowPath, 'utf8');
+      const flowDef = parseYaml(flowYaml);
+
+      if (Array.isArray(flowDef.prerequisites) && flowDef.prerequisites.length > 0) {
+        const results = validatePrerequisites(flowDef.prerequisites, repoRoot);
+        let missingCount = 0;
+        for (const res of results) {
+          if (res.available) {
+            console.log(`  ✅ ${res.name}: available`);
+          } else {
+            console.error(`  ❌ ${res.name}: MISSING`);
+            missingCount++;
+            const inst = getToolInstructions(res.name);
+            if (inst) {
+              console.error(`     Purpose: ${inst.description}`);
+              console.error(`     Instructions: ${inst.instructions}`);
+            } else {
+              console.error(`     Reason: ${res.reason}`);
+            }
+          }
+        }
+        if (missingCount > 0) {
+          console.error(`[doctor] Flow prerequisite tool checks FAILED. ${missingCount} tool(s) missing.`);
+          failed = true;
+        } else {
+          console.log('[doctor] Flow prerequisite tool checks PASSED.');
+        }
+      }
+    } catch (e) {
+      console.error(`[doctor] ERROR: Failed to parse flow definition: ${e.message}`);
+      failed = true;
+    }
+  }
+
+  if (failed) {
+    console.error('[doctor] Sanity or prerequisite checks FAILED.');
+    process.exit(1);
+  }
   console.log('[doctor] Static sanity checks PASSED.');
 
   console.log('[doctor] Running spec validation gate...');
