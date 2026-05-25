@@ -72,6 +72,18 @@ _Avoid_: manual review scan
 A markdown document (`.ai/reviews/<feature-slug>/human-review.md`) automatically created when consecutive validation failures reach 3, defining the block context and presenting resolution options.
 _Avoid_: block report, unstructured review request
 
+**Flow Validator**:
+A deterministic Node.js validator (`lib/flow-validator.js`, invoked via `adp flow validate` or `npm run validate:flow`) that checks flow definition syntax, ledger state consistency, and the cross-reference between them. Runs without LLMs and is callable from `adp doctor`.
+_Avoid_: runtime gate evaluation, tool prerequisite check, spec validator
+
+**Ledger Corruption**:
+A state in which the flow ledger (`.ai/flow-ledger.json`) violates an invariant — invalid stage references, impossible status transitions, orphaned entries, or version mismatch with the flow definition. Detected by the Flow Validator, never by the Flow Engine at execution time.
+_Avoid_: gate failure, spec drift
+
+**Skill Reference Check**:
+The Flow Validator pass that verifies each stage's `skill:` field is declared in the same flow definition's `prerequisites:` block. Emits a warning, not an error — the authoritative runtime check belongs to the Phase 12 tool-checker.
+_Avoid_: tool prerequisite check, runtime skill resolution
+
 ## Example Dialogue
 
 **Dev**: I need to check if my new feature specification is ready for the GSD execution phase. Should I run Promptfoo or check it myself?
