@@ -12,9 +12,10 @@ This skill orchestrates a data-driven project workflow. It reads a flow definiti
 1. Read the flow definition at `.ai/flows/rough-project-flow.yaml`.
 2. Read the ledger state at `.ai/state/flow-ledger.json`.
 3. Find the **first stage** with `status: "needs_revision"` (priority) or `status: "pending"`.
-4. Output the **Structured Stage Block** (see format below).
-5. Invoke the indicated skill or command.
-6. After the stage completes, **verify artifacts** and **update the ledger**.
+4. **Verify prerequisite tools** for that stage (see Prerequisite Tool Verification below). If any are missing, halt and mark the stage as `"blocked"`.
+5. Output the **Structured Stage Block** (or Prerequisite Warning Block if blocked).
+6. Invoke the indicated skill or command.
+7. After the stage completes, **verify artifacts** and **update the ledger**.
 
 ---
 
@@ -25,14 +26,15 @@ When all stages are `pending`, the flow has not started yet.
 1. Read `.ai/flows/rough-project-flow.yaml` to load the stage definitions.
 2. Read `.ai/state/flow-ledger.json` — all stages should be `pending`.
 3. The first stage (typically `decision_discovery`) is your starting point.
-4. **Before starting**, update the ledger:
+4. **Verify prerequisite tools** for the first stage. If missing, update status to `"blocked"`, output the Prerequisite Warning Block, and halt.
+5. If prerequisites are satisfied, **before starting**, update the ledger:
    - Set `stages[0].status` to `"in_progress"`
    - Set `stages[0].started_at` to the current ISO timestamp
    - Set `current_stage` to the first stage's `id`
    - Set the root `updated_at` to now
    - Write the updated JSON back to `.ai/state/flow-ledger.json`
-5. Output the Structured Stage Block for the first stage.
-6. Invoke the skill.
+6. Output the Structured Stage Block for the first stage.
+7. Invoke the skill.
 
 ---
 
@@ -42,10 +44,44 @@ When returning after a context reset or new session:
 
 1. Read the ledger. Find `current_stage`.
 2. Look up that stage's status:
+   - If `blocked`: Re-verify the prerequisites. If now available, set status to `"in_progress"`, update the ledger, and proceed. If still missing, output the Prerequisite Warning Block and halt.
    - If `in_progress`: Check if its required artifacts already exist. If they do, **complete the stage** (see below). If not, remind yourself to complete it.
    - If `needs_revision`: Re-run the stage from scratch.
    - If `done`: Find the next non-done stage.
-3. Output the Structured Stage Block for the current/next stage.
+3. Output the Structured Stage Block (or Prerequisite Warning Block) for the current/next stage.
+
+---
+
+## Prerequisite Tool Verification
+
+Before starting or advancing to any stage, you MUST verify that the required prerequisite tool for that stage's skill is installed.
+
+### 1. Map Stage to Prerequisite
+Lookup the `prerequisites` array in `.ai/flows/rough-project-flow.yaml` and find the entry whose `name` or `command` matches the current stage's `skill` or `command` property (case-insensitively).
+
+### 2. Verify Tool Availability
+Check if the tool is available using `validatePrerequisites` logic:
+- Check if the skill folder exists in `.agents/skills/<name>` or `.claude/skills/<name>`.
+- Check if the skill folder exists in your home directory `~/.gemini/config/skills/<name>`.
+- If a `command` is defined, check if it exists on the system PATH.
+
+### 3. Handle Missing Prerequisites (Halt and Block)
+If the tool is **missing**:
+- Update `.ai/state/flow-ledger.json` setting the stage status to `"blocked"`.
+- Set the root `updated_at` to the current ISO timestamp and write it back.
+- Output the **Prerequisite Warning Block** instead of the normal stage instruction:
+
+```text
+⚠️ PREREQUISITE WARNING
+Stage:        {Stage Name} ({Stage ID})
+Missing:      {Tool Name} ({Prerequisite Command})
+Purpose:      {Tool Purpose/Description}
+Instructions: {Tool Installation Instructions}
+
+Flow execution is BLOCKED. Please install the tool and run 'adp doctor' to re-verify.
+```
+
+- **Halt execution** and do not advance or run any commands for this stage until the user installs the tool.
 
 ---
 

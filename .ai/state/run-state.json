@@ -1,6 +1,6 @@
 {
-  "feature_slug": "010-flow-engine-skill",
-  "spec_path": "specs/010-flow-engine-skill/",
+  "feature_slug": "011-prerequisite-tool-checker-installation",
+  "spec_path": "specs/011-prerequisite-tool-checker-installation/",
   "current_phase": "Complete",
   "last_gate": "Spec-Validation",
   "consecutive_failures": 0,
@@ -8,7 +8,7 @@
   "last_failed_step": null,
   "last_failed_rule": null,
   "last_validator_output": null,
-  "updated_at": "2026-05-25T03:35:33.512Z",
+  "updated_at": "2026-05-25T03:54:33.892Z",
   "last_gate_status": "PASS",
   "verified_artifacts": []
 }
