@@ -223,6 +223,16 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 - Flow definitions are data, not code — they describe stage order and artifact gates, not execution logic.
 - The flow engine skill instructs agents; it does not spawn subprocesses or invoke tools directly.
 
+### Phase 14: Improve AI for spawn subagent support
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 13
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 14 to break down)
+
 ---
 *Roadmap defined: 2026-05-24*
 *Last updated: 2026-05-25 — v2.0 Flow Engine milestone added*

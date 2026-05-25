@@ -89,6 +89,11 @@ Begin Phase 13 — discuss flow validator and tests.
 /rough-project-flow phase13
 ```
 
+## Accumulated Context
+
+### Roadmap Evolution
+- Phase 14 added: Improve AI for spawn subagent support
 
 ---
 *State updated: 2026-05-25*
+
