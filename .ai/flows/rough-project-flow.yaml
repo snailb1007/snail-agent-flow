@@ -1,0 +1,139 @@
+name: rough-project-flow
+version: 1.0.0
+description: |
+  A 10-stage sequential engineering flow for agent-assisted feature delivery.
+  Coordinates decision discovery, design challenges, canonical specification,
+  implementation planning, critiques, vertical slicing, execution, and release.
+
+prerequisites:
+  - name: GSD
+    command: gsd-discuss-phase
+    check: command -v gsd-discuss-phase || test -d .agents/skills/gsd-discuss-phase || test -d ~/.gemini/config/skills/gsd-discuss-phase
+  - name: Superpowers
+    command: using-superpowers
+    check: command -v using-superpowers || test -d .agents/skills/using-superpowers || test -d ~/.gemini/config/skills/using-superpowers
+  - name: Spec-Kit
+    command: speckit-specify
+    check: command -v speckit-specify || test -d .agents/skills/speckit-specify || test -d ~/.gemini/config/skills/speckit-specify
+  - name: GStack
+    command: plan-ceo-review
+    check: command -v plan-ceo-review || test -d .agents/skills/plan-ceo-review || test -d ~/.gemini/config/skills/plan-ceo-review
+
+stages:
+  - id: decision_discovery
+    name: Decision discovery
+    description: Discover and document major decisions, assumptions, and constraints.
+    skill: gsd-discuss-phase
+    command: node bin/adp.js new-session "discuss"
+    required_artifacts:
+      - path: .planning/phases/{phase_id}-CONTEXT.md
+        headings:
+          - "## Decisions"
+      - path: .planning/phases/{phase_id}-DISCUSSION-LOG.md
+        headings:
+          - "# Phase"
+    revision_routing: []
+
+  - id: decision_challenge
+    name: Decision challenge
+    description: Challenge the decisions against codebase context and domain constraints.
+    skill: grill-with-docs
+    required_artifacts:
+      - path: .planning/phases/{phase_id}-CHALLENGE-NOTES.md
+    revision_routing:
+      - on: challenge_failed
+        to: decision_discovery
+
+  - id: canonical_spec
+    name: Canonical spec
+    description: Author or update the canonical spec, plan, and tasks files.
+    skill: speckit-specify
+    command: node bin/adp.js feature "{feature_slug}"
+    required_artifacts:
+      - path: "{feature_dir}/spec.md"
+        headings:
+          - "## Goal"
+          - "## Acceptance Criteria"
+          - "## Test Strategy"
+          - "## Behavior-Preservation Rules"
+    revision_routing: []
+
+  - id: implementation_plan
+    name: Implementation plan
+    description: Generate the implementation plan.
+    skill: speckit-plan
+    required_artifacts:
+      - path: "{feature_dir}/plan.md"
+        headings:
+          - "## Proposed Changes"
+          - "## Verification Plan"
+    revision_routing: []
+
+  - id: plan_critique
+    name: Plan critique
+    description: Run product (CEO) and engineering critiques on the plan.
+    skill: plan-ceo-review
+    required_artifacts:
+      - path: .ai/reviews/{feature_slug}/gstack-ceo-review.md
+        headings:
+          - "# GStack CEO Review"
+      - path: .ai/reviews/{feature_slug}/gstack-eng-review.md
+        headings:
+          - "# GStack Engineering Manager Review"
+    revision_routing: []
+
+  - id: revision_loop
+    name: Revision loop
+    description: Address review critiques and align spec, plan, and decisions.
+    skill: speckit-tasks
+    required_artifacts:
+      - path: "{feature_dir}/tasks.md"
+    revision_routing:
+      - on: critique_failed
+        to: implementation_plan
+      - on: spec_failed
+        to: canonical_spec
+      - on: decision_failed
+        to: decision_discovery
+
+  - id: vertical_slicing
+    name: Vertical slicing
+    description: Split tasks into vertical issue slices.
+    skill: speckit-taskstoissues
+    required_artifacts:
+      - path: "{feature_dir}/tasks.md"
+    revision_routing: []
+
+  - id: execution
+    name: Execution
+    description: Implement the vertical slices one by one.
+    skill: gsd-execute-phase
+    required_artifacts:
+      - path: .ai/sessions/YYYY-MM-DD-gsd-execution-{feature_slug}.md
+    revision_routing:
+      - on: execution_failed
+        to: revision_loop
+
+  - id: verification
+    name: Verification
+    description: Run validators and tests to verify correctness of changes.
+    skill: gsd-verify-work
+    command: node bin/adp.js validate-spec
+    required_artifacts:
+      - path: .ai/state/run-state.json
+    revision_routing:
+      - on: verification_failed
+        to: execution
+
+  - id: release_readiness
+    name: Release readiness
+    description: Assess ship readiness and document the release decision.
+    skill: gsd-ship
+    required_artifacts:
+      - path: .ai/reviews/{feature_slug}/ship-decision.md
+      - path: .ai/state/handoff.md
+        headings:
+          - "## Promoted to project memory"
+    revision_routing:
+      - on: ship_rejected
+        to: execution

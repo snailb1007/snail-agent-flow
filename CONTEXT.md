@@ -84,6 +84,14 @@ _Avoid_: gate failure, spec drift
 The Flow Validator pass that verifies each stage's `skill:` field is declared in the same flow definition's `prerequisites:` block. Emits a warning, not an error — the authoritative runtime check belongs to the Phase 12 tool-checker.
 _Avoid_: tool prerequisite check, runtime skill resolution
 
+**Sandbox Compliance**:
+The requirement that all referenced skill execution context files must reside within the workspace to bypass environment-level read-permission boundaries.
+_Avoid_: global path referencing, home directory execution contexts
+
+**Subagent Parallelization**:
+The technique of splitting independent tasks in tasks.md into concurrent execution threads using specialized subagents, minimizing overall wall-clock delivery time.
+_Avoid_: sequential execution of independent checklists, single-thread task processing
+
 ## Example Dialogue
 
 **Dev**: I need to check if my new feature specification is ready for the GSD execution phase. Should I run Promptfoo or check it myself?

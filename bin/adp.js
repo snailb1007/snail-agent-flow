@@ -224,6 +224,10 @@ function handleInit() {
     console.log('[init] .claude/skills/project-flow/SKILL.md already exists, skipping.');
   }
 
+  // Localize GSD skills and append subagent guidelines
+  localizeGlobalSkills(repoRoot);
+  appendSubagentGuidelines(repoRoot);
+
   console.log('[init] Initialization complete.');
 }
 
@@ -805,4 +809,159 @@ function handleHandoff() {
 
   console.log('[validator] Memory Handoff report matches protocol validation criteria.');
   process.exit(0);
+}
+
+function resolveHomePath(filePath) {
+  const os = require('os');
+  if (filePath.startsWith('~')) {
+    return path.join(os.homedir(), filePath.slice(1));
+  }
+  if (filePath.startsWith('$HOME')) {
+    return path.join(os.homedir(), filePath.slice(5));
+  }
+  return filePath;
+}
+
+function localizeGlobalSkills(repoRoot) {
+  const os = require('os');
+  const homeDir = os.homedir();
+  const globalSkillsDir = path.join(homeDir, '.gemini/config/skills');
+
+  if (!fs.existsSync(globalSkillsDir)) {
+    console.log('[init] Global skills directory does not exist, skipping GSD skill localization.');
+    return;
+  }
+
+  console.log('[init] Localizing global GSD skills...');
+  try {
+    const entries = fs.readdirSync(globalSkillsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory() && entry.name.startsWith('gsd-')) {
+        const skillSlug = entry.name;
+        const globalSkillPath = path.join(globalSkillsDir, skillSlug);
+        const globalSkillMdPath = path.join(globalSkillPath, 'SKILL.md');
+
+        if (!fs.existsSync(globalSkillMdPath)) {
+          continue;
+        }
+
+        const localAgentsSkillDir = path.join(repoRoot, '.agents/skills', skillSlug);
+        const localClaudeSkillDir = path.join(repoRoot, '.claude/skills', skillSlug);
+
+        const agentsExists = fs.existsSync(localAgentsSkillDir);
+        const claudeExists = fs.existsSync(localClaudeSkillDir);
+
+        if (agentsExists && claudeExists) {
+          console.log(`[init] Local skill folders for ${skillSlug} already exist, skipping.`);
+          continue;
+        }
+
+        let skillContent = fs.readFileSync(globalSkillMdPath, 'utf8');
+
+        // Extract referenced workflow/reference files in <execution_context>
+        const contextMatch = skillContent.match(/<execution_context>([\s\S]*?)<\/execution_context>/);
+        const referencedFiles = [];
+        if (contextMatch) {
+          const lines = contextMatch[1].split('\n');
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('@')) {
+              const rawPath = trimmed.slice(1).trim();
+              referencedFiles.push(rawPath);
+            }
+          }
+        }
+
+        const copiedFileMap = new Map();
+        for (const rawPath of referencedFiles) {
+          const absPath = resolveHomePath(rawPath);
+          if (fs.existsSync(absPath)) {
+            const isWorkflow = absPath.includes('/workflows/');
+            const subFolder = isWorkflow ? 'workflows' : 'references';
+            const fileName = path.basename(absPath);
+
+            if (!agentsExists) {
+              const destPath = path.join(localAgentsSkillDir, subFolder, fileName);
+              fs.mkdirSync(path.dirname(destPath), { recursive: true });
+              fs.copyFileSync(absPath, destPath);
+            }
+            if (!claudeExists) {
+              const destPath = path.join(localClaudeSkillDir, subFolder, fileName);
+              fs.mkdirSync(path.dirname(destPath), { recursive: true });
+              fs.copyFileSync(absPath, destPath);
+            }
+            copiedFileMap.set(rawPath, { subFolder, fileName });
+          } else {
+            console.warn(`[init] WARNING: Global context file not found: ${rawPath}`);
+          }
+        }
+
+        if (!agentsExists) {
+          fs.mkdirSync(localAgentsSkillDir, { recursive: true });
+          let localContent = skillContent;
+          if (contextMatch) {
+            let rewrittenBlock = contextMatch[1];
+            for (const [rawPath, info] of copiedFileMap.entries()) {
+              const relPath = `.agents/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
+              rewrittenBlock = rewrittenBlock.replace(rawPath, relPath);
+            }
+            localContent = skillContent.replace(contextMatch[1], rewrittenBlock);
+          }
+          fs.writeFileSync(path.join(localAgentsSkillDir, 'SKILL.md'), localContent, 'utf8');
+          console.log(`[init] Localized skill to .agents/skills/${skillSlug}`);
+        }
+
+        if (!claudeExists) {
+          fs.mkdirSync(localClaudeSkillDir, { recursive: true });
+          let localContent = skillContent;
+          if (contextMatch) {
+            let rewrittenBlock = contextMatch[1];
+            for (const [rawPath, info] of copiedFileMap.entries()) {
+              const relPath = `.claude/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
+              rewrittenBlock = rewrittenBlock.replace(rawPath, relPath);
+            }
+            localContent = skillContent.replace(contextMatch[1], rewrittenBlock);
+          }
+          fs.writeFileSync(path.join(localClaudeSkillDir, 'SKILL.md'), localContent, 'utf8');
+          console.log(`[init] Localized skill to .claude/skills/${skillSlug}`);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn(`[init] WARNING: Failed to localize global skills: ${e.message}`);
+  }
+}
+
+function appendSubagentGuidelines(repoRoot) {
+  const guidelinesBlock = `
+## Subagent & Parallel Execution Guidelines
+
+1. **Detect Independent Tasks:** Before starting execution, review the task list (e.g., \`tasks.md\`) to identify independent, non-sequential tasks.
+2. **Define Specialized Subagents:** For each independent task or sub-project, define a specialized subagent using the \`define_subagent\` tool.
+3. **Spawn in Parallel:** Invoke the defined subagents in parallel using the \`invoke_subagent\` tool to execute tasks concurrently.
+4. **Limit Context Size:** Do not pass large session logs or redundant context files to subagents. Keep their context focused and lightweight.
+5. **Coordinate & Wait:** Wait for all parallel subagents to complete before advancing to downstream tasks that depend on their outputs.
+`;
+
+  const files = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
+  for (const f of files) {
+    const filePath = path.join(repoRoot, f);
+    if (fs.existsSync(filePath)) {
+      try {
+        let content = fs.readFileSync(filePath, 'utf8');
+        if (!content.match(/##\s+Subagent\s+&\s+Parallel\s+Execution\s+Guidelines/i)) {
+          if (content && !content.endsWith('\n')) {
+            content += '\n';
+          }
+          content += guidelinesBlock.trim() + '\n';
+          fs.writeFileSync(filePath, content, 'utf8');
+          console.log(`[init] Appended subagent guidelines to ${f}`);
+        } else {
+          console.log(`[init] Subagent guidelines already present in ${f}, skipping.`);
+        }
+      } catch (e) {
+        console.warn(`[init] WARNING: Failed to update ${f} with subagent guidelines: ${e.message}`);
+      }
+    }
+  }
 }

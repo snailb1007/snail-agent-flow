@@ -1,0 +1,25 @@
+---
+name: gsd-ai-integration-phase
+description: "Generate an AI-SPEC.md design contract for phases that involve building AI systems."
+---
+
+<objective>
+Create an AI design contract (AI-SPEC.md) for a phase involving AI system development.
+Orchestrates gsd-framework-selector → gsd-ai-researcher → gsd-domain-researcher → gsd-eval-planner.
+Flow: Select Framework → Research Docs → Research Domain → Design Eval Strategy → Done
+</objective>
+
+<execution_context>
+@.agents/skills/gsd-ai-integration-phase/workflows/ai-integration-phase.md
+@.agents/skills/gsd-ai-integration-phase/references/ai-frameworks.md
+@.agents/skills/gsd-ai-integration-phase/references/ai-evals.md
+</execution_context>
+
+<context>
+Phase number: $ARGUMENTS — optional, auto-detects next unplanned phase if omitted.
+</context>
+
+<process>
+Execute end-to-end.
+Preserve all workflow gates.
+</process>

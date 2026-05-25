@@ -46,3 +46,10 @@ You are integrated with RTK (Rust Token Killer). When executing or reading outpu
 - Test Runners: Expect failed assertions only. Ignore truncated lines for passing suites.
 - File Tree/Operations: Recognize that boilerplate directories (node_modules, .git, target, target/debug) are hidden by default; do not re-run commands to find them unless explicitly requested.
 - Error logs: Focus strictly on the core stack trace signals; summary formats contain the complete execution diagnostic.
+## Subagent & Parallel Execution Guidelines
+
+1. **Detect Independent Tasks:** Before starting execution, review the task list (e.g., `tasks.md`) to identify independent, non-sequential tasks.
+2. **Define Specialized Subagents:** For each independent task or sub-project, define a specialized subagent using the `define_subagent` tool.
+3. **Spawn in Parallel:** Invoke the defined subagents in parallel using the `invoke_subagent` tool to execute tasks concurrently.
+4. **Limit Context Size:** Do not pass large session logs or redundant context files to subagents. Keep their context focused and lightweight.
+5. **Coordinate & Wait:** Wait for all parallel subagents to complete before advancing to downstream tasks that depend on their outputs.

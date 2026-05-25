@@ -135,8 +135,8 @@ addTest('CLI Init Command', () => {
   if (res2.code !== 0) {
     throw new Error(`Expected exit code 0 on second init, got ${res2.code}`);
   }
-  if (readFile('CLAUDE.md') !== 'Custom CLAUDE') {
-    throw new Error('Safe creation failed: custom CLAUDE.md was overwritten!');
+  if (!readFile('CLAUDE.md').startsWith('Custom CLAUDE')) {
+    throw new Error('Safe creation failed: custom CLAUDE.md was overwritten or prefix lost!');
   }
 });
 
@@ -991,6 +991,115 @@ stages:
   const output = res.stdout + (res.stderr || '');
   if (!output.includes('MissingTool') || !output.includes('MISSING')) {
     throw new Error(`Expected output to mention missing prerequisite 'MissingTool', got: ${output}`);
+  }
+});
+
+// 18. Dynamic skill localization and subagent guidelines appending
+addTest('CLI Init Localizes Skills and Appends Guidelines', () => {
+  setupSandbox();
+
+  const mockHome = path.join(testSandboxRoot, 'mock-home');
+  const mockGlobalSkillsDir = path.join(mockHome, '.gemini/config/skills');
+  const mockGlobalAntigravityDir = path.join(mockHome, '.gemini/antigravity');
+
+  // Create mock global directories
+  fs.mkdirSync(mockGlobalSkillsDir, { recursive: true });
+  fs.mkdirSync(path.join(mockGlobalSkillsDir, 'gsd-test-skill'), { recursive: true });
+  fs.mkdirSync(path.join(mockGlobalAntigravityDir, 'get-shit-done/workflows'), { recursive: true });
+  fs.mkdirSync(path.join(mockGlobalAntigravityDir, 'get-shit-done/references'), { recursive: true });
+
+  // Create mock global files
+  const mockSkillMd = `---
+name: gsd-test-skill
+description: "Test description"
+---
+<execution_context>
+@~/.gemini/antigravity/get-shit-done/workflows/test-workflow.md
+@~/.gemini/antigravity/get-shit-done/references/test-ref.md
+</execution_context>
+`;
+  fs.writeFileSync(path.join(mockGlobalSkillsDir, 'gsd-test-skill/SKILL.md'), mockSkillMd, 'utf8');
+  fs.writeFileSync(path.join(mockGlobalAntigravityDir, 'get-shit-done/workflows/test-workflow.md'), '# Mock Workflow', 'utf8');
+  fs.writeFileSync(path.join(mockGlobalAntigravityDir, 'get-shit-done/references/test-ref.md'), '# Mock Reference', 'utf8');
+
+  // Pre-create instruction files in sandbox to verify guidelines appending
+  writeFile('CLAUDE.md', '# CLAUDE.md\n');
+  writeFile('GEMINI.md', '# GEMINI.md\n');
+  writeFile('AGENTS.md', '# AGENTS.md\n');
+
+  // Run init with custom HOME environment variable
+  const result = spawnSync('node', [cliScriptPath, 'init'], {
+    env: {
+      ...process.env,
+      PROJECT_ROOT: testSandboxRoot,
+      REPO_ROOT: testSandboxRoot,
+      HOME: mockHome
+    },
+    encoding: 'utf8'
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`Init command failed in test: ${result.stderr}`);
+  }
+
+  // Assert local skill folder and files are copied
+  const localSkillDir = '.agents/skills/gsd-test-skill';
+  const localClaudeSkillDir = '.claude/skills/gsd-test-skill';
+
+  if (!fileExists(`${localSkillDir}/SKILL.md`)) {
+    throw new Error('Local SKILL.md not copied to .agents/skills');
+  }
+  if (!fileExists(`${localClaudeSkillDir}/SKILL.md`)) {
+    throw new Error('Local SKILL.md not copied to .claude/skills');
+  }
+
+  // Assert workflows and references are copied
+  if (!fileExists(`${localSkillDir}/workflows/test-workflow.md`)) {
+    throw new Error('Workflow file not copied locally');
+  }
+  if (!fileExists(`${localSkillDir}/references/test-ref.md`)) {
+    throw new Error('Reference file not copied locally');
+  }
+
+  // Assert local SKILL.md content has rewritten paths
+  const localSkillContent = readFile(`${localSkillDir}/SKILL.md`);
+  if (!localSkillContent.includes('@.agents/skills/gsd-test-skill/workflows/test-workflow.md')) {
+    throw new Error(`Path not rewritten in .agents SKILL.md: ${localSkillContent}`);
+  }
+
+  const localClaudeSkillContent = readFile(`${localClaudeSkillDir}/SKILL.md`);
+  if (!localClaudeSkillContent.includes('@.claude/skills/gsd-test-skill/workflows/test-workflow.md')) {
+    throw new Error(`Path not rewritten in .claude SKILL.md: ${localClaudeSkillContent}`);
+  }
+
+  // Assert guidelines are appended to instruction files
+  for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
+    const content = readFile(f);
+    if (!content.includes('Subagent & Parallel Execution Guidelines')) {
+      throw new Error(`Guidelines not appended to ${f}: ${content}`);
+    }
+  }
+
+  // Running init again (brownfield) should not append duplicate guidelines
+  const result2 = spawnSync('node', [cliScriptPath, 'init'], {
+    env: {
+      ...process.env,
+      PROJECT_ROOT: testSandboxRoot,
+      REPO_ROOT: testSandboxRoot,
+      HOME: mockHome
+    },
+    encoding: 'utf8'
+  });
+
+  if (result2.status !== 0) {
+    throw new Error(`Second init command failed: ${result2.stderr}`);
+  }
+
+  // Check instruction files content to verify no duplicate guidelines
+  const claudeContent = readFile('CLAUDE.md');
+  const occurrences = (claudeContent.match(/Subagent & Parallel Execution Guidelines/g) || []).length;
+  if (occurrences !== 1) {
+    throw new Error(`Expected guidelines to appear exactly once in CLAUDE.md, got ${occurrences}`);
   }
 });
 

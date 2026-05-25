@@ -1,78 +1,66 @@
-# Phase 14: Improve AI for spawn subagent support - Context
+# Phase 14: Improve AI for Spawn Subagent Support — Context
 
-**Gathered:** 2026-05-26
-**Status:** Ready for planning
+**Date:** 2026-05-26
+**Phase:** 14-improve-ai-for-spawn-subagent-support
+**Requirements:** SUB-01, SUB-02, SUB-03, SUB-04
 
-<domain>
-## Phase Boundary
+## Decisions
 
-Enable the AI agent client to successfully parse GSD workflows without permission denied sandbox errors, and instruct it to spawn subagents for parallel task execution.
+### D-14-01: Dynamic Discovery and Workspace Localization of Skills
+We will extend the `adp init` command to dynamically discover and localize global skill contexts.
+- **Global Discovery:** The CLI will resolve the user's home directory config path (specifically `~/.gemini/config/skills/` where GSD skills are installed) using `os.homedir()`.
+- **Parsing and Copying:** It will scan this directory for all `gsd-*` folders. For each folder:
+  - It reads `SKILL.md` and extracts paths starting with `~` or referencing `.gemini/antigravity` in `<execution_context>` blocks.
+  - It copies those referenced workflow/reference markdown files from their global locations into the local workspace under `.agents/skills/<skill-slug>/workflows/` and `.agents/skills/<skill-slug>/references/`.
+  - It creates/updates `.agents/skills/<skill-slug>/SKILL.md` (and also `.claude/skills/<skill-slug>/SKILL.md` for Claude parity).
+  - It rewrites the `<execution_context>` lines in these local `SKILL.md` files to use workspace-relative paths (e.g. `@.agents/skills/<skill-slug>/workflows/` instead of `@~/.gemini/antigravity/...`).
+- **Safe Overwrite Policy:** If the local files already exist, the CLI will skip them to protect custom modifications, matching the existing project brownfield policy.
 
-</domain>
+**Rationale:** The AI sandboxing boundaries prevent the agent client from reading files outside the workspace (such as in `~/.gemini/antigravity`), which throws `Permission denied` errors during GSD skill loading. Localizing these files into the workspace allows sandboxed agents to load and parse them successfully.
 
-<decisions>
-## Implementation Decisions
+### D-14-02: Subagent & Parallel Execution Guidelines in Instruction Files
+We will update `adp init` to append subagent rules to the default instructions.
+- If `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md` are generated or updated during `init`, they will include a dedicated `## Subagent & Parallel Execution Guidelines` section.
+- If these files already exist, the initialization step will check if the section is present, and append it to the end of the file if missing.
+- **Rules included:**
+  1. Detect independent/non-sequential tasks in `tasks.md` before execution.
+  2. Define specialized subagents using the `define_subagent` tool.
+  3. Invoke subagents in parallel using the `invoke_subagent` tool.
+  4. Restrict subagent context (do not pass full session logs) to keep tokens low and avoid context fragmentation.
+  5. Wait for subagent completion before advancing to downstream tasks.
 
-### Localization of GSD Workflow Assets
-- **D-01:** Copy GSD workflows and reference files locally to the workspace under `.agents/skills/<skill-name>/workflows/` and `.agents/skills/<skill-name>/references/` during project initialization (`adp init`). Local stubs under `.claude/skills/...` will also be kept in sync.
+**Rationale:** Runtimes often default to sequential inline execution to conserve tokens unless they are explicitly instructed to use their parallel spawning capabilities. Formalizing these rules in `*.md` files ensures they are loaded into the agent's system prompt on startup.
 
-### Workspace-Relative Path Resolution
-- **D-02:** Use workspace-relative paths starting with `@.agents/skills/` in the `<execution_context>` blocks of the local skill `SKILL.md` files so that the AI client can resolve them without sandbox path permission security boundaries.
+### D-14-03: Claude Code parity for local skills
+We will ensure that all dynamic localizations write to both `.agents/skills/` and `.claude/skills/`.
+- Both directories are supported by this repository's prerequisite checks and doctor script.
+- Writing to both ensures parity regardless of whether the user is executing the flow via Gemini Agent or Claude Code.
 
-### Default Instruction Guidelines for Subagents
-- **D-03:** Append a new section `## Subagent & Parallel Execution Guidelines` directly to the adapter files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) during `adp init` and template rendering to guide the agent in spawning subagents for independent task lists.
+**Rationale:** ADAPT-03 requires maintaining runtime neutrality and parity across different AI agent clients.
 
-### Verification Strategy
-- **D-04:** Add a verification check to `validators/scripts/test-cli.js` asserting that the GSD workflows and reference files are correctly localized during `adp init`, and that paths in the local `SKILL.md` stubs are properly formatted.
+### D-14-04: Test Coverage & Sandbox Simulation
+We will update `validators/scripts/test-cli.js` to simulate this behavior.
+- We will mock a global skill folder and some mock workflow files in the home directory path during testing.
+- The test sandbox will assert that running `adp init` copies the mock workflows and generates rewritten relative-context `SKILL.md` files correctly.
 
-### the agent's Discretion
-- The implementation of the exact layout of `.agents/skills/` folders, how copy errors are handled, and how the subagent guidelines text is formatted.
+**Rationale:** Deterministic validator tests are a hard requirement (CLI-03, VERIFY-02) before code changes are merged.
 
-</decisions>
+## Assumptions
 
-<canonical_refs>
-## Canonical References
+- The CLI runs outside the AI sandbox with full read/write permission to the user's home directory.
+- `~/.gemini/config/skills/` is the standard path where GSD skills are registered on the user's host system.
+- `~/.gemini/antigravity/` is the standard path where global get-shit-done workflows and references reside.
 
-**Downstream agents MUST read these before planning or implementing.**
+## Constraints
 
-### Strategy and Planning
-- `.planning/notes/subagent-spawning-strategy.md` — The core spawning and sandbox path strategy.
-- `.planning/ROADMAP.md` — Roadmap defining goals and phase dependencies.
-- `.planning/REQUIREMENTS.md` — Requirement specifications for SUB-01 to SUB-04.
+- Files copied to the workspace will be checked into the project's repository. While this increases the workspace file count, it is required so that subsequent agent invocations have access to the workflows.
+- Dynamic rewrite must parse the `<execution_context>` blocks accurately using simple regex or split operations, handling whitespace and comments defensively.
 
-</canonical_refs>
+## Open Questions
 
-<code_context>
-## Existing Code Insights
+None. All options resolved using recommended patterns.
 
-### Reusable Assets
-- `bin/adp.js` `handleInit()` — The initialization logic where we can copy files and append guidelines.
+## Dependencies
 
-### Established Patterns
-- Copying templates from package to workspace on initialization.
-- Default instruction file structure (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`).
-
-### Integration Points
-- `bin/adp.js` `handleInit()` — Entry point for file copying.
-- `validators/scripts/test-cli.js` — Verification entry point.
-
-</code_context>
-
-<specifics>
-## Specific Ideas
-
-- No specific requirements — open to standard approaches
-
-</specifics>
-
-<deferred>
-## Deferred Ideas
-
-- None — discussion stayed within phase scope
-
-</deferred>
-
----
-
-*Phase: 14-improve-ai-for-spawn-subagent-support*
-*Context gathered: 2026-05-26*
+- Phase 9: CLI `adp init` command structure (complete).
+- Phase 12: `lib/tool-validator.js` and prerequisite checks (complete).

@@ -1,6 +1,6 @@
 {
-  "feature_slug": "011-prerequisite-tool-checker-installation",
-  "spec_path": "specs/011-prerequisite-tool-checker-installation/",
+  "feature_slug": "015-014-improve-ai-spawn",
+  "spec_path": "specs/015-014-improve-ai-spawn/",
   "current_phase": "Complete",
   "last_gate": "Spec-Validation",
   "consecutive_failures": 0,
@@ -8,7 +8,7 @@
   "last_failed_step": null,
   "last_failed_rule": null,
   "last_validator_output": null,
-  "updated_at": "2026-05-25T08:55:56.421Z",
+  "updated_at": "2026-05-25T17:45:42.201Z",
   "last_gate_status": "PASS",
   "verified_artifacts": []
 }
