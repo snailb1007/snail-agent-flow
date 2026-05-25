@@ -35,6 +35,7 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 - [ ] Implement deterministic artifact gate enforcement with circuit breaker behavior.
 - [ ] Add a flow validator for definition syntax, ledger consistency, and gate status.
 - [ ] Add tests covering flow lifecycle: normal completion, revision routing, gate blocking, brownfield merge.
+- [ ] Warn or guide installation of required tools to use skills if the user lacks them.
 
 ### Out of Scope
 

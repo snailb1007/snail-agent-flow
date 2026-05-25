@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: flow-engine
 status: active
-last_updated: "2026-05-25T01:10:00.000Z"
+last_updated: "2026-05-25T01:50:00.000Z"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 1
   total_plans: 1
   completed_plans: 1
-  percent: 20
+  percent: 17
 ---
 
 # Project State
@@ -66,8 +66,8 @@ Primary requirements:
 - CLI tests, validator tests, pipeline tests all passing.
 
 ### v2.0 (Active)
-- v2 requirements defined: 20 total, 5 categories (FLOW, INIT, ENGINE, GATE, FVALID).
-- Roadmap phases 8-12 defined with success criteria.
+- v2 requirements defined: 24 total, 6 categories (FLOW, INIT, ENGINE, GATE, WARN, FVALID).
+- Roadmap phases 8-13 defined with success criteria.
 - Phase 8: Flow Definition Format and Built-in Flow completed and verified.
 
 ## Next Action

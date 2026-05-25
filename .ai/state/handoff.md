@@ -1,22 +1,18 @@
 # Memory Handoff Report
 
-## Session
-2026-05-25-008-flow-definition-format-built
+- **Feature**: 009-flow-initialization-ledger
+- **Date**: 2026-05-25
 
 ## Promoted to project memory
-- Declarative flow definitions are written in YAML and stored under `.ai/flows/` in the target project.
-- A custom, zero-dependency YAML parser is implemented in `lib/yaml-parser.js` to parse YAML configurations in light runtimes.
-- Prerequisite tool availability is checked using the `validatePrerequisites` function in `lib/tool-validator.js`, which checks skill folders in `.agents/skills/`, `.claude/skills/`, and `~/.gemini/config/skills/`, with PATH checks as a fallback.
+Successfully implemented the Flow Initialization and Ledger State feature. The `adp init` command now copies the canonical flow definition to `.ai/flows/`, generates a `flow-ledger.json` state file from the parsed YAML, and scaffolds a `project-flow` SKILL.md stub. Brownfield re-init safely skips existing files.
 
 ## Architecture updated
-- Created `lib/yaml-parser.js` for lightweight line-by-line configuration parsing.
-- Created `lib/tool-validator.js` for checking prerequisite skills and commands.
-- Configured `.specify/templates/rough-project-flow.yaml` to specify the 10-stage ledger.
-- Configured `.specify/templates/custom-flow-example.yaml` as a reference for custom flows.
-
-## Known risks updated
-- Simple YAML parser: Anchors, aliases, or advanced nested YAML syntax are not supported. If a custom flow fails to parse, it must be simplified to basic indented lists and key-values.
+- Extended `handleInit()` in `bin/adp.js` with flow definition copy, ledger generation, and SKILL.md stub creation.
+- Added `lib/flow-ledger.js` for creating ledger state from parsed flow definitions.
+- Added `.specify/templates/project-flow-skill-template.md` as the SKILL.md source template.
+- Integrated the YAML parser (`lib/yaml-parser.js`) from Phase 08 to drive ledger generation.
 
 ## Verification promoted
-- Added unit tests in `validators/scripts/test-flow-parser.js`.
-- Linked tests to `npm test` script in `package.json`.
+- Added 4 new CLI tests covering greenfield init, brownfield skip, ledger schema validation, and YAML parse failure handling.
+- Added `validators/scripts/test-flow-parser.js` with 7 unit tests for the flow parser.
+- All verification suites pass: `npm run test:cli` (19/19), `npm run test:validator` (15/15), `npm run test:pipeline` (8/8).
