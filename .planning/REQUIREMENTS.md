@@ -104,6 +104,13 @@ Requirements for the Flow Engine milestone. Packages the rough-project-flow ledg
 - [ ] **FVALID-03**: Validate that the flow definition references only known skill names or commands.
 - [ ] **FVALID-04**: Add tests for the flow validator covering happy path, gate failures, revision loops, and corruption detection.
 
+### Subagent Spawning Support
+
+- [ ] **SUB-01**: Copy GSD workflows and reference files locally to the workspace under `.agents/skills/` during project initialization (`adp init`) to bypass Sandbox path security restrictions.
+- [ ] **SUB-02**: Update local skill definitions (e.g. `gsd-execute-phase/SKILL.md` and `gsd-explore/SKILL.md`) to resolve their execution contexts using workspace-local relative paths.
+- [ ] **SUB-03**: Define explicit subagent and parallel execution guidelines in default instruction files (`CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`) directing the agent to spawn subagents for independent task lists.
+- [ ] **SUB-04**: Verify that local skill file reading and subagent spawning work correctly in a simulated sandbox environment without throwing permission errors.
+
 ## v3 Requirements (Deferred)
 
 - **MULTI-01**: Support multiple concurrent flows per project (e.g., feature A at execution while feature B at spec stage).
@@ -142,12 +149,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GATE-01 – GATE-04 | Phase 11 (v2) | Completed |
 | WARN-01 – WARN-04 | Phase 12 (v2) | Completed |
 | FVALID-01 – FVALID-04 | Phase 13 (v2) | Pending |
+| SUB-01 – SUB-04 | Phase 14 (v2) | Pending |
 
 **Coverage:**
 - v1 requirements: 28 total, 28 completed
-- v2 requirements: 24 total, 20 completed
+- v2 requirements: 28 total, 20 completed
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-24*
-*Last updated: 2026-05-25 — v2 Flow Engine milestone added*
+*Last updated: 2026-05-26 — Phase 14 subagent support added*

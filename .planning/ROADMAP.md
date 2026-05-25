@@ -225,8 +225,8 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 
 ### Phase 14: Improve AI for spawn subagent support
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Enable the AI agent client to successfully parse GSD workflows without permission denied sandbox errors, and instruct it to spawn subagents for parallel task execution.
+**Requirements:** SUB-01, SUB-02, SUB-03, SUB-04
 **Depends on:** Phase 13
 **Plans:** 0 plans
 
@@ -235,4 +235,4 @@ Plans:
 
 ---
 *Roadmap defined: 2026-05-24*
-*Last updated: 2026-05-25 — v2.0 Flow Engine milestone added*
+*Last updated: 2026-05-26 — Phase 14 subagent support added*
