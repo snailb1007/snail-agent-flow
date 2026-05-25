@@ -755,6 +755,9 @@ addTest('CLI Init Creates Flow Infrastructure (Greenfield)', () => {
   if (!fileExists('.agents/skills/project-flow/SKILL.md')) {
     throw new Error('Expected .agents/skills/project-flow/SKILL.md to be created');
   }
+  if (!fileExists('.claude/skills/project-flow/SKILL.md')) {
+    throw new Error('Expected .claude/skills/project-flow/SKILL.md to be created');
+  }
 
   // Verify SKILL.md has correct frontmatter
   const skillContent = readFile('.agents/skills/project-flow/SKILL.md');
@@ -763,6 +766,11 @@ addTest('CLI Init Creates Flow Infrastructure (Greenfield)', () => {
   }
   if (!skillContent.includes('description:')) {
     throw new Error('Expected SKILL.md to contain "description:" in frontmatter');
+  }
+
+  const claudeSkillContent = readFile('.claude/skills/project-flow/SKILL.md');
+  if (!claudeSkillContent.includes('name: project-flow')) {
+    throw new Error('Expected Claude SKILL.md to contain "name: project-flow" in frontmatter');
   }
 
   // Verify init output mentions flow files
@@ -786,6 +794,8 @@ addTest('CLI Init Skips Existing Flow Files (Brownfield)', () => {
   writeFile('.ai/state/flow-ledger.json', '{"custom": true}');
   fs.mkdirSync(path.join(testSandboxRoot, '.agents/skills/project-flow'), { recursive: true });
   writeFile('.agents/skills/project-flow/SKILL.md', 'custom-skill-content');
+  fs.mkdirSync(path.join(testSandboxRoot, '.claude/skills/project-flow'), { recursive: true });
+  writeFile('.claude/skills/project-flow/SKILL.md', 'custom-claude-skill-content');
 
   const res = runCLI(['init']);
   if (res.code !== 0) {
@@ -801,6 +811,9 @@ addTest('CLI Init Skips Existing Flow Files (Brownfield)', () => {
   }
   if (readFile('.agents/skills/project-flow/SKILL.md') !== 'custom-skill-content') {
     throw new Error('Brownfield SKILL.md was overwritten!');
+  }
+  if (readFile('.claude/skills/project-flow/SKILL.md') !== 'custom-claude-skill-content') {
+    throw new Error('Brownfield Claude SKILL.md was overwritten!');
   }
 
   // Verify skip messages in output

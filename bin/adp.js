@@ -211,6 +211,19 @@ function handleInit() {
     console.log('[init] .agents/skills/project-flow/SKILL.md already exists, skipping.');
   }
 
+  // Also initialize for Claude Code if needed
+  const claudeSkillDir = path.join(repoRoot, '.claude/skills/project-flow');
+  const claudeSkillPath = path.join(claudeSkillDir, 'SKILL.md');
+  if (!fs.existsSync(claudeSkillPath)) {
+    if (fs.existsSync(skillTemplatePath)) {
+      fs.mkdirSync(claudeSkillDir, { recursive: true });
+      fs.copyFileSync(skillTemplatePath, claudeSkillPath);
+      console.log('[init] Created .claude/skills/project-flow/SKILL.md (copied from template)');
+    }
+  } else {
+    console.log('[init] .claude/skills/project-flow/SKILL.md already exists, skipping.');
+  }
+
   console.log('[init] Initialization complete.');
 }
 
