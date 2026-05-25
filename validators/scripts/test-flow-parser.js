@@ -101,22 +101,54 @@ key2: value2
 });
 
 // 2. Tool Validator Tests
-test('validatePrerequisites - workspace directories and system PATH', () => {
-  // We check adp command which should be installed/mocked or use nodes
+test('validatePrerequisites - directory slug derives from command, not name', () => {
+  // `speckit-specify` exists at .agents/skills/speckit-specify in this repo.
+  // The alias `Spec-Kit` must NOT be used as the directory key.
   const prereqs = [
-    { name: 'Spec-Kit', command: 'node bin/adp.js status' }
+    { name: 'Spec-Kit', command: 'speckit-specify' }
   ];
-  
   const results = validatePrerequisites(prereqs, repoRoot);
   assert.strictEqual(results.length, 1);
-  assert.strictEqual(results[0].name, 'Spec-Kit');
-  // It should be available since the skill speckit-specify is in the workspace
   assert.strictEqual(results[0].available, true);
+});
+
+test('validatePrerequisites - alias dir does NOT satisfy missing real skill (P1 regression)', () => {
+  // Simulate: only the alias dir exists, the real stage command does not.
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'prereq-p1-'));
+  fs.mkdirSync(path.join(tmp, '.agents/skills/gsd'), { recursive: true });
+
+  const prereqs = [
+    { name: 'GSD', command: 'gsd-discuss-phase-definitely-not-on-path-xyz' }
+  ];
+  const results = validatePrerequisites(prereqs, tmp);
+  assert.strictEqual(results[0].available, false,
+    'alias-only directory must not mark prerequisite available');
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('validatePrerequisites - check command runs with cwd=repoRoot (P2 regression)', () => {
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'prereq-p2-'));
+  fs.mkdirSync(path.join(tmp, '.agents/skills/some-tool'), { recursive: true });
+
+  const originalCwd = process.cwd();
+  // Change CWD to somewhere that has no .agents folder.
+  process.chdir(require('os').tmpdir());
+  try {
+    const prereqs = [
+      { name: 'SomeTool', check: 'test -d .agents/skills/some-tool' }
+    ];
+    const results = validatePrerequisites(prereqs, tmp);
+    assert.strictEqual(results[0].available, true,
+      'check command should resolve relative paths against repoRoot, not process.cwd()');
+  } finally {
+    process.chdir(originalCwd);
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('validatePrerequisites - missing tool reporting', () => {
   const prereqs = [
-    { name: 'NonExistentToolForTesting', command: 'nonexistent-command-that-fails' }
+    { name: 'NonExistentToolForTesting', command: 'nonexistent-command-that-fails-xyz' }
   ];
 
   const results = validatePrerequisites(prereqs, repoRoot);

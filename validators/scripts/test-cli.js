@@ -12,7 +12,7 @@ function setupSandbox() {
   fs.mkdirSync(testSandboxRoot, { recursive: true });
 
   // Pre-create mock skill folders to satisfy prerequisite checks in tests
-  const skills = ['gsd', 'superpowers', 'spec-kit', 'gstack'];
+  const skills = ['gsd-discuss-phase', 'using-superpowers', 'speckit-specify', 'plan-ceo-review'];
   for (const s of skills) {
     fs.mkdirSync(path.join(testSandboxRoot, '.agents/skills', s), { recursive: true });
   }
@@ -497,7 +497,7 @@ addTest('Greenfield Project Fixture Integration', () => {
   fs.mkdirSync(greenfieldSandbox, { recursive: true });
 
   // Pre-create mock skill folders to satisfy prerequisites in greenfield sandbox
-  const skills = ['gsd', 'superpowers', 'spec-kit', 'gstack'];
+  const skills = ['gsd-discuss-phase', 'using-superpowers', 'speckit-specify', 'plan-ceo-review'];
   for (const s of skills) {
     fs.mkdirSync(path.join(greenfieldSandbox, '.agents/skills', s), { recursive: true });
   }
@@ -567,7 +567,7 @@ addTest('Brownfield Project Fixture Integration', () => {
   fs.mkdirSync(brownfieldSandbox, { recursive: true });
 
   // Pre-create mock skill folders to satisfy prerequisites in brownfield sandbox
-  const skills = ['gsd', 'superpowers', 'spec-kit', 'gstack'];
+  const skills = ['gsd-discuss-phase', 'using-superpowers', 'speckit-specify', 'plan-ceo-review'];
   for (const s of skills) {
     fs.mkdirSync(path.join(brownfieldSandbox, '.agents/skills', s), { recursive: true });
   }
