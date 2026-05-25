@@ -73,6 +73,13 @@ Primary requirements:
 - Phases 8-11: Completed and verified in PR #44.
 - Phase 12: Prerequisite Tool Checker and Installation Guide completed and verified.
 
+## Quick Tasks Completed
+
+| Slug | Date | Description |
+|---|---|---|
+| `phase12-prereq-validator-fixes` | 2026-05-25 | Fix alias directory and spawnSync cwd bugs in tool-validator. |
+| `update-readme-install-instructions` | 2026-05-25 | Add installation and CLI linking instructions to README.md. |
+
 ## Next Action
 
 Begin Phase 13 — discuss flow validator and tests.

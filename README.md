@@ -2,8 +2,38 @@
 
 Snail Agent Flow is a local operating protocol for AI coding agents. It keeps feature specs, planning artifacts, validation gates, sessions, reviews, and durable memory in predictable paths so agents can move from spec to implementation to release without inventing parallel state.
 
-## CLI
+## Installation
 
+To set up Snail Agent Flow locally:
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd snail-agent-flow
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Register the CLI commands globally**:
+   Make the `adp` and `saf` CLI commands available anywhere on your system by linking the package:
+   ```bash
+   npm link
+   ```
+   *Alternatively, install globally from the local path:*
+   ```bash
+   npm install -g .
+   ```
+
+4. **Verify the installation**:
+   Run the project doctor to verify that required directory structures and tool dependencies are present:
+   ```bash
+   saf doctor
+   ```
+
+## CLI
 The package exposes the same local CLI through two command names:
 
 ```bash
