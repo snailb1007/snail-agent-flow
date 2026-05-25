@@ -10,6 +10,12 @@ function setupSandbox() {
     fs.rmSync(testSandboxRoot, { recursive: true, force: true });
   }
   fs.mkdirSync(testSandboxRoot, { recursive: true });
+
+  // Pre-create mock skill folders to satisfy prerequisite checks in tests
+  const skills = ['gsd-discuss-phase', 'using-superpowers', 'speckit-specify', 'plan-ceo-review'];
+  for (const s of skills) {
+    fs.mkdirSync(path.join(testSandboxRoot, '.agents/skills', s), { recursive: true });
+  }
 }
 
 function cleanupSandbox() {
@@ -490,6 +496,12 @@ addTest('Greenfield Project Fixture Integration', () => {
   }
   fs.mkdirSync(greenfieldSandbox, { recursive: true });
 
+  // Pre-create mock skill folders to satisfy prerequisites in greenfield sandbox
+  const skills = ['gsd-discuss-phase', 'using-superpowers', 'speckit-specify', 'plan-ceo-review'];
+  for (const s of skills) {
+    fs.mkdirSync(path.join(greenfieldSandbox, '.agents/skills', s), { recursive: true });
+  }
+
   // Copy mock package.json from fixture
   const fixturePkg = path.resolve(__dirname, '../../.specify/fixtures/greenfield-project/package.json');
   fs.copyFileSync(fixturePkg, path.join(greenfieldSandbox, 'package.json'));
@@ -553,6 +565,12 @@ addTest('Brownfield Project Fixture Integration', () => {
     fs.rmSync(brownfieldSandbox, { recursive: true, force: true });
   }
   fs.mkdirSync(brownfieldSandbox, { recursive: true });
+
+  // Pre-create mock skill folders to satisfy prerequisites in brownfield sandbox
+  const skills = ['gsd-discuss-phase', 'using-superpowers', 'speckit-specify', 'plan-ceo-review'];
+  for (const s of skills) {
+    fs.mkdirSync(path.join(brownfieldSandbox, '.agents/skills', s), { recursive: true });
+  }
 
   // Copy package.json, README.md, and src/index.js from brownfield fixture
   const fixtureDir = path.resolve(__dirname, '../../.specify/fixtures/brownfield-project');
@@ -912,6 +930,54 @@ addTest('CLI Init Handles YAML Parse Failure Gracefully', () => {
   }
   if (!fileExists('.ai/sessions')) {
     throw new Error('Expected .ai/sessions to be created even when YAML parse fails');
+  }
+});
+
+// 17. Prerequisite checking doctor test
+addTest('CLI Doctor Reports Missing Prerequisites and Exits 1', () => {
+  setupSandbox();
+
+  // Run init first to scaffold directories and files
+  let res = runCLI(['init']);
+  if (res.code !== 0) {
+    throw new Error('Init failed during prerequisite integration test setup');
+  }
+
+  // Pre-create spec/plan/tasks files so that the static validation passes
+  writeJson('.specify/feature.json', { feature_directory: 'specs/001-test' });
+  fs.mkdirSync(path.join(testSandboxRoot, 'specs/001-test/checklists'), { recursive: true });
+  fs.writeFileSync(path.join(testSandboxRoot, 'specs/001-test/spec.md'), '# Test\n## Goal\nTest.\n## Acceptance Criteria\n- AC1\n## Test Strategy\nManual.\n## Behavior-Preservation Rules\nNone.\n', 'utf8');
+  fs.writeFileSync(path.join(testSandboxRoot, 'specs/001-test/plan.md'), '# Plan\n## Proposed Changes\n- Change.\n## Verification Plan\n- Verify.\n', 'utf8');
+  fs.writeFileSync(path.join(testSandboxRoot, 'specs/001-test/tasks.md'), '# Tasks\n- [ ] Task\n', 'utf8');
+  fs.writeFileSync(path.join(testSandboxRoot, 'specs/001-test/checklists/requirements.md'), '# Checklist\n- [x] Done\n', 'utf8');
+
+  // Modify .ai/flows/rough-project-flow.yaml to inject a missing prerequisite
+  const flowPath = path.join(testSandboxRoot, '.ai/flows/rough-project-flow.yaml');
+  const badFlow = `
+name: bad-flow
+version: 1.0.0
+prerequisites:
+  - name: MissingTool
+    command: nonexistent-command-123
+    check: command -v nonexistent-command-123
+stages:
+  - id: decision_discovery
+    name: Decision discovery
+    skill: gsd-discuss-phase
+    required_artifacts: []
+`;
+  fs.writeFileSync(flowPath, badFlow, 'utf8');
+
+  // Run doctor
+  res = runCLI(['doctor']);
+  
+  if (res.code !== 1) {
+    throw new Error(`Expected exit code 1 when prerequisite is missing, got ${res.code}`);
+  }
+
+  const output = res.stdout + (res.stderr || '');
+  if (!output.includes('MissingTool') || !output.includes('MISSING')) {
+    throw new Error(`Expected output to mention missing prerequisite 'MissingTool', got: ${output}`);
   }
 });
 
