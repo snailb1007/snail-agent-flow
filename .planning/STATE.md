@@ -85,6 +85,7 @@ Primary requirements:
 | `phase12-prereq-validator-fixes` | 2026-05-25 | Fix alias directory and spawnSync cwd bugs in tool-validator. |
 | `update-readme-install-instructions` | 2026-05-25 | Add installation and CLI linking instructions to README.md. |
 | `claude-code-project-flow-skill` | 2026-05-25 | Fix visibility of project-flow skill in Claude Code by copying/init to .claude/skills. |
+| `260527-152-update-readme` | 2026-05-26 | Sync README with v0.4.0.0 — expanded `init` description, added `test:init-checks`, added `lib/` and `.ai/flows/` to project structure (commit c58dd92). |
 
 ## Next Action
 
