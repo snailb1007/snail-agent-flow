@@ -797,7 +797,9 @@ addTest('CLI Init Skips Existing Flow Files (Brownfield)', () => {
   fs.mkdirSync(path.join(testSandboxRoot, '.claude/skills/project-flow'), { recursive: true });
   writeFile('.claude/skills/project-flow/SKILL.md', 'custom-claude-skill-content');
 
+  process.env.ADP_NO_STRICT = '1';
   const res = runCLI(['init']);
+  delete process.env.ADP_NO_STRICT;
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on brownfield init, got ${res.code}. Stderr: ${res.stderr}`);
   }
@@ -919,7 +921,9 @@ addTest('CLI Init Handles YAML Parse Failure Gracefully', () => {
   // Remove the ledger so init tries to generate it from the invalid YAML
   // The .ai/state dir will be created by init
 
+  process.env.ADP_NO_STRICT = '1';
   const res = runCLI(['init']);
+  delete process.env.ADP_NO_STRICT;
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on init with invalid YAML, got ${res.code}. Stderr: ${res.stderr}`);
   }
@@ -976,7 +980,7 @@ prerequisites:
 stages:
   - id: decision_discovery
     name: Decision discovery
-    skill: gsd-discuss-phase
+    skill: MissingTool
     required_artifacts: []
 `;
   fs.writeFileSync(flowPath, badFlow, 'utf8');
