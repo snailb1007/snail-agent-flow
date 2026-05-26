@@ -88,7 +88,7 @@ You are integrated with RTK (Rust Token Killer). When executing or reading outpu
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **snail-agent-flow** (1017 symbols, 1096 relationships, 2 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **snail-agent-flow** (1206 symbols, 1300 relationships, 2 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

@@ -23,8 +23,9 @@
   },
   "scripts": {
     "validate": "node validators/scripts/validate-spec.js",
-    "test": "npm run validate && npm run test:validator && npm run test:pipeline && npm run test:cli && node validators/scripts/test-flow-parser.js && node validators/scripts/test-flow-engine.js",
+    "test": "npm run validate && npm run test:validator && npm run test:init-checks && npm run test:pipeline && npm run test:cli && node validators/scripts/test-flow-parser.js && node validators/scripts/test-flow-engine.js",
     "test:validator": "node validators/scripts/test-validator.js",
+    "test:init-checks": "node validators/scripts/test-init-checks.js",
     "test:pipeline": "bash .specify/scripts/bash/simulate-phase2-pipeline.sh",
     "test:cli": "node validators/scripts/test-cli.js"
   }
