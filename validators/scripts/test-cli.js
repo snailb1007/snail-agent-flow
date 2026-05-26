@@ -1107,6 +1107,67 @@ description: "Test description"
   }
 });
 
+addTest('CLI Init Localizes Multiple Execution Context Blocks', () => {
+  setupSandbox();
+
+  const mockHome = path.join(testSandboxRoot, 'mock-home');
+  const mockGlobalSkillsDir = path.join(mockHome, '.gemini/config/skills');
+  const mockWorkflowDir = path.join(mockHome, '.gemini/antigravity/get-shit-done/workflows');
+
+  fs.mkdirSync(path.join(mockGlobalSkillsDir, 'gsd-multi-context'), { recursive: true });
+  fs.mkdirSync(mockWorkflowDir, { recursive: true });
+
+  fs.writeFileSync(path.join(mockWorkflowDir, 'first.md'), '# First Workflow', 'utf8');
+  fs.writeFileSync(path.join(mockWorkflowDir, 'second.md'), '# Second Workflow', 'utf8');
+
+  const mockSkillMd = `---
+name: gsd-multi-context
+description: "Test description"
+---
+<execution_context>
+@~/.gemini/antigravity/get-shit-done/workflows/first.md
+</execution_context>
+<execution_context>
+@~/.gemini/antigravity/get-shit-done/workflows/second.md
+</execution_context>
+`;
+  fs.writeFileSync(path.join(mockGlobalSkillsDir, 'gsd-multi-context/SKILL.md'), mockSkillMd, 'utf8');
+
+  const result = spawnSync('node', [cliScriptPath, 'init'], {
+    env: {
+      ...process.env,
+      PROJECT_ROOT: testSandboxRoot,
+      REPO_ROOT: testSandboxRoot,
+      HOME: mockHome
+    },
+    encoding: 'utf8'
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`Expected init command to succeed, got ${result.status}. Stderr: ${result.stderr}`);
+  }
+
+  for (const base of ['.agents/skills', '.claude/skills']) {
+    const localSkill = `${base}/gsd-multi-context/SKILL.md`;
+    const content = readFile(localSkill);
+    if (content.includes('@~/.gemini/')) {
+      throw new Error(`Expected all global paths to be rewritten in ${localSkill}: ${content}`);
+    }
+    if (!content.includes(`@${base}/gsd-multi-context/workflows/first.md`)) {
+      throw new Error(`Expected first context path to be rewritten in ${localSkill}: ${content}`);
+    }
+    if (!content.includes(`@${base}/gsd-multi-context/workflows/second.md`)) {
+      throw new Error(`Expected second context path to be rewritten in ${localSkill}: ${content}`);
+    }
+    if (!fileExists(`${base}/gsd-multi-context/workflows/first.md`)) {
+      throw new Error(`Expected first workflow to be copied under ${base}`);
+    }
+    if (!fileExists(`${base}/gsd-multi-context/workflows/second.md`)) {
+      throw new Error(`Expected second workflow to be copied under ${base}`);
+    }
+  }
+});
+
 // 22. Strict Gate Greenfield Happy Path
 addTest('CLI Init Strict Gate Greenfield Happy Path', () => {
   setupSandbox();

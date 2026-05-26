@@ -811,12 +811,11 @@ function localizeGlobalSkills(repoRoot) {
 
         let skillContent = fs.readFileSync(globalSkillMdPath, 'utf8');
 
-        // Extract referenced workflow/reference files in <execution_context>
+        // Extract referenced workflow/reference files in all <execution_context> blocks.
         const blocks = extractExecutionContextBlocks(skillContent);
-        const contextMatchText = blocks[0] || '';
         const referencedFiles = [];
-        if (contextMatchText) {
-          const lines = contextMatchText.split('\n');
+        for (const block of blocks) {
+          const lines = block.split('\n');
           for (const line of lines) {
             const trimmed = line.trim();
             if (trimmed.startsWith('@')) {
@@ -853,13 +852,9 @@ function localizeGlobalSkills(repoRoot) {
         if (!agentsExists) {
           fs.mkdirSync(localAgentsSkillDir, { recursive: true });
           let localContent = skillContent;
-          if (contextMatchText) {
-            let rewrittenBlock = contextMatchText;
-            for (const [rawPath, info] of copiedFileMap.entries()) {
-              const relPath = `.agents/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
-              rewrittenBlock = rewrittenBlock.replace(rawPath, relPath);
-            }
-            localContent = skillContent.replace(contextMatchText, rewrittenBlock);
+          for (const [rawPath, info] of copiedFileMap.entries()) {
+            const relPath = `.agents/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
+            localContent = localContent.split(rawPath).join(relPath);
           }
           fs.writeFileSync(path.join(localAgentsSkillDir, 'SKILL.md'), localContent, 'utf8');
           console.log(`[init] Localized skill to .agents/skills/${skillSlug}`);
@@ -868,13 +863,9 @@ function localizeGlobalSkills(repoRoot) {
         if (!claudeExists) {
           fs.mkdirSync(localClaudeSkillDir, { recursive: true });
           let localContent = skillContent;
-          if (contextMatchText) {
-            let rewrittenBlock = contextMatchText;
-            for (const [rawPath, info] of copiedFileMap.entries()) {
-              const relPath = `.claude/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
-              rewrittenBlock = rewrittenBlock.replace(rawPath, relPath);
-            }
-            localContent = skillContent.replace(contextMatchText, rewrittenBlock);
+          for (const [rawPath, info] of copiedFileMap.entries()) {
+            const relPath = `.claude/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
+            localContent = localContent.split(rawPath).join(relPath);
           }
           fs.writeFileSync(path.join(localClaudeSkillDir, 'SKILL.md'), localContent, 'utf8');
           console.log(`[init] Localized skill to .claude/skills/${skillSlug}`);

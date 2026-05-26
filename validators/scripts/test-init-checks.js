@@ -296,6 +296,39 @@ stages:
   }
 });
 
+addTest('init-checks: missing declared prereq fails even when no stage references it', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    const flowYaml = `
+name: rough-project-flow
+version: 1.0.0
+prerequisites:
+  - name: Superpowers
+    command: using-superpowers
+    check: nonexistent-command-123
+stages:
+  - id: decision_discovery
+    name: Decision discovery
+    skill: project-flow
+`;
+    fs.writeFileSync(path.join(tempdir, '.ai/flows/rough-project-flow.yaml'), flowYaml, 'utf8');
+    const report = runStrictChecks(tempdir);
+    if (report.ok) {
+      throw new Error('Expected report.ok to be false when a declared prerequisite is missing');
+    }
+    const fail = report.failures.find(f => f.id === 'prereqs.superpowers');
+    if (!fail) {
+      throw new Error('Expected failure with id "prereqs.superpowers"');
+    }
+    if (fail.required !== true) {
+      throw new Error('Expected declared prerequisite to be required');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
 // 9. localization scan flags @~/foo
 addTest('init-checks: localization scan flags @~/foo inside <execution_context>', () => {
   const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
