@@ -88,6 +88,22 @@ _Avoid_: tool prerequisite check, runtime skill resolution
 The requirement that all referenced skill execution context files must reside within the workspace to bypass environment-level read-permission boundaries.
 _Avoid_: global path referencing, home directory execution contexts
 
+**Skill Localization**:
+The initialization-time protocol step that creates workspace-readable copies of globally installed GSD skills and their declared supporting context so sandboxed agents can use them.
+_Avoid_: skill installation, remote download, runtime skill execution
+
+**Execution Context**:
+The supporting workflow and reference material that a skill declares it needs in order to operate correctly.
+_Avoid_: process environment, runtime state, session context
+
+**Runtime Skill Mirror**:
+A workspace-local copy of the same skill capability prepared for a specific agent runtime.
+_Avoid_: global skill, new skill, generated skill
+
+**Brownfield Preservation**:
+The rule that initialization must protect existing workspace artifacts that may contain user customization.
+_Avoid_: overwrite, forced regeneration, destructive merge
+
 **Subagent Parallelization**:
 The technique of splitting independent tasks in tasks.md into concurrent execution threads using specialized subagents, minimizing overall wall-clock delivery time.
 _Avoid_: sequential execution of independent checklists, single-thread task processing
@@ -105,5 +121,4 @@ _Avoid_: sequential execution of independent checklists, single-thread task proc
 **Dev**: I still have a few `TODO` items inside `plan.md`. Will that pass?
 
 **Domain Expert**: No. The validator performs a **Placeholder Scan** to find forbidden tokens like `TODO` or `TBD`. If it finds any, it fails with an `Open Clarification` error. If you fail validation 3 times consecutively, it automatically generates a **Human Review Packet** at `.ai/reviews/<feature-slug>/human-review.md` and halts. You will then need to review the packet options before resuming.
-
 

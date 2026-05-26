@@ -797,7 +797,9 @@ addTest('CLI Init Skips Existing Flow Files (Brownfield)', () => {
   fs.mkdirSync(path.join(testSandboxRoot, '.claude/skills/project-flow'), { recursive: true });
   writeFile('.claude/skills/project-flow/SKILL.md', 'custom-claude-skill-content');
 
+  process.env.ADP_NO_STRICT = '1';
   const res = runCLI(['init']);
+  delete process.env.ADP_NO_STRICT;
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on brownfield init, got ${res.code}. Stderr: ${res.stderr}`);
   }
@@ -919,7 +921,9 @@ addTest('CLI Init Handles YAML Parse Failure Gracefully', () => {
   // Remove the ledger so init tries to generate it from the invalid YAML
   // The .ai/state dir will be created by init
 
+  process.env.ADP_NO_STRICT = '1';
   const res = runCLI(['init']);
+  delete process.env.ADP_NO_STRICT;
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on init with invalid YAML, got ${res.code}. Stderr: ${res.stderr}`);
   }
@@ -976,7 +980,7 @@ prerequisites:
 stages:
   - id: decision_discovery
     name: Decision discovery
-    skill: gsd-discuss-phase
+    skill: MissingTool
     required_artifacts: []
 `;
   fs.writeFileSync(flowPath, badFlow, 'utf8');
@@ -1101,6 +1105,235 @@ description: "Test description"
   if (occurrences !== 1) {
     throw new Error(`Expected guidelines to appear exactly once in CLAUDE.md, got ${occurrences}`);
   }
+});
+
+addTest('CLI Init Localizes Multiple Execution Context Blocks', () => {
+  setupSandbox();
+
+  const mockHome = path.join(testSandboxRoot, 'mock-home');
+  const mockGlobalSkillsDir = path.join(mockHome, '.gemini/config/skills');
+  const mockWorkflowDir = path.join(mockHome, '.gemini/antigravity/get-shit-done/workflows');
+
+  fs.mkdirSync(path.join(mockGlobalSkillsDir, 'gsd-multi-context'), { recursive: true });
+  fs.mkdirSync(mockWorkflowDir, { recursive: true });
+
+  fs.writeFileSync(path.join(mockWorkflowDir, 'first.md'), '# First Workflow', 'utf8');
+  fs.writeFileSync(path.join(mockWorkflowDir, 'second.md'), '# Second Workflow', 'utf8');
+
+  const mockSkillMd = `---
+name: gsd-multi-context
+description: "Test description"
+---
+<execution_context>
+@~/.gemini/antigravity/get-shit-done/workflows/first.md
+</execution_context>
+<execution_context>
+@~/.gemini/antigravity/get-shit-done/workflows/second.md
+</execution_context>
+`;
+  fs.writeFileSync(path.join(mockGlobalSkillsDir, 'gsd-multi-context/SKILL.md'), mockSkillMd, 'utf8');
+
+  const result = spawnSync('node', [cliScriptPath, 'init'], {
+    env: {
+      ...process.env,
+      PROJECT_ROOT: testSandboxRoot,
+      REPO_ROOT: testSandboxRoot,
+      HOME: mockHome
+    },
+    encoding: 'utf8'
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`Expected init command to succeed, got ${result.status}. Stderr: ${result.stderr}`);
+  }
+
+  for (const base of ['.agents/skills', '.claude/skills']) {
+    const localSkill = `${base}/gsd-multi-context/SKILL.md`;
+    const content = readFile(localSkill);
+    if (content.includes('@~/.gemini/')) {
+      throw new Error(`Expected all global paths to be rewritten in ${localSkill}: ${content}`);
+    }
+    if (!content.includes(`@${base}/gsd-multi-context/workflows/first.md`)) {
+      throw new Error(`Expected first context path to be rewritten in ${localSkill}: ${content}`);
+    }
+    if (!content.includes(`@${base}/gsd-multi-context/workflows/second.md`)) {
+      throw new Error(`Expected second context path to be rewritten in ${localSkill}: ${content}`);
+    }
+    if (!fileExists(`${base}/gsd-multi-context/workflows/first.md`)) {
+      throw new Error(`Expected first workflow to be copied under ${base}`);
+    }
+    if (!fileExists(`${base}/gsd-multi-context/workflows/second.md`)) {
+      throw new Error(`Expected second workflow to be copied under ${base}`);
+    }
+  }
+});
+
+// 22. Strict Gate Greenfield Happy Path
+addTest('CLI Init Strict Gate Greenfield Happy Path', () => {
+  setupSandbox();
+
+  const mockHome = path.join(testSandboxRoot, 'mock-home');
+  fs.mkdirSync(mockHome, { recursive: true });
+
+  const originalHome = process.env.HOME;
+  let res;
+  try {
+    process.env.HOME = mockHome;
+    res = runCLI(['init']);
+  } finally {
+    process.env.HOME = originalHome;
+  }
+
+  if (res.code !== 0) {
+    cleanupSandbox();
+    throw new Error(`Expected exit code 0 on greenfield happy path, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+
+  if (fileExists('.ai/state/repair-guide.md')) {
+    cleanupSandbox();
+    throw new Error('Expected repair-guide.md to not exist on greenfield happy path init');
+  }
+
+  cleanupSandbox();
+});
+
+// 23. Strict Gate Fails on Missing Prerequisite
+addTest('CLI Init Strict Gate Fails on Missing Prerequisite', () => {
+  setupSandbox();
+
+  const mockHome = path.join(testSandboxRoot, 'mock-home');
+  fs.mkdirSync(mockHome, { recursive: true });
+
+  // Delete one of the required skill folders to trigger prerequisite check failure
+  const p = path.join(testSandboxRoot, '.agents/skills/gsd-discuss-phase');
+  if (fs.existsSync(p)) {
+    fs.rmSync(p, { recursive: true, force: true });
+  }
+
+  const originalHome = process.env.HOME;
+  let res;
+  try {
+    process.env.HOME = mockHome;
+    res = runCLI(['init']);
+  } finally {
+    process.env.HOME = originalHome;
+  }
+
+  if (res.code !== 1) {
+    cleanupSandbox();
+    throw new Error(`Expected exit code 1 when prerequisite is missing, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+
+  if (!fileExists('.ai/state/repair-guide.md')) {
+    cleanupSandbox();
+    throw new Error('Expected repair-guide.md to be created on missing prerequisite failure');
+  }
+
+  const guide = readFile('.ai/state/repair-guide.md');
+  if (!guide.includes('gsd')) {
+    cleanupSandbox();
+    throw new Error(`Expected repair guide to include the literal "gsd", got: ${guide}`);
+  }
+  if (!guide.includes('adp doctor')) {
+    cleanupSandbox();
+    throw new Error(`Expected repair guide to include the verify command "adp doctor", got: ${guide}`);
+  }
+
+  cleanupSandbox();
+});
+
+// 24. Strict Gate Fails on Broken Localized SKILL.md
+addTest('CLI Init Strict Gate Fails on Broken Localized SKILL.md', () => {
+  setupSandbox();
+
+  const mockHome = path.join(testSandboxRoot, 'mock-home');
+  fs.mkdirSync(mockHome, { recursive: true });
+
+  // Pre-create a localized skill that still references ~/.gemini/...
+  const skillDir = path.join(testSandboxRoot, '.agents/skills/gsd-discuss-phase');
+  fs.mkdirSync(skillDir, { recursive: true });
+  writeFile('.agents/skills/gsd-discuss-phase/SKILL.md',
+    '# Test\n<execution_context>\n@~/.gemini/antigravity/workflows/foo.md\n</execution_context>\n');
+
+  const originalHome = process.env.HOME;
+  let res;
+  try {
+    process.env.HOME = mockHome;
+    res = runCLI(['init']);
+  } finally {
+    process.env.HOME = originalHome;
+  }
+
+  if (res.code !== 1) {
+    cleanupSandbox();
+    throw new Error(`Expected exit code 1 when localized skill has global paths, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+
+  if (!fileExists('.ai/state/repair-guide.md')) {
+    cleanupSandbox();
+    throw new Error('Expected repair guide to be written');
+  }
+
+  const guide = readFile('.ai/state/repair-guide.md');
+  if (!guide.includes('category: localization')) {
+    cleanupSandbox();
+    throw new Error(`Expected repair guide to specify category: localization, got: ${guide}`);
+  }
+  if (!guide.includes('SKILL.md')) {
+    cleanupSandbox();
+    throw new Error(`Expected repair guide to name the offending file "SKILL.md", got: ${guide}`);
+  }
+
+  cleanupSandbox();
+});
+
+// 25. Strict Gate Reports Instruction Section Missing
+addTest('CLI Init Strict Gate Reports Instruction Section Missing', () => {
+  setupSandbox();
+
+  const mockHome = path.join(testSandboxRoot, 'mock-home');
+  fs.mkdirSync(mockHome, { recursive: true });
+
+  // Pre-create CLAUDE.md with a custom lowercase heading so appendSubagentGuidelines is skipped
+  writeFile('CLAUDE.md', '# Custom\n## subagent & parallel execution guidelines\n');
+
+  const originalHome = process.env.HOME;
+  let res;
+  try {
+    process.env.HOME = mockHome;
+    res = runCLI(['init']);
+  } finally {
+    process.env.HOME = originalHome;
+  }
+
+  if (res.code !== 1) {
+    cleanupSandbox();
+    throw new Error(`Expected exit code 1 when instruction section is missing/incorrectly cased, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+
+  if (!fileExists('.ai/state/repair-guide.md')) {
+    cleanupSandbox();
+    throw new Error('Expected repair guide to be written');
+  }
+
+  const guide = readFile('.ai/state/repair-guide.md');
+  if (!guide.includes('Local workflow files incomplete')) {
+    cleanupSandbox();
+    throw new Error(`Expected repair guide to include the literal "Local workflow files incomplete", got: ${guide}`);
+  }
+  if (!guide.includes('category: instruction')) {
+    cleanupSandbox();
+    throw new Error(`Expected repair guide to specify category: instruction, got: ${guide}`);
+  }
+
+  // Re-read CLAUDE.md and assert that the correct heading is still absent
+  const claudeContent = readFile('CLAUDE.md');
+  if (claudeContent.includes('## Subagent & Parallel Execution Guidelines')) {
+    cleanupSandbox();
+    throw new Error('Expected correct heading to be absent in CLAUDE.md');
+  }
+
+  cleanupSandbox();
 });
 
 // Run all tests

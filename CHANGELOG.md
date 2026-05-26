@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented here.
 
+## [0.4.0.0] - 2026-05-26
+
+### Added
+- Added dynamic GSD skill localization during `adp init` that copies global skill configurations, workflows, and templates into the workspace to support sandboxed AI agent execution.
+- Added path rewriting logic to convert global paths in localized skill markdown files into workspace-relative paths.
+- Added strict sanity checks to `adp init` and `adp doctor` that detect missing required directories, invalid flow definitions, corrupted JSON ledgers, missing prerequisites, or global path leaks.
+- Added automatic repair guide generation (`.ai/state/repair-guide.md`) when initialization or doctor checks fail, providing clear, copy-pasteable instructions to resolve issues.
+- Added parallel execution and subagent guidelines to `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` to instruct agents on splitting checklists into concurrent subagent tasks.
+- Added 20 unit tests for `init-checks` and expanded CLI integration tests to verify skill localization, path rewriting, guideline appending, and brownfield preservation.
+
+### Changed
+- Advanced project state, roadmap, and active feature pointers to mark Phase 15 complete.
+- Extended the prerequisite tool database with detailed installation commands, detection hints, and purposes for `gsd`, `superpowers`, `spec-kit`, and `gstack`.
+
 ## [0.3.0.0] - 2026-05-24
 
 ### Added

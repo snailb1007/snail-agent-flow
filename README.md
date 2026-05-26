@@ -49,12 +49,12 @@ node bin/adp.js <command>
 
 | Command | Purpose |
 |---|---|
-| `init` | Create the required protocol directories and missing starter docs without overwriting existing files. |
+| `init` | Create required protocol directories, missing starter docs (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`), copy the default flow definition to `.ai/flows/rough-project-flow.yaml`, initialize `.ai/state/flow-ledger.json` from it, generate `project-flow` skill stubs under `.agents/skills/` and `.claude/skills/`, copy and localize global GSD skills, append subagent guidelines, and run strict initialization-time sanity checks. |
 | `feature <description>` | Create a validated Spec-Kit feature scaffold under `specs/<feature-slug>/` and update `.specify/feature.json`. |
 | `run <description>` | Initialize the protocol if needed, create a feature scaffold, run validation, and print next steps. |
 | `new-session <name>` | Create `.ai/sessions/YYYY-MM-DD-<name>.md` for temporary execution notes. |
 | `status` | Print the active feature, feature directory, current phase, last gate, gate status, retry count, and verified artifacts. |
-| `doctor` | Check required project structure and run the deterministic spec validator. |
+| `doctor` | Run strict static sanity checks (directories, flow definitions, ledgers, tool prerequisites, global path leaks) and run the deterministic spec validator. Generates `.ai/state/repair-guide.md` on failure. |
 | `validate-spec` | Run `validators/scripts/validate-spec.js` through the packaged CLI path. |
 | `handoff` | Validate `.ai/state/handoff.md` before release by checking required memory handoff sections. |
 
@@ -88,11 +88,12 @@ The generated packet is a validated starting point for agent-driven planning and
 ## Verification
 
 ```bash
-npm run validate        # deterministic Spec-Kit validation
-npm run test:validator  # validator unit coverage
-npm run test:pipeline   # Phase 2 pipeline simulation
-npm run test:cli        # CLI command integration coverage
-npm test                # full validation suite
+npm run validate           # deterministic Spec-Kit validation
+npm run test:validator     # validator unit coverage
+npm run test:init-checks   # strict init-time sanity check coverage
+npm run test:pipeline      # Phase 2 pipeline simulation
+npm run test:cli           # CLI command integration coverage
+npm test                   # full validation suite
 ```
 
 The release workflow runs `npm test`, builds an npm tarball with `npm pack`, uploads the package artifact, and attaches it to tagged GitHub releases matching `v*.*.*.*`.
@@ -104,8 +105,10 @@ The release workflow runs `npm test`, builds an npm tarball with `npm pack`, upl
 | `.specify/` | Spec-Kit presets, fixtures, templates, validation scripts, optional evaluation rubric, and active feature pointer. |
 | `specs/<feature-slug>/` | Canonical feature requirements, implementation plan, tasks, and checklists. |
 | `.ai/` | Mutable orchestration state, review logs, session logs, memory handoff state, and durable project memory. |
+| `.ai/flows/` | Project flow definitions (e.g. `rough-project-flow.yaml`) consumed by the flow engine and ledger. |
 | `.github/workflows/` | GitHub Actions release and CI verification workflows. |
 | `bin/adp.js` | Zero-dependency Node.js CLI for protocol setup, status, validation, and handoff checks. |
+| `lib/` | Shipped runtime modules — init-checks, flow engine, flow ledger, YAML parser, skill-md parser, tool validator. |
 | `validators/scripts/` | Deterministic validation and integration test scripts. |
 | `docs/` | Protocol reference docs, artifact registry, routing matrix, ADRs, and runbooks. |
 

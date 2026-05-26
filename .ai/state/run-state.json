@@ -1,6 +1,6 @@
 {
-  "feature_slug": "015-014-improve-ai-spawn",
-  "spec_path": "specs/015-014-improve-ai-spawn/",
+  "feature_slug": "016-strict-initialization-checks-detailed",
+  "spec_path": "specs/016-strict-initialization-checks-detailed/",
   "current_phase": "Complete",
   "last_gate": "Spec-Validation",
   "consecutive_failures": 0,
@@ -8,7 +8,7 @@
   "last_failed_step": null,
   "last_failed_rule": null,
   "last_validator_output": null,
-  "updated_at": "2026-05-25T17:45:42.201Z",
+  "updated_at": "2026-05-26T18:01:29.233Z",
   "last_gate_status": "PASS",
   "verified_artifacts": []
 }

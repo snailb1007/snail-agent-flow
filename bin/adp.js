@@ -3,6 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
+const { runStrictChecks, formatTerminal, formatMarkdownGuide } = require('../lib/init-checks');
+const { extractExecutionContextBlocks } = require('../lib/skill-md-parser');
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -227,6 +229,8 @@ function handleInit() {
   // Localize GSD skills and append subagent guidelines
   localizeGlobalSkills(repoRoot);
   appendSubagentGuidelines(repoRoot);
+
+  runAndReport(repoRoot, 'init');
 
   console.log('[init] Initialization complete.');
 }
@@ -627,85 +631,7 @@ function handleStatus() {
 }
 
 function handleDoctor() {
-  const dirs = [
-    '.ai/sessions',
-    '.ai/memory',
-    '.ai/reviews',
-    '.ai/state',
-    '.ai/flows',
-    '.specify/templates',
-    'specs'
-  ];
-
-  console.log('[doctor] Running static sanity checks...');
-  let failed = false;
-  for (const d of dirs) {
-    const fullPath = path.join(repoRoot, d);
-    if (!fs.existsSync(fullPath)) {
-      console.error(`[doctor] ERROR: Directory is missing: ${d}`);
-      failed = true;
-    }
-  }
-
-  const constitutionPath = path.join(repoRoot, '.ai/constitution.md');
-  if (!fs.existsSync(constitutionPath)) {
-    console.error('[doctor] ERROR: .ai/constitution.md is missing');
-    failed = true;
-  }
-
-  if (failed) {
-    console.error('[doctor] Static checks FAILED.');
-    process.exit(1);
-  }
-
-  // Active flow prerequisite checks
-  const flowPath = path.join(repoRoot, '.ai/flows/rough-project-flow.yaml');
-  if (fs.existsSync(flowPath)) {
-    console.log('[doctor] Running flow prerequisite tool checks...');
-    try {
-      const { parseYaml } = require(path.join(packageRoot, 'lib/yaml-parser'));
-      const { validatePrerequisites, getToolInstructions } = require(path.join(packageRoot, 'lib/tool-validator'));
-
-      const flowYaml = fs.readFileSync(flowPath, 'utf8');
-      const flowDef = parseYaml(flowYaml);
-
-      if (Array.isArray(flowDef.prerequisites) && flowDef.prerequisites.length > 0) {
-        const results = validatePrerequisites(flowDef.prerequisites, repoRoot);
-        let missingCount = 0;
-        for (const res of results) {
-          if (res.available) {
-            console.log(`  ✅ ${res.name}: available`);
-          } else {
-            console.error(`  ❌ ${res.name}: MISSING`);
-            missingCount++;
-            const inst = getToolInstructions(res.name);
-            if (inst) {
-              console.error(`     Purpose: ${inst.description}`);
-              console.error(`     Instructions: ${inst.instructions}`);
-            } else {
-              console.error(`     Reason: ${res.reason}`);
-            }
-          }
-        }
-        if (missingCount > 0) {
-          console.error(`[doctor] Flow prerequisite tool checks FAILED. ${missingCount} tool(s) missing.`);
-          failed = true;
-        } else {
-          console.log('[doctor] Flow prerequisite tool checks PASSED.');
-        }
-      }
-    } catch (e) {
-      console.error(`[doctor] ERROR: Failed to parse flow definition: ${e.message}`);
-      failed = true;
-    }
-  }
-
-  if (failed) {
-    console.error('[doctor] Sanity or prerequisite checks FAILED.');
-    process.exit(1);
-  }
-  console.log('[doctor] Static sanity checks PASSED.');
-
+  runAndReport(repoRoot, 'doctor');
   console.log('[doctor] Running spec validation gate...');
   const valResult = runSpecValidatorSync(false);
   if (valResult.status !== 0) {
@@ -747,6 +673,33 @@ function runSpecValidatorSync(silent = false) {
     stdout: result.stdout,
     stderr: result.stderr
   };
+}
+
+function runAndReport(repoRoot, source) {
+  if (process.env.ADP_NO_STRICT === '1') {
+    process.stderr.write(`[${source}] strict checks skipped (ADP_NO_STRICT=1)\n`);
+    return;
+  }
+
+  const report = runStrictChecks(repoRoot);
+  process.stderr.write(formatTerminal(report, source));
+
+  const guidePath = path.join(repoRoot, '.ai/state/repair-guide.md');
+  if (!report.ok) {
+    fs.mkdirSync(path.dirname(guidePath), { recursive: true });
+    fs.writeFileSync(guidePath, formatMarkdownGuide(report, { source }), 'utf8');
+    console.error(`[${source}] Repair guide written to .ai/state/repair-guide.md`);
+    process.exit(1);
+  }
+
+  // success: clean up stale repair guide
+  if (fs.existsSync(guidePath)) {
+    try {
+      fs.unlinkSync(guidePath);
+    } catch (e) {
+      // ignore unlink errors
+    }
+  }
 }
 
 function handleHandoff() {
@@ -858,11 +811,11 @@ function localizeGlobalSkills(repoRoot) {
 
         let skillContent = fs.readFileSync(globalSkillMdPath, 'utf8');
 
-        // Extract referenced workflow/reference files in <execution_context>
-        const contextMatch = skillContent.match(/<execution_context>([\s\S]*?)<\/execution_context>/);
+        // Extract referenced workflow/reference files in all <execution_context> blocks.
+        const blocks = extractExecutionContextBlocks(skillContent);
         const referencedFiles = [];
-        if (contextMatch) {
-          const lines = contextMatch[1].split('\n');
+        for (const block of blocks) {
+          const lines = block.split('\n');
           for (const line of lines) {
             const trimmed = line.trim();
             if (trimmed.startsWith('@')) {
@@ -899,13 +852,9 @@ function localizeGlobalSkills(repoRoot) {
         if (!agentsExists) {
           fs.mkdirSync(localAgentsSkillDir, { recursive: true });
           let localContent = skillContent;
-          if (contextMatch) {
-            let rewrittenBlock = contextMatch[1];
-            for (const [rawPath, info] of copiedFileMap.entries()) {
-              const relPath = `.agents/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
-              rewrittenBlock = rewrittenBlock.replace(rawPath, relPath);
-            }
-            localContent = skillContent.replace(contextMatch[1], rewrittenBlock);
+          for (const [rawPath, info] of copiedFileMap.entries()) {
+            const relPath = `.agents/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
+            localContent = localContent.split(rawPath).join(relPath);
           }
           fs.writeFileSync(path.join(localAgentsSkillDir, 'SKILL.md'), localContent, 'utf8');
           console.log(`[init] Localized skill to .agents/skills/${skillSlug}`);
@@ -914,13 +863,9 @@ function localizeGlobalSkills(repoRoot) {
         if (!claudeExists) {
           fs.mkdirSync(localClaudeSkillDir, { recursive: true });
           let localContent = skillContent;
-          if (contextMatch) {
-            let rewrittenBlock = contextMatch[1];
-            for (const [rawPath, info] of copiedFileMap.entries()) {
-              const relPath = `.claude/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
-              rewrittenBlock = rewrittenBlock.replace(rawPath, relPath);
-            }
-            localContent = skillContent.replace(contextMatch[1], rewrittenBlock);
+          for (const [rawPath, info] of copiedFileMap.entries()) {
+            const relPath = `.claude/skills/${skillSlug}/${info.subFolder}/${info.fileName}`;
+            localContent = localContent.split(rawPath).join(relPath);
           }
           fs.writeFileSync(path.join(localClaudeSkillDir, 'SKILL.md'), localContent, 'utf8');
           console.log(`[init] Localized skill to .claude/skills/${skillSlug}`);
