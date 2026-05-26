@@ -49,12 +49,12 @@ node bin/adp.js <command>
 
 | Command | Purpose |
 |---|---|
-| `init` | Create the required protocol directories and missing starter docs without overwriting existing files. |
+| `init` | Create required protocol directories, missing starter docs, copy and localize global GSD skills, append subagent guidelines, and run strict initialization-time sanity checks. |
 | `feature <description>` | Create a validated Spec-Kit feature scaffold under `specs/<feature-slug>/` and update `.specify/feature.json`. |
 | `run <description>` | Initialize the protocol if needed, create a feature scaffold, run validation, and print next steps. |
 | `new-session <name>` | Create `.ai/sessions/YYYY-MM-DD-<name>.md` for temporary execution notes. |
 | `status` | Print the active feature, feature directory, current phase, last gate, gate status, retry count, and verified artifacts. |
-| `doctor` | Check required project structure and run the deterministic spec validator. |
+| `doctor` | Run strict static sanity checks (directories, flow definitions, ledgers, tool prerequisites, global path leaks) and run the deterministic spec validator. Generates `.ai/state/repair-guide.md` on failure. |
 | `validate-spec` | Run `validators/scripts/validate-spec.js` through the packaged CLI path. |
 | `handoff` | Validate `.ai/state/handoff.md` before release by checking required memory handoff sections. |
 
