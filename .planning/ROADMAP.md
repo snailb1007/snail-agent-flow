@@ -58,7 +58,7 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 
 ## Milestone v2.0 — Flow Engine
 
-### Phase 8: Flow Definition Format and Built-in Flow
+### Phase 8: Flow Definition Format and Built-in Flow ✅
 
 **Goal:** Define a declarative flow definition format and ship the built-in `rough-project-flow` as the first flow definition.
 
@@ -79,7 +79,7 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 - A custom flow definition can be validated against the schema.
 - Prerequisite tool availability is checkable from the definition.
 
-### Phase 9: Flow Initialization and Ledger State
+### Phase 9: Flow Initialization and Ledger State ✅
 
 **Goal:** Extend `adp init` to bootstrap flow infrastructure and create the ledger state file.
 
@@ -100,7 +100,7 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 - `adp init` on a brownfield project with existing `.ai/` merges new files without destroying existing state.
 - The generated SKILL.md is valid and can be read by agents.
 
-### Phase 10: Flow Engine Skill
+### Phase 10: Flow Engine Skill ✅
 
 **Goal:** Package the flow orchestrator as a Gemini skill that agents mention in chat to start, resume, or inspect the flow.
 
@@ -124,7 +124,7 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 - Revision loops reset the correct upstream stages and preserve audit history.
 - The skill works with the built-in `rough-project-flow.yaml` end-to-end.
 
-### Phase 11: Artifact Gate Enforcement
+### Phase 11: Artifact Gate Enforcement ✅
 
 **Goal:** Implement deterministic artifact gate checks as a reusable validation layer.
 
@@ -146,7 +146,7 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 - Three failures trigger the human review circuit breaker.
 - No gate check uses LLM evaluation — only file existence, content checks, and heading validation.
 
-### Phase 12: Prerequisite Tool Checker and Installation Guide
+### Phase 12: Prerequisite Tool Checker and Installation Guide ✅
 
 **Goal:** Warn users or guide the installation of required tools if they are missing from the system to use agent skills.
 
@@ -167,7 +167,7 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 - Missing tools trigger helpful, platform-specific installation instructions (macOS brew/npm directions).
 - Flow engine halts and warns the user if they try to execute a stage requiring missing tools.
 
-### Phase 13: Flow Validator and Tests
+### Phase 13: Flow Validator and Tests ✅
 
 **Goal:** Add a deterministic flow validator and comprehensive test suite.
 
@@ -223,7 +223,7 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 - Flow definitions are data, not code — they describe stage order and artifact gates, not execution logic.
 - The flow engine skill instructs agents; it does not spawn subprocesses or invoke tools directly.
 
-### Phase 14: Improve AI for spawn subagent support
+### Phase 14: Improve AI for spawn subagent support ✅
 
 **Goal:** Enable the AI agent client to successfully parse GSD workflows without permission denied sandbox errors, and instruct it to spawn subagents for parallel task execution.
 **Requirements:** SUB-01, SUB-02, SUB-03, SUB-04
@@ -233,7 +233,7 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 Plans:
 - [ ] TBD (run /gsd-plan-phase 14 to break down)
 
-### Phase 15: Strict initialization checks and detailed installation guides for missing tools
+### Phase 15: Strict initialization checks and detailed installation guides for missing tools ✅
 
 **Goal:** Harden `adp init` and `adp doctor` with a deterministic post-init strict gate that re-checks the full local/offline setup surface (flow YAML, ledger, prereqs, localized SKILL.md paths, instruction-file sections, feature pointer), distinguishes 'tool missing' from 'local workflow files incomplete', and emits a layered terminal failure summary plus a structured Markdown repair guide at `.ai/state/repair-guide.md`.
 **Requirements**: D-15-01..D-15-16 (locked decisions); supports WARN-02/03/04, SUB-01/02, INIT-03
@@ -246,6 +246,16 @@ Plans:
 - [ ] 15-03-PLAN.md — Wire handleInit + handleDoctor via shared runAndReport helper in bin/adp.js (D-15-01/02/03/07/09/13/14/16)
 - [ ] 15-04-PLAN.md — CLI integration tests covering greenfield, missing prereq, broken localization, instruction section missing (D-15-02/05/08/13/14/15/16)
 
+### Phase 16: Context budget gate and subagent orchestration policy
+
+**Goal:** Add a deterministic context budget and orchestration policy layer so the flow engine can decide when work stays inline, when it must hand off to a fresh session, and when independent tasks should run as isolated subagents with minimal context packs instead of inheriting a large chat history.
+**Requirements**: CTX-01, CTX-02, CTX-03, CTX-04, CTX-05
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 16 to define context budget gates, context-pack schema, fan-out rules, handoff requirements, and validator coverage)
+
 ---
 *Roadmap defined: 2026-05-24*
-*Last updated: 2026-05-26 — Phase 15 strict-init plans created*
+*Last updated: 2026-05-26 — Phase 16 context budget policy added*

@@ -26,17 +26,20 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 - [x] CLI with `init`, `feature`, `run`, `new-session`, `status`, `doctor`, `validate-spec`, and `handoff` commands.
 - [x] Greenfield and brownfield fixtures, CI verification matrix, and optional evaluation rubrics.
 
-### Active (v2.0)
+### Validated (v2.0)
 
 - [x] Define a declarative flow definition format (YAML) that captures stage order, required skills, artifact gates, and revision routing.
 - [x] Ship the built-in `rough-project-flow` as a data-driven flow definition encoding the 10-stage ledger.
-- [ ] Extend `adp init` to copy flow definitions into `.ai/flows/` and create the flow ledger state file.
-- [ ] Package the flow orchestrator as a Gemini skill that agents mention in chat to start, resume, or inspect the flow.
-- [ ] Implement deterministic artifact gate enforcement with circuit breaker behavior.
-- [ ] Add a flow validator for definition syntax, ledger consistency, and gate status.
-- [ ] Add tests covering flow lifecycle: normal completion, revision routing, gate blocking, brownfield merge.
-- [ ] Warn or guide installation of required tools to use skills if the user lacks them.
+- [x] Extend `adp init` to copy flow definitions into `.ai/flows/` and create the flow ledger state file.
+- [x] Package the flow orchestrator as a Gemini skill that agents mention in chat to start, resume, or inspect the flow.
+- [x] Implement deterministic artifact gate enforcement with circuit breaker behavior.
+- [x] Add a flow validator for definition syntax, ledger consistency, and gate status.
+- [x] Add tests covering flow lifecycle: normal completion, revision routing, gate blocking, brownfield merge.
+- [x] Warn or guide installation of required tools to use skills if the user lacks them.
 
+### Active (v2.0)
+
+- [ ] Add context budget gate and subagent orchestration policies (Phase 16).
 ### Out of Scope
 
 - Replacing GSD, GStack, Superpowers, Spec-Kit, Serena, Semble, GitNexus, Context7, Promptfoo, or Playwright — this project orchestrates them rather than reimplementing them.

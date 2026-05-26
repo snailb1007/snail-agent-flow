@@ -2,129 +2,108 @@
   "flow_name": "rough-project-flow",
   "flow_version": "1.0.0",
   "flow_definition_path": ".ai/flows/rough-project-flow.yaml",
-  "current_stage": null,
-  "created_at": "2026-05-26T00:31:10.000Z",
-  "updated_at": "2026-05-26T00:46:30.000Z",
+  "current_stage": "decision_discovery",
+  "created_at": "2026-05-26T03:35:58.445Z",
+  "updated_at": "2026-05-26T03:36:10.000Z",
   "stages": [
     {
       "id": "decision_discovery",
       "name": "Decision discovery",
-      "status": "done",
-      "artifacts": [
-        ".planning/phases/14-improve-ai-for-spawn-subagent-support/14-CONTEXT.md",
-        ".planning/phases/14-improve-ai-for-spawn-subagent-support/14-DISCUSSION-LOG.md"
-      ],
+      "status": "in_progress",
+      "artifacts": [],
       "gate_result": null,
-      "started_at": "2026-05-25T16:55:00.000Z",
-      "completed_at": "2026-05-25T17:28:00.000Z",
+      "started_at": "2026-05-26T03:36:10.000Z",
+      "completed_at": null,
       "revision_count": 0
     },
     {
       "id": "decision_challenge",
       "name": "Decision challenge",
-      "status": "done",
-      "artifacts": [
-        ".planning/phases/14-improve-ai-for-spawn-subagent-support/14-CHALLENGE-NOTES.md"
-      ],
+      "status": "pending",
+      "artifacts": [],
       "gate_result": null,
-      "started_at": "2026-05-25T17:28:00.000Z",
-      "completed_at": "2026-05-25T17:30:00.000Z",
+      "started_at": null,
+      "completed_at": null,
       "revision_count": 0
     },
     {
       "id": "canonical_spec",
       "name": "Canonical spec",
-      "status": "done",
-      "artifacts": [
-        "specs/015-014-improve-ai-spawn/spec.md"
-      ],
+      "status": "pending",
+      "artifacts": [],
       "gate_result": null,
-      "started_at": "2026-05-25T17:38:00.000Z",
-      "completed_at": "2026-05-25T17:40:00.000Z",
+      "started_at": null,
+      "completed_at": null,
       "revision_count": 0
     },
     {
       "id": "implementation_plan",
       "name": "Implementation plan",
-      "status": "done",
-      "artifacts": [
-        "specs/015-014-improve-ai-spawn/plan.md"
-      ],
+      "status": "pending",
+      "artifacts": [],
       "gate_result": null,
-      "started_at": "2026-05-25T17:40:00.000Z",
-      "completed_at": "2026-05-25T17:41:00.000Z",
+      "started_at": null,
+      "completed_at": null,
       "revision_count": 0
     },
     {
       "id": "plan_critique",
       "name": "Plan critique",
-      "status": "done",
-      "artifacts": [
-        ".ai/reviews/015-014-improve-ai-spawn/gstack-ceo-review.md",
-        ".ai/reviews/015-014-improve-ai-spawn/gstack-eng-review.md"
-      ],
+      "status": "pending",
+      "artifacts": [],
       "gate_result": null,
-      "started_at": "2026-05-25T17:41:00.000Z",
-      "completed_at": "2026-05-25T17:41:20.000Z",
+      "started_at": null,
+      "completed_at": null,
       "revision_count": 0
     },
     {
       "id": "revision_loop",
       "name": "Revision loop",
-      "status": "done",
-      "artifacts": [
-        "specs/015-014-improve-ai-spawn/tasks.md"
-      ],
+      "status": "pending",
+      "artifacts": [],
       "gate_result": null,
-      "started_at": "2026-05-25T17:41:20.000Z",
-      "completed_at": "2026-05-25T17:41:25.000Z",
+      "started_at": null,
+      "completed_at": null,
       "revision_count": 0
     },
     {
       "id": "vertical_slicing",
       "name": "Vertical slicing",
-      "status": "done",
-      "artifacts": [
-        "specs/015-014-improve-ai-spawn/tasks.md"
-      ],
+      "status": "pending",
+      "artifacts": [],
       "gate_result": null,
-      "started_at": "2026-05-25T17:41:25.000Z",
-      "completed_at": "2026-05-25T17:41:25.000Z",
+      "started_at": null,
+      "completed_at": null,
       "revision_count": 0
     },
     {
       "id": "execution",
       "name": "Execution",
-      "status": "done",
-      "artifacts": [
-        ".ai/sessions/2026-05-26-gsd-execution-015-014-improve-ai-spawn.md"
-      ],
-      "started_at": "2026-05-26T00:43:00.000Z",
-      "completed_at": "2026-05-26T00:45:15.000Z",
+      "status": "pending",
+      "artifacts": [],
+      "gate_result": null,
+      "started_at": null,
+      "completed_at": null,
       "revision_count": 0
     },
     {
       "id": "verification",
       "name": "Verification",
-      "status": "done",
-      "artifacts": [
-        ".ai/state/run-state.json"
-      ],
-      "started_at": "2026-05-26T00:45:15.000Z",
-      "completed_at": "2026-05-26T00:45:20.000Z",
+      "status": "pending",
+      "artifacts": [],
+      "gate_result": null,
+      "started_at": null,
+      "completed_at": null,
       "revision_count": 0
     },
     {
       "id": "release_readiness",
       "name": "Release readiness",
-      "status": "done",
-      "artifacts": [
-        ".ai/reviews/015-014-improve-ai-spawn/ship-decision.md",
-        ".ai/state/handoff.md"
-      ],
+      "status": "pending",
+      "artifacts": [],
       "gate_result": null,
-      "started_at": "2026-05-26T00:46:00.000Z",
-      "completed_at": "2026-05-26T00:46:30.000Z",
+      "started_at": null,
+      "completed_at": null,
       "revision_count": 0
     }
   ],
