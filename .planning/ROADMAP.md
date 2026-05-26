@@ -233,6 +233,19 @@ This roadmap has two milestones. Milestone v1.0 (Phases 1-7) established the pro
 Plans:
 - [ ] TBD (run /gsd-plan-phase 14 to break down)
 
+### Phase 15: Strict initialization checks and detailed installation guides for missing tools
+
+**Goal:** Harden `adp init` and `adp doctor` with a deterministic post-init strict gate that re-checks the full local/offline setup surface (flow YAML, ledger, prereqs, localized SKILL.md paths, instruction-file sections, feature pointer), distinguishes 'tool missing' from 'local workflow files incomplete', and emits a layered terminal failure summary plus a structured Markdown repair guide at `.ai/state/repair-guide.md`.
+**Requirements**: D-15-01..D-15-16 (locked decisions); supports WARN-02/03/04, SUB-01/02, INIT-03
+**Depends on:** Phase 14
+**Plans:** 4 plans
+
+Plans:
+- [ ] 15-01-PLAN.md — Enrich INSTRUCTIONS_DB schema with 8-field structured records (D-15-10/11/12/15)
+- [ ] 15-02-PLAN.md — New pure module lib/init-checks.js with runStrictChecks + terminal/Markdown formatters (D-15-01/02/04/05/06/08/09/10/13/14/15)
+- [ ] 15-03-PLAN.md — Wire handleInit + handleDoctor via shared runAndReport helper in bin/adp.js (D-15-01/02/03/07/09/13/14/16)
+- [ ] 15-04-PLAN.md — CLI integration tests covering greenfield, missing prereq, broken localization, instruction section missing (D-15-02/05/08/13/14/15/16)
+
 ---
 *Roadmap defined: 2026-05-24*
-*Last updated: 2026-05-26 — Phase 14 subagent support added*
+*Last updated: 2026-05-26 — Phase 15 strict-init plans created*
