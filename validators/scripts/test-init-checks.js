@@ -19,6 +19,7 @@ function populateGreenfield(tempdir) {
     '.ai/flows',
     '.specify/templates',
     'specs',
+    '.ai/context-packs',
     '.agents/skills/project-flow',
     '.claude/skills/project-flow'
   ];
@@ -684,6 +685,234 @@ addTest('init-checks: featurePointer.active skipped when .specify/feature.json a
     const fail3 = report3.failures.find(f => f.id === 'featurePointer.active');
     if (fail3) {
       throw new Error('Expected featurePointer.active to pass when feature_directory exists');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// 21. policy.config.exists is warning when absent
+addTest('init-checks: policy.config.exists is warning when absent', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    // policy config is absent, so policy.config.exists should fail but NOT ok=false because it is required: false (warning only)
+    const report = runStrictChecks(tempdir);
+    const failExists = report.results.find(f => f.id === 'policy.config.exists');
+    if (!failExists) {
+      throw new Error('Expected result with id "policy.config.exists"');
+    }
+    if (failExists.passed !== false) {
+      throw new Error('Expected policy.config.exists to be passed=false');
+    }
+    if (failExists.required !== false) {
+      throw new Error('Expected policy.config.exists to be required=false');
+    }
+    // policy.config.schema should pass (since it is absent)
+    const failSchema = report.results.find(f => f.id === 'policy.config.schema');
+    if (!failSchema || failSchema.passed !== true) {
+      throw new Error('Expected policy.config.schema to pass when config is absent');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// 22. policy.config.schema fails when malformed
+addTest('init-checks: policy.config.schema fails when malformed', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    fs.writeFileSync(
+      path.join(tempdir, '.ai/state/context-policy.json'),
+      JSON.stringify({ schema_version: '1.0', max_parallelism: 99 }), // fails validation
+      'utf8'
+    );
+    const report = runStrictChecks(tempdir);
+    if (report.ok) {
+      throw new Error('Expected report.ok to be false when policy config is malformed');
+    }
+    const failSchema = report.failures.find(f => f.id === 'policy.config.schema');
+    if (!failSchema) {
+      throw new Error('Expected failure with id "policy.config.schema"');
+    }
+    if (failSchema.passed !== false) {
+      throw new Error('Expected failSchema.passed to be false');
+    }
+    if (!failSchema.evidence || typeof failSchema.evidence.parseError !== 'string' || failSchema.evidence.parseError.length === 0) {
+      throw new Error('Expected parseError in evidence');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// 23. context.packs schema and refs check
+addTest('init-checks: context.packs validation fails when context pack has missing files or bad schema', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    // Write malformed context pack (missing required fields)
+    fs.writeFileSync(
+      path.join(tempdir, '.ai/context-packs/pack1.json'),
+      JSON.stringify({ schema_version: '1.0' }),
+      'utf8'
+    );
+    
+    // Write a context pack with missing required files
+    const validPack = {
+      schema_version: '1.0.0',
+      created_at: new Date().toISOString(),
+      stage_id: 'decision_discovery',
+      objective: 'test',
+      required_files: [{ path: 'missing-file-123.md' }],
+      omissions: [],
+      expected_outputs: [],
+      validation_commands: [],
+      stop_conditions: []
+    };
+    fs.writeFileSync(
+      path.join(tempdir, '.ai/context-packs/pack2.json'),
+      JSON.stringify(validPack),
+      'utf8'
+    );
+
+    const report = runStrictChecks(tempdir);
+    if (report.ok) {
+      throw new Error('Expected report.ok to be false when context packs are invalid');
+    }
+    const failSchema = report.failures.find(f => f.id === 'context.packs.schema');
+    if (!failSchema || failSchema.passed !== false) {
+      throw new Error('Expected context.packs.schema to fail');
+    }
+    const failRefs = report.failures.find(f => f.id === 'context.packs.refs');
+    if (!failRefs || failRefs.passed !== false) {
+      throw new Error('Expected context.packs.refs to fail');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// 24. context.packs.fanout.conflicts fails when siblings overlap without coordination
+addTest('init-checks: context.packs.fanout.conflicts fails when parallel subagents overlap without coordination', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    
+    const packA = {
+      schema_version: '1.0.0',
+      created_at: new Date().toISOString(),
+      stage_id: 'stage_a',
+      objective: 'test',
+      required_files: [],
+      omissions: [],
+      expected_outputs: [],
+      validation_commands: [],
+      stop_conditions: [],
+      subagent_fanout: {
+        group_id: 'group1',
+        subagent_index: 0,
+        total_subagents: 2,
+        write_targets: ['shared-target.md'],
+        sequential_inline_fallback: true,
+        join_owner: 'parent'
+      }
+    };
+
+    const packB = {
+      schema_version: '1.0.0',
+      created_at: new Date().toISOString(),
+      stage_id: 'stage_b',
+      objective: 'test',
+      required_files: [],
+      omissions: [],
+      expected_outputs: [],
+      validation_commands: [],
+      stop_conditions: [],
+      subagent_fanout: {
+        group_id: 'group1',
+        subagent_index: 1,
+        total_subagents: 2,
+        write_targets: ['shared-target.md'], // overlapping target
+        sequential_inline_fallback: true,
+        join_owner: 'parent'
+      }
+    };
+
+    fs.writeFileSync(path.join(tempdir, '.ai/context-packs/packA.json'), JSON.stringify(packA), 'utf8');
+    fs.writeFileSync(path.join(tempdir, '.ai/context-packs/packB.json'), JSON.stringify(packB), 'utf8');
+
+    const report = runStrictChecks(tempdir);
+    if (report.ok) {
+      throw new Error('Expected report.ok to be false when sibling write targets overlap without coordination');
+    }
+    const failConflicts = report.failures.find(f => f.id === 'context.packs.fanout.conflicts');
+    if (!failConflicts || failConflicts.passed !== false) {
+      throw new Error('Expected context.packs.fanout.conflicts to fail');
+    }
+    if (!failConflicts.evidence.parseError.includes('Overlap in write targets detected')) {
+      throw new Error('Expected overlap error message in conflict failure');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// 25. handoff validation checks
+addTest('init-checks: handoff.exists and handoff.schema checks works', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    
+    // Handoff is absent -> warning only, schema passes
+    const report1 = runStrictChecks(tempdir);
+    const resultExists1 = report1.results.find(r => r.id === 'handoff.exists');
+    if (resultExists1.passed !== false) throw new Error('Handoff exists should be false');
+    if (resultExists1.required !== false) throw new Error('Handoff exists should not be required');
+    const resultSchema1 = report1.results.find(r => r.id === 'handoff.schema');
+    if (resultSchema1.passed !== true) throw new Error('Handoff schema should pass when absent');
+
+    // Malformed handoff -> schema fails
+    fs.writeFileSync(
+      path.join(tempdir, '.ai/state/context-handoff.json'),
+      JSON.stringify({ schema_version: '1.0' }),
+      'utf8'
+    );
+    const report2 = runStrictChecks(tempdir);
+    const resultExists2 = report2.results.find(r => r.id === 'handoff.exists');
+    if (resultExists2.passed !== true) throw new Error('Handoff exists should be true');
+    const resultSchema2 = report2.results.find(r => r.id === 'handoff.schema');
+    if (resultSchema2.passed !== false) throw new Error('Handoff schema should fail when malformed');
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// 26. instructions.contextPolicySection check
+addTest('init-checks: instructions.contextPolicySection fails when heading is missing', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    // Create CLAUDE.md without the heading
+    fs.writeFileSync(path.join(tempdir, 'CLAUDE.md'), '# CLAUDE.md\nNo context policy heading here', 'utf8');
+    
+    const report1 = runStrictChecks(tempdir);
+    const failSection = report1.failures.find(f => f.id === 'instructions.contextPolicySection');
+    if (!failSection || failSection.passed !== false) {
+      throw new Error('Expected instructions.contextPolicySection to fail when heading is absent');
+    }
+
+    // Now write with the correct heading
+    fs.writeFileSync(
+      path.join(tempdir, 'CLAUDE.md'),
+      '# CLAUDE.md\n## Context Budget and Subagent Orchestration Policy\n',
+      'utf8'
+    );
+    const report2 = runStrictChecks(tempdir);
+    const failSection2 = report2.failures.find(f => f.id === 'instructions.contextPolicySection');
+    if (failSection2) {
+      throw new Error('Expected instructions.contextPolicySection to pass when heading is present');
     }
   } finally {
     fs.rmSync(tempdir, { recursive: true, force: true });

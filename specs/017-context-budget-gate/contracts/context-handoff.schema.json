@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ContextHandoffArtifact",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resume_stage": {
+      "type": "string"
+    },
+    "next_skill": {
+      "type": "string"
+    },
+    "next_command": {
+      "type": "string"
+    },
+    "context_pack_path": {
+      "type": "string"
+    },
+    "open_risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verification_commands": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "created_at",
+    "resume_stage",
+    "next_skill",
+    "context_pack_path",
+    "verification_commands",
+    "reason"
+  ]
+}

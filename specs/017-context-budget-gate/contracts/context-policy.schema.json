@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ContextPolicyConfig",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "inline_threshold_bytes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "pack_threshold_bytes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "max_parallelism": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "stage_overrides": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": ["inline", "context_pack_required", "fresh_session_required"]
+          }
+        },
+        "required": ["outcome"]
+      }
+    },
+    "budget_inputs": {
+      "type": "object",
+      "properties": {
+        "include_required_artifacts": { "type": "boolean" },
+        "include_session_logs": { "type": "boolean" },
+        "include_planning_artifacts": { "type": "boolean" },
+        "include_context_packs": { "type": "boolean" },
+        "include_handoff_files": { "type": "boolean" }
+      },
+      "required": [
+        "include_required_artifacts",
+        "include_session_logs",
+        "include_planning_artifacts",
+        "include_context_packs",
+        "include_handoff_files"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "inline_threshold_bytes",
+    "pack_threshold_bytes",
+    "max_parallelism",
+    "stage_overrides",
+    "budget_inputs"
+  ]
+}

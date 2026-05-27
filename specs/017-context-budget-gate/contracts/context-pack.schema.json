@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ContextPackManifest",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "stage_id": {
+      "type": "string"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "required_decisions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "reason": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    "allowed_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "reason": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    "excluded_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "reason": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    "omissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "reason": { "type": "string" }
+        },
+        "required": ["path", "reason"]
+      }
+    },
+    "expected_outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "required": ["path", "description"]
+      }
+    },
+    "validation_commands": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "stop_conditions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "dependency_notes": {
+      "type": "string"
+    },
+    "subagent_fanout": {
+      "type": ["object", "null"],
+      "properties": {
+        "group_id": { "type": "string" },
+        "subagent_index": { "type": "integer" },
+        "total_subagents": { "type": "integer" },
+        "write_targets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "coordination_note": { "type": "string" },
+        "sequential_inline_fallback": { "type": "boolean" },
+        "join_owner": { "type": "string" },
+        "max_parallelism": { "type": "integer", "minimum": 1, "maximum": 10 }
+      },
+      "required": [
+        "group_id",
+        "subagent_index",
+        "total_subagents",
+        "write_targets",
+        "sequential_inline_fallback",
+        "join_owner"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "created_at",
+    "stage_id",
+    "objective",
+    "required_files",
+    "omissions",
+    "expected_outputs",
+    "validation_commands",
+    "stop_conditions"
+  ]
+}

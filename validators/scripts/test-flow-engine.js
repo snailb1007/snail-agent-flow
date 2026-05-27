@@ -549,6 +549,141 @@ console.log('--- checkStagePrerequisites ---');
 }
 
 // ============================================================
+// resolveNextStage contextPolicy tests
+// ============================================================
+
+console.log('--- resolveNextStage contextPolicy ---');
+
+{
+  const ledger = createMockLedger();
+  const flow = createMockFlowDefinition();
+  // Call with only 2 args (backward compatibility)
+  const result = resolveNextStage(ledger, flow);
+  assert(result !== null, 'resolveNextStage contextPolicy: 2-argument call should return result');
+  assert(result.contextPolicy !== undefined, 'resolveNextStage contextPolicy: contextPolicy is present');
+  assert(typeof result.contextPolicy.outcome === 'string', 'resolveNextStage contextPolicy: outcome is a string');
+  assert(typeof result.contextPolicy.estimatedBytes === 'number', 'resolveNextStage contextPolicy: estimatedBytes is a number');
+}
+
+{
+  // Call with null ledger
+  const result = resolveNextStage(null, null);
+  assert(result === null, 'resolveNextStage contextPolicy: null ledger returns null');
+}
+
+// ============================================================
+// formatStageInstruction contextPolicy tests
+// ============================================================
+
+console.log('--- formatStageInstruction contextPolicy ---');
+
+{
+  const flowStage = { id: 'test_stage', name: 'Test Stage', skill: 'none', required_artifacts: [] };
+  const ledgerStage = { id: 'test_stage', status: 'pending' };
+  
+  // No context policy -> no block
+  const outputNoPolicy = formatStageInstruction(flowStage, ledgerStage);
+  assert(!outputNoPolicy.includes('CONTEXT POLICY'), 'formatStageInstruction: no policy context excludes block');
+  
+  // With context policy
+  const policy = { outcome: 'context_pack_required', estimatedBytes: 150000 };
+  const output = formatStageInstruction(flowStage, ledgerStage, policy);
+  assert(output.includes('CONTEXT POLICY'), 'formatStageInstruction: includes CONTEXT POLICY block');
+  assert(output.includes('Outcome:   context_pack_required'), 'formatStageInstruction: includes correct outcome');
+  assert(output.includes('Est. size: 146.5 KB'), 'formatStageInstruction: includes correct KB size');
+  assert(output.includes('Create .ai/context-packs/'), 'formatStageInstruction: includes context pack action');
+  
+  // With fresh_session_required
+  const policyHandoff = { outcome: 'fresh_session_required', estimatedBytes: 300000 };
+  const outputHandoff = formatStageInstruction(flowStage, ledgerStage, policyHandoff);
+  assert(outputHandoff.includes('Write .ai/state/context-handoff.json'), 'formatStageInstruction: includes handoff action');
+}
+
+// ============================================================
+// Ledger mutation protection and parallelism limit checks
+// ============================================================
+
+console.log('--- Ledger subagent protection and parallelism checks ---');
+
+{
+  // Test 1: Mutating state throws error when SUBAGENT environment variable is true
+  const ledger = createMockLedger({
+    decision_discovery: 'pending'
+  });
+  
+  process.env.SUBAGENT = 'true';
+  let threwAdvance = false;
+  try {
+    advanceStage(ledger, 'decision_discovery', []);
+  } catch (e) {
+    threwAdvance = true;
+    assert(e.message.includes('subagents are not permitted to modify'), 'advanceStage: expected subagent mutation blocked error message');
+  }
+  assert(threwAdvance, 'advanceStage: should throw under SUBAGENT=true');
+
+  let threwRevision = false;
+  try {
+    triggerRevision(ledger, 'decision_challenge', 'decision_discovery', 'test');
+  } catch (e) {
+    threwRevision = true;
+    assert(e.message.includes('subagents are not permitted to modify'), 'triggerRevision: expected subagent mutation blocked error message');
+  }
+  assert(threwRevision, 'triggerRevision: should throw under SUBAGENT=true');
+  
+  delete process.env.SUBAGENT;
+}
+
+{
+  // Test 2: validateLedger enforces parallelism cap when repoRoot is passed
+  const os = require('os');
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-flow-engine-parallel-'));
+  try {
+    fs.mkdirSync(path.join(tempDir, '.ai/state'), { recursive: true });
+    
+    // Write policy config with max_parallelism = 2
+    const policyConfig = {
+      schema_version: '1.0.0',
+      inline_threshold_bytes: 50000,
+      pack_threshold_bytes: 200000,
+      max_parallelism: 2,
+      stage_overrides: {},
+      budget_inputs: {
+        include_required_artifacts: true,
+        include_session_logs: true,
+        include_planning_artifacts: true,
+        include_context_packs: true,
+        include_handoff_files: true
+      }
+    };
+    fs.writeFileSync(path.join(tempDir, '.ai/state/context-policy.json'), JSON.stringify(policyConfig, null, 2), 'utf8');
+
+    // Ledger with 3 stages in progress
+    const ledger = {
+      flow_name: 'test-flow',
+      current_stage: 'stage1',
+      stages: [
+        { id: 'stage1', status: 'in_progress', artifacts: [] },
+        { id: 'stage2', status: 'in_progress', artifacts: [] },
+        { id: 'stage3', status: 'in_progress', artifacts: [] }
+      ],
+      revision_history: []
+    };
+
+    // Calling validateLedger with repoRoot should catch the violation
+    const res = validateLedger(ledger, tempDir);
+    assert(res.valid === false, 'validateLedger: should fail when concurrent stages exceed max_parallelism');
+    assert(res.errors.some(e => e.includes('exceeds the maximum parallelism limit')), 'validateLedger: error message should mention parallelism limit');
+
+    // Ledger with 2 stages in progress should succeed
+    ledger.stages[2].status = 'pending';
+    const resOk = validateLedger(ledger, tempDir);
+    assert(resOk.valid === true, 'validateLedger: should succeed when concurrent stages are within max_parallelism');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+// ============================================================
 // Summary
 // ============================================================
 
@@ -557,3 +692,4 @@ console.log(`Flow engine tests: ${passed} passed, ${failed} failed`);
 if (failed > 0) {
   process.exit(1);
 }
+

@@ -74,7 +74,8 @@ node bin/adp.js handoff
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+shell commands, and other important information, read the current plan:
+[plan.md](file:///Volumes/D/snail-agent-flow/specs/017-context-budget-gate/plan.md)
 <!-- SPECKIT END -->
 
 # RTK Token Optimization Rules
@@ -88,7 +89,7 @@ You are integrated with RTK (Rust Token Killer). When executing or reading outpu
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **snail-agent-flow** (1206 symbols, 1300 relationships, 2 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **snail-agent-flow** (1328 symbols, 1426 relationships, 2 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

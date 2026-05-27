@@ -47,6 +47,9 @@ The default `rough-project-flow` is a 10-stage sequential delivery loop. Each st
 | `.ai/` | Orchestration | Mutable state, reviews, sessions, handoff, and durable memory. |
 | `.ai/flows/` | Flow engine | Declarative flow definitions such as `rough-project-flow.yaml`. |
 | `.ai/state/flow-ledger.json` | Flow ledger | Current stage progress and artifact state. |
+| `.ai/state/context-policy.json` | Context policy config | Budget thresholds and orchestration limits. |
+| `.ai/state/context-handoff.json` | Handoff artifact | Handoff metadata written when restart is required. |
+| `.ai/context-packs/` | Context pack storage | Bounded context files directing subagents. |
 | `bin/adp.js` | CLI | Zero-dependency local command entry point for `adp` and `saf`. |
 | `lib/` | Runtime | Flow engine, ledger, init checks, parsers, and tool validators. |
 | `validators/scripts/` | Gates | Deterministic validation and integration test scripts. |

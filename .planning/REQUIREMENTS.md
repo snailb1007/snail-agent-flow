@@ -111,6 +111,16 @@ Requirements for the Flow Engine milestone. Packages the rough-project-flow ledg
 - [ ] **SUB-03**: Define explicit subagent and parallel execution guidelines in default instruction files (`CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`) directing the agent to spawn subagents for independent task lists.
 - [ ] **SUB-04**: Verify that local skill file reading and subagent spawning work correctly in a simulated sandbox environment without throwing permission errors.
 
+### Context Budget and Orchestration Policy
+
+These requirements are a deterministic **byte-pressure heuristic**, not token accounting. The gate estimates context pressure from the byte size of declared/staged artifacts, referenced files, session logs, and context packs on disk. It deliberately does not introspect live chat-token usage (runtime-neutral, offline). Module names and diagnostics must name this as a byte-pressure estimate to avoid overclaiming token precision.
+
+- [ ] **CTX-01**: Provide a deterministic, offline budget gate that estimates byte pressure for the next flow stage and emits one of three outcomes — `inline`, `context_pack_required`, `fresh_session_required` — returned alongside stage resolution and rendered in the formatted stage instruction. The phase/stage scope of the byte walk must be resolved centrally in `lib/flow-engine.js` from the ledger (current/next stage) and injected as a `{phase_id}` template variable; callers must not infer the current phase independently. *(maps FR-01, FR-02, FR-03)*
+- [ ] **CTX-02**: Define a minimal context-pack manifest schema (objective, active stage, required/allowed file paths, excluded files, expected outputs, validation commands, omissions) that references files by workspace-relative path rather than embedding file bodies. *(maps FR-04, FR-05)*
+- [ ] **CTX-03**: Enforce conservative subagent fan-out — only independent tasks with disjoint write targets and no sequential ledger dependency, one context pack per subagent, default parallelism capped at 3, and parent-owned join/reconcile (subagents cannot mutate the main ledger). *(maps FR-06, FR-07, FR-08)*
+- [ ] **CTX-04**: Define a fresh-session handoff artifact (next stage, required context pack, known risks, verification commands) written to a fixed well-known workspace path so a new session resumes deterministically. *(maps FR-09)*
+- [ ] **CTX-05**: Add deterministic validation gates (schema completeness, fan-out write-target uniqueness, handoff resume target) that fail closed with non-zero exit codes, wired into `adp doctor` and strict init checks. *(maps FR-10, FR-11)*
+
 ## v3 Requirements (Deferred)
 
 - **MULTI-01**: Support multiple concurrent flows per project (e.g., feature A at execution while feature B at spec stage).
@@ -150,10 +160,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WARN-01 – WARN-04 | Phase 12 (v2) | Completed |
 | FVALID-01 – FVALID-04 | Phase 13 (v2) | Pending |
 | SUB-01 – SUB-04 | Phase 14 (v2) | Pending |
+| CTX-01 – CTX-05 | Phase 16 (v2) | Pending |
 
 **Coverage:**
 - v1 requirements: 28 total, 28 completed
-- v2 requirements: 28 total, 20 completed
+- v2 requirements: 33 total, 20 completed
 - Unmapped: 0
 
 ---
