@@ -73,7 +73,8 @@ function handleInit() {
     '.ai/state',
     '.ai/flows',
     '.specify/templates',
-    'specs'
+    'specs',
+    '.ai/context-packs'
   ];
 
   console.log('[init] Initializing directories...');
@@ -229,6 +230,30 @@ function handleInit() {
   // Localize GSD skills and append subagent guidelines
   localizeGlobalSkills(repoRoot);
   appendSubagentGuidelines(repoRoot);
+  appendContextPolicyGuidelines(repoRoot);
+
+  // Write default context-policy.json config if absent
+  const policyPath = path.join(repoRoot, '.ai/state/context-policy.json');
+  if (!fs.existsSync(policyPath)) {
+    const defaultPolicy = {
+      schema_version: "1.0.0",
+      inline_threshold_bytes: 50000,
+      pack_threshold_bytes: 200000,
+      max_parallelism: 3,
+      stage_overrides: {},
+      budget_inputs: {
+        include_required_artifacts: true,
+        include_session_logs: true,
+        include_planning_artifacts: true,
+        include_context_packs: true,
+        include_handoff_files: true
+      }
+    };
+    fs.writeFileSync(policyPath, JSON.stringify(defaultPolicy, null, 2) + '\n', 'utf8');
+    console.log('[init] Created .ai/state/context-policy.json');
+  } else {
+    console.log('[init] .ai/state/context-policy.json already exists, skipping.');
+  }
 
   runAndReport(repoRoot, 'init');
 
@@ -906,6 +931,40 @@ function appendSubagentGuidelines(repoRoot) {
         }
       } catch (e) {
         console.warn(`[init] WARNING: Failed to update ${f} with subagent guidelines: ${e.message}`);
+      }
+    }
+  }
+}
+
+function appendContextPolicyGuidelines(repoRoot) {
+  const guidelinesBlock = `
+## Context Budget and Subagent Orchestration Policy
+
+1. **Estimate Byte Pressure:** Before starting any flow stage, estimate the byte pressure locally to decide the execution path (inline, context pack, or fresh session).
+2. **Configure Thresholds:** Set conservative size thresholds (e.g. 50KB inline, 200KB context pack) in \`.ai/state/context-policy.json\` to prevent context bloat.
+3. **Generate Context Packs:** When context packs are required, generate a structured pack containing only essential files and omit all others.
+4. **Use Fresh Sessions:** When byte pressure exceeds limits, write a handoff artifact (\`.ai/state/context-handoff.json\`) and resume from a clean session.
+5. **Protect Ledger State:** Parallel subagents must run in isolated workspaces with disjoint write targets and must never modify the central ledger.
+`;
+
+  const files = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
+  for (const f of files) {
+    const filePath = path.join(repoRoot, f);
+    if (fs.existsSync(filePath)) {
+      try {
+        let content = fs.readFileSync(filePath, 'utf8');
+        if (!content.match(/##\s+Context\s+Budget\s+and\s+Subagent\s+Orchestration\s+Policy/i)) {
+          if (content && !content.endsWith('\n')) {
+            content += '\n';
+          }
+          content += guidelinesBlock.trim() + '\n';
+          fs.writeFileSync(filePath, content, 'utf8');
+          console.log(`[init] Appended context policy guidelines to ${f}`);
+        } else {
+          console.log(`[init] Context policy guidelines already present in ${f}, skipping.`);
+        }
+      } catch (e) {
+        console.warn(`[init] WARNING: Failed to update ${f} with context policy guidelines: ${e.message}`);
       }
     }
   }

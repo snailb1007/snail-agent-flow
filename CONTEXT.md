@@ -73,11 +73,11 @@ A markdown document (`.ai/reviews/<feature-slug>/human-review.md`) automatically
 _Avoid_: block report, unstructured review request
 
 **Flow Validator**:
-A deterministic Node.js validator (`lib/flow-validator.js`, invoked via `adp flow validate` or `npm run validate:flow`) that checks flow definition syntax, ledger state consistency, and the cross-reference between them. Runs without LLMs and is callable from `adp doctor`.
-_Avoid_: runtime gate evaluation, tool prerequisite check, spec validator
+The deterministic, offline flow/ledger validation capability that checks flow definition syntax (`lib/yaml-parser.js`), ledger state consistency (`lib/flow-engine.js` `validateLedger`), and the cross-reference between them. It is not a standalone command; it runs as part of the Strict Post-Init Gate invoked by `adp init` and `adp doctor`. Runs without LLMs.
+_Avoid_: runtime gate evaluation, tool prerequisite check, spec validator, standalone `adp flow validate`
 
 **Ledger Corruption**:
-A state in which the flow ledger (`.ai/flow-ledger.json`) violates an invariant — invalid stage references, impossible status transitions, orphaned entries, or version mismatch with the flow definition. Detected by the Flow Validator, never by the Flow Engine at execution time.
+A state in which the flow ledger (`.ai/state/flow-ledger.json`) violates an invariant — invalid stage references, impossible status transitions, orphaned entries, or version mismatch with the flow definition. Detected by the Strict Post-Init Gate (which calls `validateLedger`), never by the Flow Engine at execution time.
 _Avoid_: gate failure, spec drift
 
 **Skill Reference Check**:
@@ -107,6 +107,26 @@ _Avoid_: overwrite, forced regeneration, destructive merge
 **Subagent Parallelization**:
 The technique of splitting independent tasks in tasks.md into concurrent execution threads using specialized subagents, minimizing overall wall-clock delivery time.
 _Avoid_: sequential execution of independent checklists, single-thread task processing
+
+**Strict Post-Init Gate**:
+The deterministic, offline check (`lib/init-checks.js` `runStrictChecks`) that runs after `adp init` scaffolds files and localizes skills. It verifies required directories, flow YAML, ledger schema, tool prerequisites, skill localization, and instruction files, then exits non-zero on any required failure. Reused verbatim by `adp doctor`.
+_Avoid_: spec validator, runtime gate evaluation, standalone flow validator
+
+**Repair Guide**:
+The Markdown remediation document (`.ai/state/repair-guide.md`) the Strict Post-Init Gate writes when it fails, listing each failure's purpose, detected reason, checked paths, install/copy commands, and the verify command. Regenerated on every failing run and deleted on a passing run.
+_Avoid_: human review packet, block report, session log
+
+**Context Budget Gate**:
+The offline check that estimates byte-pressure before starting a stage to decide the execution outcome (`inline`, `context_pack_required`, or `fresh_session_required`).
+_Avoid_: token counting, LLM-as-judge calls
+
+**Context Pack Manifest**:
+A minimal task descriptor file directing an agent or subagent on a scoped unit of work, containing only essential path references.
+_Avoid_: embedded file bodies
+
+**Fresh-Session Handoff**:
+The handover process and artifact (`.ai/state/context-handoff.json`) written when context pressure forces a session restart.
+_Avoid_: memory handoff, transcript summary
 
 ## Example Dialogue
 

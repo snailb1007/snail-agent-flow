@@ -3,44 +3,34 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: flow-engine
 status: active
-last_updated: "2026-05-26T11:00:37.803Z"
+last_updated: "2026-05-27T23:45:51.000Z"
 progress:
-  total_phases: 9
-  completed_phases: 8
-  total_plans: 6
-  completed_plans: 5
-  percent: 88
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 3
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
 
-**Last updated:** 2026-05-26
+**Last updated:** 2026-05-27
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-05-26)
+See: `.planning/PROJECT.md` (updated 2026-05-27)
 
 **Core value:** Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
-**Current focus:** Phase 16: Context budget gate and subagent orchestration policy
+**Current focus:** Milestone v2.0 completion
 
 ## Current Status
 
 Milestone v1.0 is complete (Phases 1-7). All 28 v1 requirements delivered.
-Milestone v2.0 started. Phases 8-15 are complete and verified. Phase 16 (Context budget gate and subagent orchestration policy) is now active.
+Milestone v2.0 is complete. Phases 8-16 are complete, verified, and shipped (PR #55).
 
 ## Active Phase
 
-**Phase 16: Context budget gate and subagent orchestration policy**
-
-Goal: Add a deterministic context budget and orchestration policy layer so the flow engine can decide when work stays inline, when it must hand off to a fresh session, and when independent tasks should run as isolated subagents with minimal context packs instead of inheriting a large chat history.
-
-Primary requirements:
-
-- CTX-01
-- CTX-02
-- CTX-03
-- CTX-04
-- CTX-05
+None (Milestone v2.0 complete)
 
 ## Decisions
 
@@ -61,6 +51,9 @@ Primary requirements:
 - Prerequisite tools (GSD, Superpowers, Spec-Kit, GStack) are validated, not installed.
 - Platform-specific installation instructions (macOS brew/npm) are structured in a helper database.
 - Halting and warning the user/agent is enforced inside the flow engine skill when tool prerequisites are missing.
+- Use local, offline filesystem byte-pressure heuristics instead of active LLM/token estimation API.
+- Maintain idempotency during configuration and instruction updates so existing setups are preserved.
+- Establish `.ai/state/context-handoff.json` as the well-known resume linkage by convention.
 
 ## Verification Log
 
@@ -71,12 +64,15 @@ Primary requirements:
 - Phases 1-7 execution verified.
 - CLI tests, validator tests, pipeline tests all passing.
 
-### v2.0 (Active)
+### v2.0 (Complete)
 
 - v2 requirements defined: 24 total, 6 categories (FLOW, INIT, ENGINE, GATE, WARN, FVALID).
-- Roadmap phases 8-13 defined with success criteria.
+- Roadmap phases 8-16 completed and verified.
 - Phases 8-11: Completed and verified in PR #44.
 - Phase 12: Prerequisite Tool Checker and Installation Guide completed and verified.
+- Phase 13-14: Flow validator and spawn subagent support completed and verified.
+- Phase 15: Strict Initialization Checks and Detailed Installation Guide completed and verified in PR #54.
+- Phase 16: Context Budget Gate and Subagent Orchestration Policy completed and verified in PR #55.
 
 ## Quick Tasks Completed
 
@@ -89,10 +85,10 @@ Primary requirements:
 
 ## Next Action
 
-Begin Phase 16 — plan context budget gates and subagent orchestration policies.
+Complete the milestone:
 
 ```bash
-/gsd-plan-phase 16
+/gsd-complete-milestone
 ```
 
 ## Accumulated Context
@@ -104,4 +100,4 @@ Begin Phase 16 — plan context budget gates and subagent orchestration policies
 - Phase 16 added: Context budget gate and subagent orchestration policy
 
 ---
-*State updated: 2026-05-26*
+*State updated: 2026-05-27*

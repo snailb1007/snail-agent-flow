@@ -1336,6 +1336,90 @@ addTest('CLI Init Strict Gate Reports Instruction Section Missing', () => {
   cleanupSandbox();
 });
 
+// 26. CLI Init scaffolds context policy config and guidelines
+addTest('CLI Init scaffolds context policy config and guidelines', () => {
+  setupSandbox();
+  
+  // We need constitution template to be present
+  writeJson('.specify/templates/constitution-template.md', '# Constitution');
+
+  const res = runCLI(['init']);
+  if (res.code !== 0) {
+    cleanupSandbox();
+    throw new Error(`Expected exit code 0 on init, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+
+  if (!fileExists('.ai/context-packs')) {
+    cleanupSandbox();
+    throw new Error('Expected .ai/context-packs directory to be created');
+  }
+
+  if (!fileExists('.ai/state/context-policy.json')) {
+    cleanupSandbox();
+    throw new Error('Expected .ai/state/context-policy.json to be created');
+  }
+
+  const policy = readJson('.ai/state/context-policy.json');
+  if (policy.inline_threshold_bytes !== 50000 || policy.max_parallelism !== 3) {
+    cleanupSandbox();
+    throw new Error(`Expected default config keys, got: ${JSON.stringify(policy)}`);
+  }
+
+  const files = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
+  for (const f of files) {
+    const content = readFile(f);
+    if (!content.includes('## Context Budget and Subagent Orchestration Policy')) {
+      cleanupSandbox();
+      throw new Error(`Expected context policy guidelines appended to ${f}`);
+    }
+  }
+
+  cleanupSandbox();
+});
+
+// 27. CLI Doctor fails when context-policy.json is malformed
+addTest('CLI Doctor fails when context-policy.json is malformed', () => {
+  setupSandbox();
+  
+  // Set up valid feature spec so it doesn't fail on that
+  const mockFeatureSlug = 'test-feature';
+  const mockSpecPath = `specs/${mockFeatureSlug}`;
+  writeJson('.specify/feature.json', { feature_directory: mockSpecPath });
+
+  const validSpecContent = `# Test Feature Spec\n## Goal\nTo implement a test feature.\n## Non-Goals\nNone.\n## Acceptance Criteria\n- Must work.\n## Test Strategy\nManual verification.\n## Behavior-Preservation Rules\nDo not break anything.\n`;
+  const validPlanContent = `# Test Feature Plan\n## Proposed Changes\n- Create files.\n## Verification Plan\n- Run tests.\n`;
+  const validTasksContent = `# Test Feature Tasks\n- [ ] Task 1\n- [x] Task 2\n`;
+
+  writeFile(`${mockSpecPath}/spec.md`, validSpecContent);
+  writeFile(`${mockSpecPath}/plan.md`, validPlanContent);
+  writeFile(`${mockSpecPath}/tasks.md`, validTasksContent);
+
+  // Initialize
+  runCLI(['init']);
+
+  // Write malformed policy config
+  writeJson('.ai/state/context-policy.json', { schema_version: '1.0', max_parallelism: 99 });
+
+  const res = runCLI(['doctor']);
+  if (res.code !== 1) {
+    cleanupSandbox();
+    throw new Error(`Expected exit code 1 on doctor with malformed policy config, got ${res.code}`);
+  }
+
+  if (!fileExists('.ai/state/repair-guide.md')) {
+    cleanupSandbox();
+    throw new Error('Expected repair guide to be written');
+  }
+
+  const guide = readFile('.ai/state/repair-guide.md');
+  if (!guide.includes('context-policy.json')) {
+    cleanupSandbox();
+    throw new Error(`Expected repair guide to report context-policy.json error, got: ${guide}`);
+  }
+
+  cleanupSandbox();
+});
+
 // Run all tests
 let failedCount = 0;
 console.log('Running CLI tests...\n');

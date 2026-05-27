@@ -36,7 +36,8 @@ npm test                # full validation suite
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+shell commands, and other important information, read the current plan:
+[plan.md](file:///Volumes/D/snail-agent-flow/specs/017-context-budget-gate/plan.md)
 <!-- SPECKIT END -->
 
 # RTK Token Optimization Rules
