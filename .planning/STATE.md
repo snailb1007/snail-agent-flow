@@ -1,37 +1,38 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: flow-engine
-status: Awaiting next milestone
-last_updated: "2026-05-27T17:23:53.996Z"
-last_activity: 2026-05-27 — Milestone v2.0 completed and archived
+milestone: v4.0
+milestone_name: risk-adaptive-operating-system
+status: planning
+last_updated: "2026-05-28T00:35:00.000Z"
+last_activity: 2026-05-28 — Milestone v4.0 active; Phase 18 pending
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 8
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
-**Last updated:** 2026-05-27
+**Last updated:** 2026-05-28
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-05-27)
+See: `.planning/PROJECT.md` (updated 2026-05-28)
 
 **Core value:** Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
-**Current focus:** Milestone v2.0 completion
+**Current focus:** Milestone v4.0: Risk-Adaptive Operating System (Kernel)
 
 ## Current Status
 
-Milestone v1.0 is complete (Phases 1-7). All 28 v1 requirements delivered.
-Milestone v2.0 is complete. Phases 8-16 are complete, verified, and shipped (PR #55).
+Milestone v1.0 is complete (Phases 1-7).
+Milestone v2.0 is complete (Phases 8-16).
+Milestone v4.0 is active. Scoped requirements (RAOS-01 to RAOS-08) and roadmap (Phases 18-23) defined.
 
 ## Active Phase
 
-None (Milestone v2.0 complete)
+Phase 18: Pure task scoring & profile selection module
 
 ## Decisions
 
@@ -86,11 +87,7 @@ None (Milestone v2.0 complete)
 
 ## Next Action
 
-Complete the milestone:
-
-```bash
-/gsd-complete-milestone
-```
+Define spec for Phase 18.
 
 ## Accumulated Context
 
@@ -99,17 +96,18 @@ Complete the milestone:
 - Phase 14 added: Improve AI for spawn subagent support
 - Phase 15 added: Strict initialization checks and detailed installation guides for missing tools
 - Phase 16 added: Context budget gate and subagent orchestration policy
+- Phases 18-23 added: Milestone v4.0 RAOS kernel phases.
 
 ---
-*State updated: 2026-05-27*
+*State updated: 2026-05-28*
 
 ## Current Position
 
-Phase: Milestone v2.0 complete
+Phase: Phase 18
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-05-27 — Milestone v2.0 completed and archived
+Status: Planning complete
+Last activity: 2026-05-28 — Milestone v4.0 active; Phase 18 pending
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run `/gsd-discuss-phase 18` or `/gsd-plan-phase 18`

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "inline_threshold_bytes": 50000,
+  "pack_threshold_bytes": 200000,
+  "max_parallelism": 3,
+  "stage_overrides": {},
+  "budget_inputs": {
+    "include_required_artifacts": true,
+    "include_session_logs": true,
+    "include_planning_artifacts": true,
+    "include_context_packs": true,
+    "include_handoff_files": true
+  }
+}

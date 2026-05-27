@@ -5,10 +5,33 @@ const { spawnSync } = require('child_process');
 const cliScriptPath = path.resolve(__dirname, '../../bin/adp.js');
 const testSandboxRoot = path.resolve(__dirname, '../../.specify/fixtures/test-cli-sandbox');
 
-function setupSandbox() {
-  if (fs.existsSync(testSandboxRoot)) {
-    fs.rmSync(testSandboxRoot, { recursive: true, force: true });
+function rmSyncWithRetry(dirPath, maxRetries = 10, delayMs = 50) {
+  let retries = 0;
+  while (true) {
+    try {
+      if (fs.existsSync(dirPath)) {
+        fs.rmSync(dirPath, { recursive: true, force: true });
+      }
+      break;
+    } catch (err) {
+      retries++;
+      if (retries >= maxRetries) {
+        throw err;
+      }
+      try {
+        const sab = new SharedArrayBuffer(4);
+        const int32 = new Int32Array(sab);
+        Atomics.wait(int32, 0, 0, delayMs);
+      } catch (e) {
+        const start = Date.now();
+        while (Date.now() - start < delayMs) {}
+      }
+    }
   }
+}
+
+function setupSandbox() {
+  rmSyncWithRetry(testSandboxRoot);
   fs.mkdirSync(testSandboxRoot, { recursive: true });
 
   // Pre-create mock skill folders to satisfy prerequisite checks in tests
@@ -19,9 +42,7 @@ function setupSandbox() {
 }
 
 function cleanupSandbox() {
-  if (fs.existsSync(testSandboxRoot)) {
-    fs.rmSync(testSandboxRoot, { recursive: true, force: true });
-  }
+  rmSyncWithRetry(testSandboxRoot);
 }
 
 // Helper to run CLI on sandbox
@@ -491,9 +512,7 @@ addTest('CLI CWD-Based Resolution', () => {
 // 9. Greenfield Fixture Test
 addTest('Greenfield Project Fixture Integration', () => {
   const greenfieldSandbox = path.join(testSandboxRoot, 'greenfield-sandbox');
-  if (fs.existsSync(greenfieldSandbox)) {
-    fs.rmSync(greenfieldSandbox, { recursive: true, force: true });
-  }
+  rmSyncWithRetry(greenfieldSandbox);
   fs.mkdirSync(greenfieldSandbox, { recursive: true });
 
   // Pre-create mock skill folders to satisfy prerequisites in greenfield sandbox
@@ -561,9 +580,7 @@ addTest('Greenfield Project Fixture Integration', () => {
 // 10. Brownfield Fixture Test
 addTest('Brownfield Project Fixture Integration', () => {
   const brownfieldSandbox = path.join(testSandboxRoot, 'brownfield-sandbox');
-  if (fs.existsSync(brownfieldSandbox)) {
-    fs.rmSync(brownfieldSandbox, { recursive: true, force: true });
-  }
+  rmSyncWithRetry(brownfieldSandbox);
   fs.mkdirSync(brownfieldSandbox, { recursive: true });
 
   // Pre-create mock skill folders to satisfy prerequisites in brownfield sandbox
@@ -1206,9 +1223,7 @@ addTest('CLI Init Strict Gate Fails on Missing Prerequisite', () => {
 
   // Delete one of the required skill folders to trigger prerequisite check failure
   const p = path.join(testSandboxRoot, '.agents/skills/gsd-discuss-phase');
-  if (fs.existsSync(p)) {
-    fs.rmSync(p, { recursive: true, force: true });
-  }
+  rmSyncWithRetry(p);
 
   const originalHome = process.env.HOME;
   let res;

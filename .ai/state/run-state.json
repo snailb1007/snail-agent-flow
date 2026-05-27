@@ -1,14 +1,16 @@
 {
   "feature_slug": "017-context-budget-gate",
   "spec_path": "specs/017-context-budget-gate/",
-  "current_phase": "Complete",
+  "current_phase": "Recon",
   "last_gate": "Spec-Validation",
   "consecutive_failures": 0,
   "retry_count": 0,
   "last_failed_step": null,
   "last_failed_rule": null,
   "last_validator_output": null,
-  "updated_at": "2026-05-27T17:25:14.419Z",
+  "updated_at": "2026-05-27T17:46:42.403Z",
   "last_gate_status": "PASS",
-  "verified_artifacts": []
+  "verified_artifacts": [],
+  "blocked_reason": "none",
+  "retry_scope": "none"
 }

@@ -6,13 +6,36 @@ Snail Agent Flow is a lightweight operating protocol for AI coding agents. It co
 
 Milestone v1.0 delivered the protocol foundation: artifact contract, routing/gates, deterministic validator, runtime adapters, CLI packaging, expanded examples/CI, and one-flow feature scaffolding.
 
-Milestone v2.0 focuses on packaging the rough-project-flow ledger into a portable, init-able Gemini skill with declarative flow definitions and artifact gates. This enables any project to adopt the 10-stage sequential workflow (decision discovery → decision challenge → canonical spec → implementation plan → plan critique → revision loop → vertical slicing → execution → verification → release readiness) by installing the package and mentioning the flow skill in chat.
+Milestone v2.0 focuses on packaging the rough-project-flow ledger into a portable, init-able Gemini skill with declarative flow definitions and artifact gates.
+
+Milestone v4.0 implements the Risk-Adaptive AI Delivery Operating System (RAOS) kernel, supporting dynamic operating profiles, resource claiming/leasing for parallel work safety, profile checkpoints, and decision-coupled metrics logging.
+
+## Current Milestone: v4.0 Risk-Adaptive AI Delivery Operating System (Kernel)
+
+**Goal:** Implement the RAOS kernel to enforce risk-adaptive rigor, claiming/leasing mechanisms for parallel safety, switch checkpoints, and decision-coupled metrics loggers.
+
+**Target features:**
+- Pure task scoring and operating profile selection (RAOS-01)
+- Parallel-safety work claiming in `.ai/claims/` (RAOS-02)
+- Shared resource leasing locks in `.ai/locks/` (RAOS-03)
+- Profile-switch checkpoints and transient state tracking (RAOS-04, RAOS-05)
+- Logging of 5 decision-aligned metrics in `.ai/signals/current-period.md` (RAOS-06)
+- Pipeline failure recovery and CLI health verification integration (RAOS-07, RAOS-08)
 
 ## Core Value
 
 Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
 
 ## Requirements
+
+### Active (v4.0)
+
+- [ ] Implement task scoring and dynamic profile selection (FAST/STANDARD/FULL/BUGFIX/PROTOTYPE) (RAOS-01).
+- [ ] Implement work claiming under `.ai/claims/` (RAOS-02).
+- [ ] Implement file leasing locks under `.ai/locks/` (RAOS-03).
+- [ ] Implement profile-switch checkpoints and enforce durable ADR usage (RAOS-04, RAOS-05).
+- [ ] Implement logging of 5 decision-linked metrics under `.ai/signals/` (RAOS-06).
+- [ ] Implement failure recovery rules and CLI `adp doctor` check integration (RAOS-07, RAOS-08).
 
 ### Validated (v1.0)
 
@@ -112,4 +135,4 @@ After each milestone:
 4. Update Context with current state, feedback, and verification results.
 
 ---
-*Last updated: 2026-05-27 — Milestone v2.0 completed and archived*
+*Last updated: 2026-05-28 — Milestone v4.0 started*
