@@ -757,22 +757,25 @@ console.log('--- computeOutcome ---');
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Instruction-file section: extend or replace Phase 14 section?**
+1. **Instruction-file section: extend or replace Phase 14 section?** — RESOLVED
    - What we know: Phase 14 added `## Subagent & Parallel Execution Guidelines` (5 rules). Phase 16 adds richer context-pack and handoff obligations.
    - What's unclear: Whether to merge into one section or have two adjacent sections.
    - Recommendation: Merge into `## Context Budget and Subagent Orchestration Policy` (replaces Phase 14 section heading only; content supersedes and extends). Add presence check for both the old and new heading.
+   - RESOLVED: Merge into a single `## Context Budget and Subagent Orchestration Policy` section that supersedes and extends the Phase 14 heading; init check verifies presence of the new heading. Adopted in plan 16-03.
 
-2. **Ledger context_policy annotation: optional or required?**
+2. **Ledger context_policy annotation: optional or required?** — RESOLVED
    - What we know: D-16-16 requires handoff path be "linked from ledger or state metadata."
    - What's unclear: Whether annotating every stage or only the `fresh_session_required` stage is sufficient.
    - Recommendation: Annotate only when outcome is `context_pack_required` or `fresh_session_required` (not `inline`) to minimize ledger mutation surface.
+   - RESOLVED: Annotate only non-`inline` outcomes. The fixed well-known handoff path `.ai/state/context-handoff.json` provides the state-metadata linkage required by D-16-16; ledger annotation of `context_policy.handoff_path` for `fresh_session_required` is the optional reinforcement adopted in plan 16-03.
 
-3. **Should `adp status` display the current context policy outcome?**
+3. **Should `adp status` display the current context policy outcome?** — RESOLVED
    - What we know: Current `handleStatus` reads ledger and prints stage name and gate status.
    - What's unclear: Whether displaying the policy outcome is useful or noisy for most users.
    - Recommendation: Display it only when outcome is not `inline` (i.e., action is required from the agent). This avoids noise on small sessions.
+   - RESOLVED: Display only when outcome is not `inline` (action required). Avoids noise on small sessions.
 
 ---
 
