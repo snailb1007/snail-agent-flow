@@ -22,6 +22,7 @@ This document defines the canonical artifact contract, path ownership model, and
 | `.github/workflows/ci.yml` | GitHub Actions | Authoritative | `implemented` | CI workflow matrix that runs spec validation, validator tests, pipeline simulation, CLI integration tests, and the full verification suite. |
 | `.github/workflows/release.yml` | GitHub Actions | Authoritative | `implemented` | Release workflow that runs the full validation suite, packs the CLI tarball, uploads the artifact, and attaches it to tagged releases. |
 | `docs/` | Protocol / Human | Authoritative | `implemented` | Project documentation and artifact registries. |
+| `docs/installation.md` | Protocol / Human | Authoritative | `implemented` | Local setup, CLI usage, and verification command reference. |
 | `docs/artifact-registry.md` | Protocol / Human | Authoritative | `implemented` | Registry of paths, owners, and statuses. |
 | `docs/superpowers/specs/` | Superpowers / Human | Authoritative | `implemented` | Legacy/existing project specification documents. |
 | `docs/superpowers/plans/` | Superpowers / Human | Authoritative | `implemented` | Legacy/existing project implementation plans. |

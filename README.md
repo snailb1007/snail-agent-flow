@@ -1,122 +1,69 @@
 # Snail Agent Flow
 
-Snail Agent Flow is a local operating protocol for AI coding agents. It keeps feature specs, planning artifacts, validation gates, sessions, reviews, and durable memory in predictable paths so agents can move from spec to implementation to release without inventing parallel state.
+Snail Agent Flow is a local operating protocol for AI coding agents. It keeps specs, plans, validation gates, execution notes, reviews, and durable memory in predictable paths so a project can move from idea to release without scattered agent state.
 
-## Installation
+## Flow Design
 
-To set up Snail Agent Flow locally:
+```mermaid
+flowchart LR
+  A["Decision discovery"] --> B["Decision challenge"]
+  B --> C["Canonical spec"]
+  C --> D["Implementation plan"]
+  D --> E["Plan critique"]
+  E --> F["Revision loop"]
+  F --> G["Vertical slicing"]
+  G --> H["Execution"]
+  H --> I["Verification"]
+  I --> J["Release readiness"]
 
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd snail-agent-flow
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Register the CLI commands globally**:
-   Make the `adp` and `saf` CLI commands available anywhere on your system by linking the package:
-   ```bash
-   npm link
-   ```
-   *Alternatively, install globally from the local path:*
-   ```bash
-   npm install -g .
-   ```
-
-4. **Verify the installation**:
-   Run the project doctor to verify that required directory structures and tool dependencies are present:
-   ```bash
-   saf doctor
-   ```
-
-## CLI
-The package exposes the same local CLI through two command names:
-
-```bash
-adp <command>
-saf <command>
+  F -. "spec failed" .-> C
+  F -. "critique failed" .-> D
+  H -. "execution failed" .-> F
+  I -. "verification failed" .-> H
+  J -. "ship rejected" .-> H
 ```
 
-When running from a checkout, use the script directly:
+The default `rough-project-flow` is a 10-stage sequential delivery loop. Each stage declares the skill or command to run, the artifacts it must produce, and where failures route next.
+
+## Tool Map
+
+| Layer | Tooling | Role |
+|---|---|---|
+| Constitution | Superpowers | Defines non-negotiable engineering behavior before work starts. |
+| Canonical spec | Spec-Kit | Owns `specs/<feature-slug>/spec.md`, `plan.md`, `tasks.md`, and checklists. |
+| Orchestration | Snail Agent Flow CLI (`adp` / `saf`) | Initializes protocol paths, creates feature packets, reports status, validates specs, and checks handoff state. |
+| Execution | GSD | Consumes the canonical Spec-Kit artifacts and performs implementation, verification support, and handoff work. |
+| Critique gates | GStack review tools | Runs product, engineering, QA, and ship-readiness review gates. |
+| Deterministic gates | Node.js validators | Blocks drift with required headings, path checks, placeholder scans, retry state, and human review packets. |
+| Recon support | Serena, Semble, Context7, GitNexus | Finds code context, current library docs, semantic matches, and change impact. |
+| Projection and CI | GitHub Issues / GitHub Actions | Projects tasks from `tasks.md` and runs release/verification workflows. |
+
+## Repository Contract
+
+| Path | Owner | Purpose |
+|---|---|---|
+| `.specify/` | Spec-Kit | Templates, fixtures, workflows, validators, and active feature pointer. |
+| `specs/<feature-slug>/` | Spec-Kit | Canonical feature source of truth. |
+| `.ai/` | Orchestration | Mutable state, reviews, sessions, handoff, and durable memory. |
+| `.ai/flows/` | Flow engine | Declarative flow definitions such as `rough-project-flow.yaml`. |
+| `.ai/state/flow-ledger.json` | Flow ledger | Current stage progress and artifact state. |
+| `bin/adp.js` | CLI | Zero-dependency local command entry point for `adp` and `saf`. |
+| `lib/` | Runtime | Flow engine, ledger, init checks, parsers, and tool validators. |
+| `validators/scripts/` | Gates | Deterministic validation and integration test scripts. |
+| `docs/` | Humans and agents | Protocol references, ADRs, runbooks, and setup docs. |
+
+## Quick Start
+
+For installation, CLI commands, and verification commands, read [docs/installation.md](docs/installation.md).
 
 ```bash
-node bin/adp.js <command>
-```
-
-| Command | Purpose |
-|---|---|
-| `init` | Create required protocol directories, missing starter docs (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`), copy the default flow definition to `.ai/flows/rough-project-flow.yaml`, initialize `.ai/state/flow-ledger.json` from it, generate `project-flow` skill stubs under `.agents/skills/` and `.claude/skills/`, copy and localize global GSD skills, append subagent guidelines, and run strict initialization-time sanity checks. |
-| `feature <description>` | Create a validated Spec-Kit feature scaffold under `specs/<feature-slug>/` and update `.specify/feature.json`. |
-| `run <description>` | Initialize the protocol if needed, create a feature scaffold, run validation, and print next steps. |
-| `new-session <name>` | Create `.ai/sessions/YYYY-MM-DD-<name>.md` for temporary execution notes. |
-| `status` | Print the active feature, feature directory, current phase, last gate, gate status, retry count, and verified artifacts. |
-| `doctor` | Run strict static sanity checks (directories, flow definitions, ledgers, tool prerequisites, global path leaks) and run the deterministic spec validator. Generates `.ai/state/repair-guide.md` on failure. |
-| `validate-spec` | Run `validators/scripts/validate-spec.js` through the packaged CLI path. |
-| `handoff` | Validate `.ai/state/handoff.md` before release by checking required memory handoff sections. |
-
-Session names for `new-session` may contain only letters, numbers, dots, underscores, and hyphens.
-
-### One-Flow Start
-
-For a new project, run the one-command scaffold flow:
-
-```bash
-saf run "Add user login"
-```
-
-From a repository checkout, use:
-
-```bash
+npm install
 node bin/adp.js run "Add user login"
+node bin/adp.js validate-spec
 ```
 
-This creates protocol directories if needed, writes `spec.md`, `plan.md`, `tasks.md`, and `checklists/requirements.md` under `specs/<feature-slug>/`, updates `.specify/feature.json`, and runs the deterministic validation gate.
+## Reference Docs
 
-For a project that is already initialized, create the next feature packet with:
-
-```bash
-saf feature "Improve checkout errors"
-saf validate-spec
-```
-
-The generated packet is a validated starting point for agent-driven planning and implementation. It does not mark implementation complete.
-
-## Verification
-
-```bash
-npm run validate           # deterministic Spec-Kit validation
-npm run test:validator     # validator unit coverage
-npm run test:init-checks   # strict init-time sanity check coverage
-npm run test:pipeline      # Phase 2 pipeline simulation
-npm run test:cli           # CLI command integration coverage
-npm test                   # full validation suite
-```
-
-The release workflow runs `npm test`, builds an npm tarball with `npm pack`, uploads the package artifact, and attaches it to tagged GitHub releases matching `v*.*.*.*`.
-
-## Project Structure
-
-| Path | Purpose |
-|---|---|
-| `.specify/` | Spec-Kit presets, fixtures, templates, validation scripts, optional evaluation rubric, and active feature pointer. |
-| `specs/<feature-slug>/` | Canonical feature requirements, implementation plan, tasks, and checklists. |
-| `.ai/` | Mutable orchestration state, review logs, session logs, memory handoff state, and durable project memory. |
-| `.ai/flows/` | Project flow definitions (e.g. `rough-project-flow.yaml`) consumed by the flow engine and ledger. |
-| `.github/workflows/` | GitHub Actions release and CI verification workflows. |
-| `bin/adp.js` | Zero-dependency Node.js CLI for protocol setup, status, validation, and handoff checks. |
-| `lib/` | Shipped runtime modules — init-checks, flow engine, flow ledger, YAML parser, skill-md parser, tool validator. |
-| `validators/scripts/` | Deterministic validation and integration test scripts. |
-| `docs/` | Protocol reference docs, artifact registry, routing matrix, ADRs, and runbooks. |
-
-## Documentation
-
-- [Claude agent instructions](CLAUDE.md)
-- [Gemini agent instructions](GEMINI.md)
-- [General agent instructions](AGENTS.md)
 - [Pipeline vocabulary](CONTEXT.md)
 - [Full pipeline blueprint](docs/prd.md)
 - [Artifact registry](docs/artifact-registry.md)
