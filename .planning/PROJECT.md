@@ -87,6 +87,10 @@ Current source material:
 | Copy flow definition to `.ai/flows/` on init | Flow definitions live in the project, not referenced from a global package path. Allows per-project customization. | Accepted |
 | Ledger state in JSON at `.ai/state/flow-ledger.json` | Machine-readable, deterministically validatable, versioned in git. | Accepted |
 | Flow definitions are YAML data, not code | Stage order and artifact gates are declarative. Execution logic lives in the flow engine skill. | Accepted |
+| Use local, offline filesystem byte-pressure heuristics | Offline size estimation provides runtime-neutral, offline heuristics without requiring token estimation APIs. | Accepted |
+| Enforce prerequisite tool checking on engine startup | Halting or warning early avoids runtime execution errors due to missing system tools (GSD, GStack, etc.). | Accepted |
+| Localize GSD workflows inside the workspace | Solves sandbox path security restrictions by carrying workflows under `.agents/skills/`. | Accepted |
+| Establish `.ai/state/context-handoff.json` as handoff target | A fixed well-known workspace path allows clean session resumes. | Accepted |
 
 ## Evolution
 
@@ -108,4 +112,4 @@ After each milestone:
 4. Update Context with current state, feedback, and verification results.
 
 ---
-*Last updated: 2026-05-25 — v2.0 Flow Engine milestone started*
+*Last updated: 2026-05-27 — Milestone v2.0 completed and archived*

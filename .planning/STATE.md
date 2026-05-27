@@ -2,8 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: flow-engine
-status: active
-last_updated: "2026-05-27T23:45:51.000Z"
+status: Awaiting next milestone
+last_updated: "2026-05-27T17:23:53.996Z"
+last_activity: 2026-05-27 — Milestone v2.0 completed and archived
 progress:
   total_phases: 1
   completed_phases: 1
@@ -101,3 +102,14 @@ Complete the milestone:
 
 ---
 *State updated: 2026-05-27*
+
+## Current Position
+
+Phase: Milestone v2.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-05-27 — Milestone v2.0 completed and archived
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
