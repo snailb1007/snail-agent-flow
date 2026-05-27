@@ -36,10 +36,8 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 - [x] Add a flow validator for definition syntax, ledger consistency, and gate status.
 - [x] Add tests covering flow lifecycle: normal completion, revision routing, gate blocking, brownfield merge.
 - [x] Warn or guide installation of required tools to use skills if the user lacks them.
+- [x] Add context budget gate and subagent orchestration policies (Phase 16).
 
-### Active (v2.0)
-
-- [ ] Add context budget gate and subagent orchestration policies (Phase 16).
 ### Out of Scope
 
 - Replacing GSD, GStack, Superpowers, Spec-Kit, Serena, Semble, GitNexus, Context7, Promptfoo, or Playwright — this project orchestrates them rather than reimplementing them.
