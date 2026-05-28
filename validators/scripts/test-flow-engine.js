@@ -17,7 +17,10 @@ const {
   advanceStage,
   triggerRevision,
   formatStageInstruction,
-  checkStagePrerequisites
+  checkStagePrerequisites,
+  handleSpecDrift,
+  triggerContextHandoff,
+  handleLeaseCollision
 } = require('../../lib/flow-engine');
 
 let passed = 0;
@@ -681,6 +684,78 @@ console.log('--- Ledger subagent protection and parallelism checks ---');
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
+}
+
+// ============================================================
+// Failure Recovery tests
+// ============================================================
+
+console.log('--- failure recovery ---');
+
+{
+  // Test 1: handleSpecDrift rolls back stages
+  const ledger = createMockLedger({
+    decision_discovery: 'done',
+    decision_challenge: 'done',
+    canonical_spec: 'done',
+    implementation_plan: 'in_progress'
+  });
+  const result = handleSpecDrift(ledger, 'implementation_plan', 'canonical_spec', 'spec drift reason');
+  assert(result.stages[2].status === 'needs_revision', 'handleSpecDrift: target spec stage is reset');
+  assert(result.stages[3].status === 'needs_revision', 'handleSpecDrift: current stage is reset');
+  assert(result.current_stage === 'canonical_spec', 'handleSpecDrift: current_stage points back to spec stage');
+  assert(result.revision_history.some(h => h.reason.includes('Spec Drift: spec drift reason')), 'handleSpecDrift: records spec drift in history');
+}
+
+{
+  // Test 2: triggerContextHandoff creates handoff JSON and blocks stage
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-flow-engine-handoff-'));
+  try {
+    const ledger = createMockLedger({
+      decision_discovery: 'in_progress'
+    });
+    const handoffPath = triggerContextHandoff(
+      ledger,
+      'decision_discovery',
+      {
+        nextSkill: 'speckit-plan',
+        contextPackPath: '.ai/context-packs/pack1.json',
+        verificationCommands: ['npm run validate', 'npm test'],
+        reason: 'Too many tokens'
+      },
+      tempDir
+    );
+
+    assert(fs.existsSync(handoffPath), 'triggerContextHandoff: handoff file created');
+    assert(ledger.stages[0].status === 'blocked', 'triggerContextHandoff: current stage marked blocked');
+
+    const content = JSON.parse(fs.readFileSync(handoffPath, 'utf8'));
+    assert(content.schema_version === '1.0.0', 'triggerContextHandoff: schema_version matches');
+    assert(content.resume_stage === 'decision_discovery', 'triggerContextHandoff: resume_stage matches');
+    assert(content.next_skill === 'speckit-plan', 'triggerContextHandoff: next_skill matches');
+    assert(content.context_pack_path === '.ai/context-packs/pack1.json', 'triggerContextHandoff: context_pack_path matches');
+    assertDeepEqual(content.verification_commands, ['npm run validate', 'npm test'], 'triggerContextHandoff: verification_commands match');
+    assert(content.reason === 'Too many tokens', 'triggerContextHandoff: reason matches');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+{
+  // Test 3: handleLeaseCollision delays and error behavior
+  const delay0 = handleLeaseCollision(0);
+  assert(delay0 === 1000, `handleLeaseCollision: retry 0 delay ${delay0} should be 1000`);
+  const delay2 = handleLeaseCollision(2);
+  assert(delay2 === 4000, `handleLeaseCollision: retry 2 delay ${delay2} should be 4000`);
+
+  let threw = false;
+  try {
+    handleLeaseCollision(3, 3);
+  } catch (e) {
+    threw = true;
+    assert(e.message.includes('Max retries (3) exceeded'), 'handleLeaseCollision: throws when retries exhausted');
+  }
+  assert(threw, 'handleLeaseCollision: should throw on exhaustion');
 }
 
 // ============================================================

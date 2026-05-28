@@ -693,6 +693,60 @@ function handleDoctor(cmdArgs = []) {
   console.log(`[doctor] Active claims: ${claims.length}`);
   console.log(`[doctor] Active locks: ${locks.length}`);
 
+  // Scan for stale claims
+  const claimsDir = claimsStore.dirPath;
+  if (fs.existsSync(claimsDir)) {
+    try {
+      const files = fs.readdirSync(claimsDir).filter(f => f.endsWith('.json'));
+      for (const file of files) {
+        const key = file.slice(0, -5);
+        const filePath = path.join(claimsDir, file);
+        const content = fs.readFileSync(filePath, 'utf8').trim();
+        if (content) {
+          const meta = JSON.parse(content);
+          let isDead = false;
+          try {
+            process.kill(meta.pid, 0);
+          } catch (err) {
+            if (err.code === 'ESRCH') isDead = true;
+          }
+          const elapsed = (Date.now() - new Date(meta.acquired_at).getTime()) / 1000;
+          const cap = meta.stale_lock_cap_seconds || 3600;
+          if (isDead || elapsed > cap) {
+            console.log(`[doctor] Warning: Stale claim detected on task '${key}' (pid: ${meta.pid} dead=${isDead}, age: ${Math.round(elapsed)}s, cap: ${cap}s)`);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Scan for stale locks
+  const locksDir = locksStore.dirPath;
+  if (fs.existsSync(locksDir)) {
+    try {
+      const files = fs.readdirSync(locksDir).filter(f => f.endsWith('.json'));
+      for (const file of files) {
+        const key = file.slice(0, -5);
+        const filePath = path.join(locksDir, file);
+        const content = fs.readFileSync(filePath, 'utf8').trim();
+        if (content) {
+          const meta = JSON.parse(content);
+          let isDead = false;
+          try {
+            process.kill(meta.pid, 0);
+          } catch (err) {
+            if (err.code === 'ESRCH') isDead = true;
+          }
+          const elapsed = (Date.now() - new Date(meta.acquired_at).getTime()) / 1000;
+          const cap = meta.stale_lock_cap_seconds || 3600;
+          if (isDead || elapsed > cap) {
+            console.log(`[doctor] Warning: Stale lease lock detected on file '${key}' (pid: ${meta.pid} dead=${isDead}, age: ${Math.round(elapsed)}s, cap: ${cap}s)`);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
   if (checkLocks) {
     if (claims.length > 0) {
       console.log('\nActive Claims:');
@@ -715,6 +769,43 @@ function handleDoctor(cmdArgs = []) {
         console.log(`  - File: ${targetFile} (owner: ${l.owner}, pid: ${l.pid}, acquired: ${l.acquired_at})`);
       }
     }
+  }
+
+  // Check observability signals
+  const signalsFile = path.join(repoRoot, '.ai/signals/current-period.md');
+  if (fs.existsSync(signalsFile)) {
+    try {
+      const content = fs.readFileSync(signalsFile, 'utf8');
+      const entries = (content.match(/###\s+\[/g) || []).length;
+      console.log(`[doctor] Observability signals: ${entries} logged in current-period.md`);
+    } catch (e) {
+      console.log(`[doctor] Warning: Failed to read observability signals file: ${e.message}`);
+    }
+  } else {
+    console.log(`[doctor] Observability signals: none (current-period.md missing)`);
+  }
+
+  // Check profile-switch checkpoints
+  const stateDir = path.join(repoRoot, '.ai/state');
+  if (fs.existsSync(stateDir)) {
+    try {
+      const files = fs.readdirSync(stateDir).filter(f => /^profile-switch-.*\.md$/.test(f));
+      console.log(`[doctor] Profile-switch checkpoints: ${files.length} found`);
+    } catch (e) {}
+  }
+
+  // Check context handoff
+  const handoffPath = path.join(repoRoot, '.ai/state/context-handoff.json');
+  if (fs.existsSync(handoffPath)) {
+    try {
+      const raw = fs.readFileSync(handoffPath, 'utf8');
+      const handoff = JSON.parse(raw);
+      console.log(`[doctor] Context handoff: present (resume stage: ${handoff.resume_stage}, next skill: ${handoff.next_skill})`);
+    } catch (e) {
+      console.log(`[doctor] Warning: Context handoff file present but malformed: ${e.message}`);
+    }
+  } else {
+    console.log(`[doctor] Context handoff: none`);
   }
 
   console.log('[doctor] Running spec validation gate...');
