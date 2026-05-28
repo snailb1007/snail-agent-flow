@@ -23,8 +23,8 @@ Requirements for the RAOS Kernel milestone. Enables dynamic profile selection, r
 - [ ] **RAOS-01**: Implement a pure task scoring module that rates tasks on a 0-2 scale across 5 dimensions (Novelty, Blast Radius, Ambiguity, Reversibility, User/Biz Risk). Returns FAST (0-2), STANDARD (3-5), or FULL (6+) profile, with override rules for BUGFIX and PROTOTYPE.
 
 ### Resource Ownership
-- [ ] **RAOS-02**: Implement Work Claiming primitives. Record task ownership (owner, task, profile, write scope, start time, status) in JSON files under `.ai/claims/` before editing files.
-- [ ] **RAOS-03**: Implement Artifact Leasing primitives. Record temporary write lock on shared files (owner, scope, purpose, acquired time, TTL, heartbeat) in JSON files under `.ai/locks/`. Active leases must block concurrent writers. Supports heartbeat extensions and TTL expiration.
+- [x] **RAOS-02**: Implement Work Claiming primitives. Record task ownership (owner, task, profile, write scope, start time, status) in JSON files under `.ai/claims/` before editing files.
+- [x] **RAOS-03**: Implement Artifact Leasing primitives. Record temporary write lock on shared files (owner, scope, purpose, acquired time, TTL, heartbeat) in JSON files under `.ai/locks/`. Active leases must block concurrent writers. Supports heartbeat extensions and TTL expiration.
 
 ### State Transitions & ADRs
 - [ ] **RAOS-04**: Implement Profile-Switch Checkpoints. Generate checkpoint markdown files at `.ai/state/profile-switch-*.md` when switching profiles mid-flight, capturing completed work, assumptions, touched files, risks, and resume steps.
@@ -52,8 +52,8 @@ Requirements for the RAOS Kernel milestone. Enables dynamic profile selection, r
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | RAOS-01 | Phase 18 | Pending |
-| RAOS-02 | Phase 19 | Pending |
-| RAOS-03 | Phase 20 | Pending |
+| RAOS-02 | Phase 19 | Complete |
+| RAOS-03 | Phase 20 | Complete |
 | RAOS-04 | Phase 21 | Pending |
 | RAOS-05 | Phase 21 | Pending |
 | RAOS-06 | Phase 22 | Pending |

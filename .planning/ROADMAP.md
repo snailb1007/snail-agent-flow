@@ -20,9 +20,9 @@
 
 **Goal:** Build a reusable record store at `lib/ownership-store.js` providing race-proof `acquire`/`release`/`list` primitives on the local filesystem. Uses exclusive-create (`fs.openSync(path, 'wx')`) for atomicity and tmp-rename for crash-safety. Lazy stale-steal on acquire (PID-dead OR past `stale_lock_cap_seconds`, default 3600). No daemon, no heartbeat — short-lived locks only. Foundation that Phase 19 (claims) and Phase 20 (leases) both wrap as thin domain wrappers; building it once dedupes the atomic-write logic.
 **Requirements:** Foundation for RAOS-02, RAOS-03
-**Depends on:** Phase 18**Plans:** 1 plan
+**Depends on:** Phase 18**Plans:** 1/1 plans complete
 
-- [ ] [#56](https://github.com/snailb1007/snail-agent-flow/issues/56) (S1) — lib/ownership-store.js + race/stale-steal/crash-recovery test suite
+- [x] [#56](https://github.com/snailb1007/snail-agent-flow/issues/56) (S1) — lib/ownership-store.js + race/stale-steal/crash-recovery test suite
 
 ### Phase 19: Work claiming backend & storage format
 

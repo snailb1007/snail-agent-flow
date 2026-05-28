@@ -128,6 +128,35 @@ _Avoid_: embedded file bodies
 The handover process and artifact (`.ai/state/context-handoff.json`) written when context pressure forces a session restart.
 _Avoid_: memory handoff, transcript summary
 
+**Risk-Adaptive Operating System (RAOS)**:
+The core operating system of Snail Agent Flow that dynamically gates execution rigor using task-based risk scoring.
+_Avoid_: static process policies
+
+**Operating Profile**:
+An execution mode (FAST, STANDARD, FULL, BUGFIX, PROTOTYPE) that defines the required gates and planning checkpoints for a given task.
+_Avoid_: phase type
+
+**Task Scorer**:
+The kernel component that evaluates a task specification against a 5-dimension risk rubric to output an Operating Profile.
+_Avoid_: manual profile selection
+
+**Work Unit Claim**:
+A transient reservation record (`.ai/claims/<task-slug>.json`) asserting exclusive execution ownership of a specific checklist task.
+_Avoid_: task status update
+
+**Shared Artifact Lock**:
+A time-limited lease (`.ai/locks/<file-hash>.json`) preventing concurrent writes to source-of-truth files by parallel agents.
+_Avoid_: file write permissions
+
+**Profile Switch Checkpoint**:
+A transient state log (`.ai/state/profile-switch-*.md`) documenting an in-flight transition between operating profiles (e.g. escalating from FAST to STANDARD).
+_Avoid_: run state checkpoint
+
+**Decision-Linked Signal**:
+A workflow metric tracked in `.ai/signals/current-period.md` specifically to inform pipeline improvements or refactoring tasks.
+_Avoid_: raw telemetry
+
+
 ## Example Dialogue
 
 **Dev**: I need to check if my new feature specification is ready for the GSD execution phase. Should I run Promptfoo or check it myself?

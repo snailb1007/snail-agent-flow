@@ -5,6 +5,7 @@ const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const { runStrictChecks, formatTerminal, formatMarkdownGuide } = require('../lib/init-checks');
 const { extractExecutionContextBlocks } = require('../lib/skill-md-parser');
+const { OwnershipStore } = require('../lib/ownership-store');
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -74,7 +75,9 @@ function handleInit() {
     '.ai/flows',
     '.specify/templates',
     'specs',
-    '.ai/context-packs'
+    '.ai/context-packs',
+    '.ai/claims',
+    '.ai/locks'
   ];
 
   console.log('[init] Initializing directories...');
@@ -657,6 +660,12 @@ function handleStatus() {
 
 function handleDoctor() {
   runAndReport(repoRoot, 'doctor');
+
+  const claimsStore = new OwnershipStore(path.join(repoRoot, '.ai/claims'));
+  const locksStore = new OwnershipStore(path.join(repoRoot, '.ai/locks'));
+  console.log(`[doctor] Active claims: ${claimsStore.list().length}`);
+  console.log(`[doctor] Active locks: ${locksStore.list().length}`);
+
   console.log('[doctor] Running spec validation gate...');
   const valResult = runSpecValidatorSync(false);
   if (valResult.status !== 0) {

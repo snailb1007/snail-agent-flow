@@ -129,7 +129,9 @@ addTest('CLI Init Command', () => {
     '.ai/reviews',
     '.ai/state',
     '.specify/templates',
-    'specs'
+    'specs',
+    '.ai/claims',
+    '.ai/locks'
   ];
   for (const d of dirs) {
     if (!fileExists(d)) {
