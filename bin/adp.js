@@ -22,6 +22,11 @@ Commands:
   doctor                Run static project integrity checks and validations.
   validate-spec         Run the deterministic specification validation gate.
   handoff               Validate memory handoff checklist completeness.
+  score <task.json>     Score task risk and output profile selection.
+  claim <task-slug>     Claim work unit ownership.
+  lease <file>          Acquire advisory file lease lock.
+  checkpoint            Write profile-switch checkpoint.
+  signal <type> <val>   Log observability signal.
 `;
 
 if (!command || command === '--help' || command === '-h') {
@@ -52,13 +57,28 @@ switch (command) {
     handleStatus();
     break;
   case 'doctor':
-    handleDoctor();
+    handleDoctor(args.slice(1));
     break;
   case 'validate-spec':
     handleValidateSpec();
     break;
   case 'handoff':
     handleHandoff();
+    break;
+  case 'score':
+    handleScore(args.slice(1));
+    break;
+  case 'claim':
+    handleClaim(args.slice(1));
+    break;
+  case 'lease':
+    handleLease(args.slice(1));
+    break;
+  case 'checkpoint':
+    handleCheckpoint(args.slice(1));
+    break;
+  case 'signal':
+    handleSignal(args.slice(1));
     break;
   default:
     console.error(`Error: Unknown command "${command}"`);
@@ -77,7 +97,8 @@ function handleInit() {
     'specs',
     '.ai/context-packs',
     '.ai/claims',
-    '.ai/locks'
+    '.ai/locks',
+    '.ai/signals'
   ];
 
   console.log('[init] Initializing directories...');
@@ -658,13 +679,134 @@ function handleStatus() {
   process.exit(0);
 }
 
-function handleDoctor() {
+function handleDoctor(cmdArgs = []) {
+  const checkLocks = cmdArgs.includes('--check-locks');
+
   runAndReport(repoRoot, 'doctor');
 
   const claimsStore = new OwnershipStore(path.join(repoRoot, '.ai/claims'));
   const locksStore = new OwnershipStore(path.join(repoRoot, '.ai/locks'));
-  console.log(`[doctor] Active claims: ${claimsStore.list().length}`);
-  console.log(`[doctor] Active locks: ${locksStore.list().length}`);
+  
+  const claims = claimsStore.list();
+  const locks = locksStore.list();
+
+  console.log(`[doctor] Active claims: ${claims.length}`);
+  console.log(`[doctor] Active locks: ${locks.length}`);
+
+  // Scan for stale claims
+  const claimsDir = claimsStore.dirPath;
+  if (fs.existsSync(claimsDir)) {
+    try {
+      const files = fs.readdirSync(claimsDir).filter(f => f.endsWith('.json'));
+      for (const file of files) {
+        const key = file.slice(0, -5);
+        const filePath = path.join(claimsDir, file);
+        const content = fs.readFileSync(filePath, 'utf8').trim();
+        if (content) {
+          const meta = JSON.parse(content);
+          let isDead = false;
+          try {
+            process.kill(meta.pid, 0);
+          } catch (err) {
+            if (err.code === 'ESRCH') isDead = true;
+          }
+          const elapsed = (Date.now() - new Date(meta.acquired_at).getTime()) / 1000;
+          const cap = meta.stale_lock_cap_seconds || 3600;
+          if (isDead || elapsed > cap) {
+            console.log(`[doctor] Warning: Stale claim detected on task '${key}' (pid: ${meta.pid} dead=${isDead}, age: ${Math.round(elapsed)}s, cap: ${cap}s)`);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Scan for stale locks
+  const locksDir = locksStore.dirPath;
+  if (fs.existsSync(locksDir)) {
+    try {
+      const files = fs.readdirSync(locksDir).filter(f => f.endsWith('.json'));
+      for (const file of files) {
+        const key = file.slice(0, -5);
+        const filePath = path.join(locksDir, file);
+        const content = fs.readFileSync(filePath, 'utf8').trim();
+        if (content) {
+          const meta = JSON.parse(content);
+          let isDead = false;
+          try {
+            process.kill(meta.pid, 0);
+          } catch (err) {
+            if (err.code === 'ESRCH') isDead = true;
+          }
+          const elapsed = (Date.now() - new Date(meta.acquired_at).getTime()) / 1000;
+          const cap = meta.stale_lock_cap_seconds || 3600;
+          if (isDead || elapsed > cap) {
+            console.log(`[doctor] Warning: Stale lease lock detected on file '${key}' (pid: ${meta.pid} dead=${isDead}, age: ${Math.round(elapsed)}s, cap: ${cap}s)`);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (checkLocks) {
+    if (claims.length > 0) {
+      console.log('\nActive Claims:');
+      for (const c of claims) {
+        const taskName = c.task || c.key;
+        console.log(`  - Task: ${taskName} (owner: ${c.owner}, pid: ${c.pid}, acquired: ${c.acquired_at})`);
+      }
+    }
+    if (locks.length > 0) {
+      console.log('\nActive Leases/Locks:');
+      for (const l of locks) {
+        let targetFile = l.key;
+        try {
+          const lockPath = path.join(locksStore.dirPath, l.key + '.json');
+          const data = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+          if (data.target_file) {
+            targetFile = path.relative(repoRoot, data.target_file);
+          }
+        } catch (e) {}
+        console.log(`  - File: ${targetFile} (owner: ${l.owner}, pid: ${l.pid}, acquired: ${l.acquired_at})`);
+      }
+    }
+  }
+
+  // Check observability signals
+  const signalsFile = path.join(repoRoot, '.ai/signals/current-period.md');
+  if (fs.existsSync(signalsFile)) {
+    try {
+      const content = fs.readFileSync(signalsFile, 'utf8');
+      const entries = (content.match(/###\s+\[/g) || []).length;
+      console.log(`[doctor] Observability signals: ${entries} logged in current-period.md`);
+    } catch (e) {
+      console.log(`[doctor] Warning: Failed to read observability signals file: ${e.message}`);
+    }
+  } else {
+    console.log(`[doctor] Observability signals: none (current-period.md missing)`);
+  }
+
+  // Check profile-switch checkpoints
+  const stateDir = path.join(repoRoot, '.ai/state');
+  if (fs.existsSync(stateDir)) {
+    try {
+      const files = fs.readdirSync(stateDir).filter(f => /^profile-switch-.*\.md$/.test(f));
+      console.log(`[doctor] Profile-switch checkpoints: ${files.length} found`);
+    } catch (e) {}
+  }
+
+  // Check context handoff
+  const handoffPath = path.join(repoRoot, '.ai/state/context-handoff.json');
+  if (fs.existsSync(handoffPath)) {
+    try {
+      const raw = fs.readFileSync(handoffPath, 'utf8');
+      const handoff = JSON.parse(raw);
+      console.log(`[doctor] Context handoff: present (resume stage: ${handoff.resume_stage}, next skill: ${handoff.next_skill})`);
+    } catch (e) {
+      console.log(`[doctor] Warning: Context handoff file present but malformed: ${e.message}`);
+    }
+  } else {
+    console.log(`[doctor] Context handoff: none`);
+  }
 
   console.log('[doctor] Running spec validation gate...');
   const valResult = runSpecValidatorSync(false);
@@ -978,3 +1120,244 @@ function appendContextPolicyGuidelines(repoRoot) {
     }
   }
 }
+
+function handleScore(cmdArgs) {
+  if (cmdArgs.length === 0) {
+    console.error('Error: Missing task JSON file. Usage: adp score <task.json>');
+    process.exit(1);
+  }
+
+  const filePath = path.resolve(repoRoot, cmdArgs[0]);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const task = JSON.parse(raw);
+    const { score } = require('../lib/profile-scorer');
+    const result = score(task);
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error scoring task: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+function handleClaim(cmdArgs) {
+  const { ClaimManager } = require('../lib/claim-manager');
+  const claimManager = new ClaimManager(path.join(repoRoot, '.ai/claims'));
+
+  // parse options
+  let release = false;
+  let status = false;
+  let taskSlug = null;
+  let owner = process.env.USER || process.env.USERNAME || 'agent';
+  let profile = null;
+  let scope = [];
+
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--release') {
+      release = true;
+    } else if (arg === '--status') {
+      status = true;
+    } else if (arg === '--owner') {
+      owner = cmdArgs[++i];
+    } else if (arg === '--profile') {
+      profile = cmdArgs[++i];
+    } else if (arg === '--scope') {
+      scope = cmdArgs[++i].split(',');
+    } else if (arg.startsWith('--')) {
+      console.error(`Error: Unknown flag "${arg}"`);
+      process.exit(1);
+    } else {
+      taskSlug = arg;
+    }
+  }
+
+  if (!taskSlug) {
+    console.error('Error: Missing task slug. Usage: adp claim <task-slug> [options]');
+    process.exit(1);
+  }
+
+  try {
+    if (release) {
+      const released = claimManager.release(taskSlug, owner);
+      if (released) {
+        console.log(`[claim] Released task: ${taskSlug}`);
+      } else {
+        console.log(`[claim] No active claim found for task: ${taskSlug}`);
+      }
+      process.exit(0);
+    }
+
+    if (status) {
+      const record = claimManager.status(taskSlug);
+      if (record) {
+        console.log(JSON.stringify(record, null, 2));
+      } else {
+        console.log(`[claim] Task ${taskSlug} is not currently claimed.`);
+      }
+      process.exit(0);
+    }
+
+    // Default: acquire claim
+    claimManager.claim(taskSlug, { owner, profile, scope });
+    console.log(`[claim] Successfully claimed task: ${taskSlug} (owner: ${owner})`);
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error handling claim: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+function handleLease(cmdArgs) {
+  const { LeaseManager } = require('../lib/lease-manager');
+  const leaseManager = new LeaseManager(path.join(repoRoot, '.ai/locks'));
+
+  // parse options
+  let release = false;
+  let file = null;
+  let owner = process.env.USER || process.env.USERNAME || 'agent';
+  let purpose = null;
+  let stale_lock_cap_seconds = 3600;
+
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--release') {
+      release = true;
+    } else if (arg === '--owner') {
+      owner = cmdArgs[++i];
+    } else if (arg === '--purpose') {
+      purpose = cmdArgs[++i];
+    } else if (arg === '--stale_lock_cap_seconds') {
+      stale_lock_cap_seconds = parseInt(cmdArgs[++i], 10);
+    } else if (arg.startsWith('--')) {
+      console.error(`Error: Unknown flag "${arg}"`);
+      process.exit(1);
+    } else {
+      file = arg;
+    }
+  }
+
+  if (!file) {
+    console.error('Error: Missing file path. Usage: adp lease <file> [options]');
+    process.exit(1);
+  }
+
+  try {
+    if (release) {
+      const released = leaseManager.release(file, owner);
+      if (released) {
+        console.log(`[lease] Released lease on: ${file}`);
+      } else {
+        console.log(`[lease] No active lease found for file: ${file}`);
+      }
+      process.exit(0);
+    }
+
+    // Default: acquire lease
+    leaseManager.acquire(file, { owner, purpose, stale_lock_cap_seconds });
+    console.log(`[lease] Successfully leased file: ${file} (owner: ${owner})`);
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error handling lease: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+function handleCheckpoint(cmdArgs) {
+  const { writeProfileSwitch } = require('../lib/checkpoint-writer');
+  
+  let from = null;
+  let to = null;
+  let reason = '';
+  let completed_files = [];
+  let active_risks = [];
+  let resume_steps = [];
+  
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--switch') {
+      from = cmdArgs[++i];
+      to = cmdArgs[++i];
+    } else if (arg === '--reason') {
+      reason = cmdArgs[++i];
+    } else if (arg === '--completed') {
+      completed_files = cmdArgs[++i].split(',').map(f => f.trim()).filter(Boolean);
+    } else if (arg === '--risks') {
+      active_risks = cmdArgs[++i].split(',').map(r => r.trim()).filter(Boolean);
+    } else if (arg === '--resume') {
+      resume_steps = cmdArgs[++i].split(',').map(s => s.trim()).filter(Boolean);
+    } else {
+      console.error(`Error: Unknown argument or flag "${arg}"`);
+      process.exit(1);
+    }
+  }
+
+  if (!from || !to) {
+    console.error('Error: Missing --switch <from> <to>.');
+    process.exit(1);
+  }
+  
+  if (!reason) {
+    console.error('Error: Missing --reason "<text>".');
+    process.exit(1);
+  }
+
+  try {
+    const targetDir = path.join(repoRoot, '.ai/state');
+    const writtenPath = writeProfileSwitch({
+      from,
+      to,
+      reason,
+      completed_files,
+      active_risks,
+      resume_steps
+    }, targetDir);
+    console.log(`[checkpoint] Checkpoint written to: ${path.relative(repoRoot, writtenPath)}`);
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error writing checkpoint: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+function handleSignal(cmdArgs) {
+  const { logSignal } = require('../lib/signal-logger');
+  
+  if (cmdArgs.length < 2) {
+    console.error('Error: Missing signal type or value. Usage: adp signal <type> <value> [--reason "<text>"]');
+    process.exit(1);
+  }
+
+  const type = cmdArgs[0];
+  const value = cmdArgs[1];
+  let reason = '';
+
+  for (let i = 2; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--reason') {
+      reason = cmdArgs[++i];
+    } else {
+      console.error(`Error: Unknown flag/argument "${arg}"`);
+      process.exit(1);
+    }
+  }
+
+  try {
+    const targetDir = path.join(repoRoot, '.ai/signals');
+    const writtenPath = logSignal(type, value, reason, targetDir);
+    console.log(`[signal] Observability signal logged to: ${path.relative(repoRoot, writtenPath)}`);
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error logging signal: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+
+
