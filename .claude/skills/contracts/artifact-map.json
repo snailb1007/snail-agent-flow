@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "canonical": {
+    "flow_state": ".ai/state/flow-state.json",
+    "claims_dir": ".ai/claims",
+    "locks_dir": ".ai/locks",
+    "signals_file": ".ai/signals/current-period.jsonl",
+    "staging_dir": ".ai/staging",
+    "reviews_dir": ".ai/reviews",
+    "sessions_dir": ".ai/sessions",
+    "memory_dir": ".ai/memory",
+    "context_file": "CONTEXT.md",
+    "adr_dir": "docs/adr",
+    "feature_root": "specs"
+  },
+  "feature_artifacts": {
+    "spec": "specs/{feature_slug}/spec.md",
+    "plan": "specs/{feature_slug}/plan.md",
+    "tasks": "specs/{feature_slug}/tasks.md"
+  },
+  "staging_outputs": {
+    "matt_to_prd": ".ai/staging/{run_id}/matt-to-prd.md",
+    "matt_to_issues": ".ai/staging/{run_id}/issue-candidates.md",
+    "matt_handoff": ".ai/staging/{run_id}/handoff-draft.md",
+    "codex_review": ".ai/reviews/{run_id}/codex-review.md",
+    "gstack_review": ".ai/reviews/{run_id}/gstack-review.md"
+  }
+}
