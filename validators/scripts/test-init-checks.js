@@ -24,11 +24,26 @@ function populateGreenfield(tempdir) {
     '.ai/locks',
     '.ai/signals',
     '.agents/skills/project-flow',
-    '.claude/skills/project-flow'
+    '.claude/skills/project-flow',
+    '.claude/skills/contracts'
   ];
   for (const d of dirs) {
     fs.mkdirSync(path.join(tempdir, d), { recursive: true });
   }
+
+  // Copy schemas to tempdir for drift validation
+  fs.copyFileSync(
+    path.resolve(__dirname, '../../.claude/skills/contracts/artifact-map.json'),
+    path.join(tempdir, '.claude', 'skills', 'contracts', 'artifact-map.json')
+  );
+  fs.copyFileSync(
+    path.resolve(__dirname, '../../.claude/skills/contracts/entities.schema.json'),
+    path.join(tempdir, '.claude', 'skills', 'contracts', 'entities.schema.json')
+  );
+  fs.copyFileSync(
+    path.resolve(__dirname, '../../.claude/skills/contracts/gate-result.schema.json'),
+    path.join(tempdir, '.claude', 'skills', 'contracts', 'gate-result.schema.json')
+  );
 
   // flow yaml
   const flowYaml = `
@@ -42,28 +57,26 @@ stages:
 `;
   fs.writeFileSync(path.join(tempdir, '.ai/flows/rough-project-flow.yaml'), flowYaml, 'utf8');
 
-  // ledger JSON
-  const ledgerJson = {
-    flow_name: "rough-project-flow",
-    flow_version: "1.0.0",
-    flow_definition_path: ".ai/flows/rough-project-flow.yaml",
-    created_at: "2026-05-26T17:00:00.000Z",
-    updated_at: "2026-05-26T17:00:00.000Z",
-    stages: [
-      {
-        "id": "decision_discovery",
-        "status": "pending",
-        "artifacts": [],
-        "gate_result": null,
-        "started_at": null,
-        "completed_at": null,
-        "revision_count": 0
-      }
-    ],
-    current_stage: "decision_discovery",
+  // state JSON
+  const stateJson = {
+    schema_version: "2.0",
+    run_id: "run-123",
+    feature_slug: "test-feature",
+    risk_profile: "STANDARD",
+    work_mode: "FEATURE",
+    stage: "align",
+    status: "running",
+    attempt: 1,
+    completed_steps: [],
+    pending_step: "align.pending",
+    locks: [],
+    signals: [],
+    consecutive_failures: 0,
+    retry_count: 0,
+    verified_artifacts: [],
     revision_history: []
   };
-  fs.writeFileSync(path.join(tempdir, '.ai/state/flow-ledger.json'), JSON.stringify(ledgerJson, null, 2), 'utf8');
+  fs.writeFileSync(path.join(tempdir, '.ai/state/flow-state.json'), JSON.stringify(stateJson, null, 2), 'utf8');
 
   // skill project-flow SKILL.md
   const skillMd = `---
@@ -172,19 +185,19 @@ addTest('init-checks: malformed flow YAML produces failure with id=flow.yaml.par
   }
 });
 
-// 5. missing ledger -> ledger.exists
-addTest('init-checks: missing ledger produces failure with id=ledger.exists', () => {
+// 5. missing state -> state.exists
+addTest('init-checks: missing state produces failure with id=state.exists', () => {
   const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
   try {
     populateGreenfield(tempdir);
-    fs.unlinkSync(path.join(tempdir, '.ai/state/flow-ledger.json'));
+    fs.unlinkSync(path.join(tempdir, '.ai/state/flow-state.json'));
     const report = runStrictChecks(tempdir);
     if (report.ok) {
-      throw new Error('Expected report.ok to be false when ledger is missing');
+      throw new Error('Expected report.ok to be false when state is missing');
     }
-    const fail = report.failures.find(f => f.id === 'ledger.exists');
+    const fail = report.failures.find(f => f.id === 'state.exists');
     if (!fail) {
-      throw new Error('Expected failure with id "ledger.exists"');
+      throw new Error('Expected failure with id "state.exists"');
     }
     if (fail.passed !== false) {
       throw new Error('Expected fail.passed to be false');
@@ -194,30 +207,30 @@ addTest('init-checks: missing ledger produces failure with id=ledger.exists', ()
   }
 });
 
-// 6. invalid ledger schema -> ledger.schema
-addTest('init-checks: invalid ledger schema produces failure with id=ledger.schema and offendingLines', () => {
+// 6. invalid state schema -> state.schema
+addTest('init-checks: invalid state schema produces failure with id=state.schema and evidence.parseError', () => {
   const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
   try {
     populateGreenfield(tempdir);
-    const badLedger = {
-      flow_name: "",
-      current_stage: 123,
-      revision_history: "not-an-array"
+    const badState = {
+      schema_version: "2.0",
+      run_id: "run-123"
+      // missing required fields
     };
-    fs.writeFileSync(path.join(tempdir, '.ai/state/flow-ledger.json'), JSON.stringify(badLedger, null, 2), 'utf8');
+    fs.writeFileSync(path.join(tempdir, '.ai/state/flow-state.json'), JSON.stringify(badState, null, 2), 'utf8');
     const report = runStrictChecks(tempdir);
     if (report.ok) {
-      throw new Error('Expected report.ok to be false when ledger schema is invalid');
+      throw new Error('Expected report.ok to be false when state schema is invalid');
     }
-    const fail = report.failures.find(f => f.id === 'ledger.schema');
+    const fail = report.failures.find(f => f.id === 'state.schema');
     if (!fail) {
-      throw new Error('Expected failure with id "ledger.schema"');
+      throw new Error('Expected failure with id "state.schema"');
     }
     if (fail.passed !== false) {
       throw new Error('Expected fail.passed to be false');
     }
-    if (!fail.evidence || !Array.isArray(fail.evidence.offendingLines) || fail.evidence.offendingLines.length === 0) {
-      throw new Error('Expected offendingLines array in evidence');
+    if (!fail.evidence || typeof fail.evidence.parseError !== 'string' || fail.evidence.parseError.length === 0) {
+      throw new Error('Expected parseError string in evidence');
     }
   } finally {
     fs.rmSync(tempdir, { recursive: true, force: true });
@@ -609,12 +622,12 @@ addTest('init-checks: formatTerminal output is ≤120 chars per line', () => {
         evidence: { parseError: 'Flow YAML file is missing.' }
       },
       {
-        id: 'ledger.exists',
+        id: 'state.exists',
         category: 'artifact',
         required: true,
         passed: false,
-        subject: '.ai/state/flow-ledger.json',
-        evidence: { parseError: 'Flow ledger JSON file is missing.' }
+        subject: '.ai/state/flow-state.json',
+        evidence: { parseError: 'Flow state JSON file is missing.' }
       }
     ],
     warnings: []

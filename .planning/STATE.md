@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: risk-adaptive-operating-system
-status: "Milestone v4.0 complete — RAOS kernel shipped"
-last_updated: "2026-05-28T17:52:00.000Z"
+status: "Milestone v4.0 complete — RAOS kernel & ATLAS loop refactor shipped"
+last_updated: "2026-05-28T23:42:00.000Z"
 last_activity: 2026-05-28
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 8
+  completed_phases: 8
+  total_plans: 16
+  completed_plans: 16
   percent: 100
 ---
 
@@ -28,11 +28,12 @@ See: `.planning/PROJECT.md` (updated 2026-05-28)
 
 Milestone v1.0 is complete (Phases 1-7).
 Milestone v2.0 is complete (Phases 8-16).
-Milestone v4.0 is complete (Phases 18-23, including Phase 18.1).
+Milestone v4.0 is complete (Phases 18-23, including Phase 18.1, and Phase 19).
 
 ## Active Phase
 
-None (Milestone v4.0 is fully complete)
+**None**
+- Phase 19 (atlas-refactor-CONTEXT) is complete.
 
 ## Decisions
 
@@ -76,6 +77,15 @@ None (Milestone v4.0 is fully complete)
 - Phase 15: Strict Initialization Checks and Detailed Installation Guide completed and verified in PR #54.
 - Phase 16: Context Budget Gate and Subagent Orchestration Policy completed and verified in PR #55.
 
+### Phase 19 (Complete)
+
+- Consolidated the GSD 10-stage flow into the 5-stage ATLAS Loop (Align, Trace, Lay, Act, Settle).
+- Implemented and wired 4 new ATLAS skills: `atlas-routing`, `atlas-gates`, `atlas-settle`, and `atlas-review`.
+- Integrated `flow-state.json` (v2.0 schema) to replace `flow-ledger.json` and `run-state.json`.
+- Implemented workspace drift validator (`lib/validate-drift.js`) and wired it into doctor/init commands and stage transitions.
+- Updated `CONTEXT.md` with ATLAS project vocabulary.
+- Implemented E2E integration test suite (`validators/scripts/test-atlas-e2e.js`) and verified the entire loop.
+
 ## Quick Tasks Completed
 
 | Slug | Date | Description |
@@ -103,14 +113,16 @@ Archive Milestone v4.0 and define next milestone requirements.
 
 - Phase 18.1 inserted after Phase 18: Ownership-store primitive (#56) — atomic file lock foundation for claims and leases (URGENT)
 - Phases 18 to 23: RAOS kernel modules completed and merged to main.
+- Phase 19 added: atlas-refactor-CONTEXT
 
 ## Current Position
 
-Phase: None (Milestone v4.0 Complete)
-Plan: Completed
-Status: Milestone v4.0 shipped
+Phase: None
+Stage: Settle (Complete) ✅
+Status: Phase 19 and Milestone v4.0 close-out completed.
 Last activity: 2026-05-28
 
 ## Operator Next Steps
 
 - Define requirements and roadmap for the next milestone (e.g. Milestone v5.0).
+- Archive Milestone v4.0 and transition.

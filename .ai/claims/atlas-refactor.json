@@ -1,0 +1,22 @@
+{
+  "task_slug": "atlas-refactor",
+  "claimed_at": "2026-05-28T15:37:46.000Z",
+  "profile": "FULL",
+  "score": {
+    "novelty": 2,
+    "blast_radius": 2,
+    "ambiguity": 1,
+    "reversibility": 2,
+    "user_biz_risk": 1,
+    "total": 8
+  },
+  "rationale": {
+    "novelty": "Brand new flow — renaming/restructuring the entire GSD system to ATLAS",
+    "blast_radius": "Cross-cutting: engine, skills, scripts, docs, CLI all affected",
+    "ambiguity": "PRD exists but several areas still TBD",
+    "reversibility": "Retiring GSD namespace is hard to undo once shipped",
+    "user_biz_risk": "Affects active developer workflows"
+  },
+  "owner": "ethan",
+  "status": "active"
+}

@@ -28,19 +28,35 @@ function cleanup() {
   } catch (e) {}
 }
 
+function createValidState(overrides = {}) {
+  return {
+    schema_version: '2.0',
+    run_id: 'test_run_id',
+    feature_slug: 'test-feature',
+    risk_profile: 'STANDARD',
+    work_mode: 'FEATURE',
+    stage: 'lay',
+    status: 'running',
+    attempt: 1,
+    completed_steps: [],
+    pending_step: '',
+    locks: [],
+    signals: [],
+    consecutive_failures: 0,
+    retry_count: 0,
+    verified_artifacts: [],
+    ...overrides
+  };
+}
+
 addTest('lay-preflight - happy path (PASS)', () => {
   setup();
   
   // Write valid flow state
-  const state = {
-    schema_version: '2.0',
+  const state = createValidState({
     last_verified_commit: 'abc123commit',
-    locks: [{ file: 'specs/my-feature/spec.md', acquired_at: new Date().toISOString() }],
-    risk_profile: 'STANDARD',
-    work_mode: 'FEATURE',
-    attempt: 1,
-    consecutive_failures: 0
-  };
+    locks: [{ file: 'specs/my-feature/spec.md', acquired_at: new Date().toISOString() }]
+  });
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
 
   // Create a dummy test file under tests/
@@ -70,14 +86,9 @@ addTest('lay-preflight - missing all requirements (FAIL)', () => {
   setup();
 
   // Write invalid flow state (missing locks and last_verified_commit)
-  const state = {
-    schema_version: '2.0',
-    locks: [],
-    risk_profile: 'STANDARD',
-    work_mode: 'FEATURE',
-    attempt: 1,
-    consecutive_failures: 0
-  };
+  const state = createValidState({
+    locks: []
+  });
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
 
   // Do NOT create any test files
@@ -106,13 +117,9 @@ addTest('lay-preflight - missing all requirements (FAIL)', () => {
 addTest('act-evaluator - happy path under cap (PASS)', () => {
   setup();
 
-  const state = {
-    schema_version: '2.0',
-    risk_profile: 'STANDARD',
-    work_mode: 'FEATURE',
-    attempt: 4, // under standard cap of 5
-    consecutive_failures: 0
-  };
+  const state = createValidState({
+    attempt: 4
+  });
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
 
   const scriptPath = path.join(__dirname, '..', '..', '.claude', 'skills', 'atlas-gates', 'scripts', 'act-evaluator.js');
@@ -135,13 +142,10 @@ addTest('act-evaluator - happy path under cap (PASS)', () => {
 addTest('act-evaluator - exceeds FAST cap (BLOCKED)', () => {
   setup();
 
-  const state = {
-    schema_version: '2.0',
+  const state = createValidState({
     risk_profile: 'FAST',
-    work_mode: 'FEATURE',
-    attempt: 4, // exceeds FAST cap of 3
-    consecutive_failures: 0
-  };
+    attempt: 4
+  });
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
 
   const scriptPath = path.join(__dirname, '..', '..', '.claude', 'skills', 'atlas-gates', 'scripts', 'act-evaluator.js');
@@ -165,13 +169,10 @@ addTest('act-evaluator - exceeds FAST cap (BLOCKED)', () => {
 addTest('act-evaluator - stuck state warning', () => {
   setup();
 
-  const state = {
-    schema_version: '2.0',
-    risk_profile: 'STANDARD',
-    work_mode: 'FEATURE',
+  const state = createValidState({
     attempt: 2,
-    consecutive_failures: 2 // stuck state!
-  };
+    consecutive_failures: 2
+  });
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
 
   const scriptPath = path.join(__dirname, '..', '..', '.claude', 'skills', 'atlas-gates', 'scripts', 'act-evaluator.js');

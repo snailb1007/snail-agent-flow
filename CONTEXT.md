@@ -156,6 +156,44 @@ _Avoid_: run state checkpoint
 A workflow metric tracked in `.ai/signals/current-period.md` specifically to inform pipeline improvements or refactoring tasks.
 _Avoid_: raw telemetry
 
+**ATLAS Loop**:
+The risk-adaptive five-stage execution protocol (Align, Trace, Lay, Act, Settle).
+_Avoid_: 10-stage rough-project-flow
+
+**ATLAS Stage**:
+One of the active stages in the ATLAS Loop.
+_Avoid_: v1 flow stage
+
+**Flow State**:
+Durable state file `.ai/state/flow-state.json` tracking current execution snapshot.
+_Avoid_: flow-ledger, run-state (both deprecated)
+
+**Artifact Contract**:
+Registry defining canonical paths and aliases.
+_Avoid_: path map
+
+**Gate Result Envelope**:
+Standard structure for verification/judgment outcomes.
+_Avoid_: gate result output
+
+**Schema Contract**:
+Files in `.claude/skills/contracts` mapping entities and shapes.
+_Avoid_: validation schemas
+
+**Template Alias**:
+Dotted references to artifacts (e.g. `{{feature.spec}}`).
+_Avoid_: raw path string
+
+**Artifact Drift**:
+Discrepancies between workspace files and the canonical Artifact Contract.
+_Avoid_: local file mismatch
+
+**flow-ledger** (Deprecated):
+Legacy flow tracking ledger (`.ai/state/flow-ledger.json`), superseded by Flow State.
+
+**run-state** (Deprecated):
+Legacy temporary execution state (`.ai/state/run-state.json`), superseded by Flow State.
+
 
 ## Example Dialogue
 

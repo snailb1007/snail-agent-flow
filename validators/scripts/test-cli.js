@@ -39,6 +39,14 @@ function setupSandbox() {
   for (const s of skills) {
     fs.mkdirSync(path.join(testSandboxRoot, '.agents/skills', s), { recursive: true });
   }
+
+  // Copy schemas to sandbox for drift validation
+  const contractsDest = path.join(testSandboxRoot, '.claude', 'skills', 'contracts');
+  fs.mkdirSync(contractsDest, { recursive: true });
+  const contractsSrc = path.resolve(__dirname, '../../.claude/skills/contracts');
+  fs.copyFileSync(path.join(contractsSrc, 'artifact-map.json'), path.join(contractsDest, 'artifact-map.json'));
+  fs.copyFileSync(path.join(contractsSrc, 'entities.schema.json'), path.join(contractsDest, 'entities.schema.json'));
+  fs.copyFileSync(path.join(contractsSrc, 'gate-result.schema.json'), path.join(contractsDest, 'gate-result.schema.json'));
 }
 
 function cleanupSandbox() {
@@ -240,16 +248,26 @@ addTest('CLI Status Command', () => {
     throw new Error(`Expected 'No active feature' message, got: ${res.stdout}`);
   }
 
-  // Set up mock feature pointer and run-state
+  // Set up mock feature pointer and flow state
   const mockFeatureSlug = 'test-feature-status';
   const mockSpecPath = `specs/${mockFeatureSlug}`;
   writeJson('.specify/feature.json', { feature_directory: mockSpecPath });
-  writeJson('.ai/state/run-state.json', {
+  writeJson('.ai/state/flow-state.json', {
+    schema_version: '2.0',
+    run_id: 'run-123',
     feature_slug: mockFeatureSlug,
-    spec_path: mockSpecPath,
-    current_phase: 'Critique',
+    risk_profile: 'STANDARD',
+    work_mode: 'FEATURE',
+    stage: 'trace',
+    status: 'running',
+    attempt: 1,
+    completed_steps: [],
+    pending_step: 'trace.pending',
+    locks: [],
+    signals: [],
     last_gate: 'Product-Review',
     last_gate_status: 'WARN',
+    consecutive_failures: 0,
     retry_count: 0,
     verified_artifacts: ['/some/path/artifact.md']
   });
@@ -261,8 +279,8 @@ addTest('CLI Status Command', () => {
   if (!res.stdout.includes(mockFeatureSlug)) {
     throw new Error(`Expected output to contain feature slug, got: ${res.stdout}`);
   }
-  if (!res.stdout.includes('Critique')) {
-    throw new Error(`Expected output to contain phase 'Critique', got: ${res.stdout}`);
+  if (!res.stdout.includes('trace')) {
+    throw new Error(`Expected output to contain stage 'trace', got: ${res.stdout}`);
   }
   if (!res.stdout.includes('Product-Review')) {
     throw new Error(`Expected output to contain gate 'Product-Review', got: ${res.stdout}`);
@@ -523,6 +541,14 @@ addTest('Greenfield Project Fixture Integration', () => {
     fs.mkdirSync(path.join(greenfieldSandbox, '.agents/skills', s), { recursive: true });
   }
 
+  // Copy schemas to sandbox for drift validation
+  const contractsDest = path.join(greenfieldSandbox, '.claude', 'skills', 'contracts');
+  fs.mkdirSync(contractsDest, { recursive: true });
+  const contractsSrc = path.resolve(__dirname, '../../.claude/skills/contracts');
+  fs.copyFileSync(path.join(contractsSrc, 'artifact-map.json'), path.join(contractsDest, 'artifact-map.json'));
+  fs.copyFileSync(path.join(contractsSrc, 'entities.schema.json'), path.join(contractsDest, 'entities.schema.json'));
+  fs.copyFileSync(path.join(contractsSrc, 'gate-result.schema.json'), path.join(contractsDest, 'gate-result.schema.json'));
+
   // Copy mock package.json from fixture
   const fixturePkg = path.resolve(__dirname, '../../.specify/fixtures/greenfield-project/package.json');
   fs.copyFileSync(fixturePkg, path.join(greenfieldSandbox, 'package.json'));
@@ -590,6 +616,14 @@ addTest('Brownfield Project Fixture Integration', () => {
   for (const s of skills) {
     fs.mkdirSync(path.join(brownfieldSandbox, '.agents/skills', s), { recursive: true });
   }
+
+  // Copy schemas to sandbox for drift validation
+  const contractsDest = path.join(brownfieldSandbox, '.claude', 'skills', 'contracts');
+  fs.mkdirSync(contractsDest, { recursive: true });
+  const contractsSrc = path.resolve(__dirname, '../../.claude/skills/contracts');
+  fs.copyFileSync(path.join(contractsSrc, 'artifact-map.json'), path.join(contractsDest, 'artifact-map.json'));
+  fs.copyFileSync(path.join(contractsSrc, 'entities.schema.json'), path.join(contractsDest, 'entities.schema.json'));
+  fs.copyFileSync(path.join(contractsSrc, 'gate-result.schema.json'), path.join(contractsDest, 'gate-result.schema.json'));
 
   // Copy package.json, README.md, and src/index.js from brownfield fixture
   const fixtureDir = path.resolve(__dirname, '../../.specify/fixtures/brownfield-project');
@@ -765,9 +799,9 @@ addTest('CLI Init Creates Flow Infrastructure (Greenfield)', () => {
     throw new Error('Flow definition content does not match template');
   }
 
-  // Verify ledger was created
-  if (!fileExists('.ai/state/flow-ledger.json')) {
-    throw new Error('Expected .ai/state/flow-ledger.json to be created');
+  // Verify flow state was created
+  if (!fileExists('.ai/state/flow-state.json')) {
+    throw new Error('Expected .ai/state/flow-state.json to be created');
   }
 
   // Verify SKILL.md stub was created
@@ -796,8 +830,8 @@ addTest('CLI Init Creates Flow Infrastructure (Greenfield)', () => {
   if (!res.stdout.includes('rough-project-flow.yaml')) {
     throw new Error(`Expected init output to mention flow definition, got: ${res.stdout}`);
   }
-  if (!res.stdout.includes('flow-ledger.json')) {
-    throw new Error(`Expected init output to mention flow ledger, got: ${res.stdout}`);
+  if (!res.stdout.includes('flow-state.json')) {
+    throw new Error(`Expected init output to mention flow state, got: ${res.stdout}`);
   }
   if (!res.stdout.includes('SKILL.md')) {
     throw new Error(`Expected init output to mention SKILL.md, got: ${res.stdout}`);
@@ -810,7 +844,7 @@ addTest('CLI Init Skips Existing Flow Files (Brownfield)', () => {
 
   // Pre-create flow files with custom content
   writeFile('.ai/flows/rough-project-flow.yaml', 'custom-flow-content');
-  writeFile('.ai/state/flow-ledger.json', '{"custom": true}');
+  writeFile('.ai/state/flow-state.json', '{"custom": true}');
   fs.mkdirSync(path.join(testSandboxRoot, '.agents/skills/project-flow'), { recursive: true });
   writeFile('.agents/skills/project-flow/SKILL.md', 'custom-skill-content');
   fs.mkdirSync(path.join(testSandboxRoot, '.claude/skills/project-flow'), { recursive: true });
@@ -827,8 +861,8 @@ addTest('CLI Init Skips Existing Flow Files (Brownfield)', () => {
   if (readFile('.ai/flows/rough-project-flow.yaml') !== 'custom-flow-content') {
     throw new Error('Brownfield flow definition was overwritten!');
   }
-  if (readFile('.ai/state/flow-ledger.json') !== '{"custom": true}') {
-    throw new Error('Brownfield flow ledger was overwritten!');
+  if (readFile('.ai/state/flow-state.json') !== '{"custom": true}') {
+    throw new Error('Brownfield flow state was overwritten!');
   }
   if (readFile('.agents/skills/project-flow/SKILL.md') !== 'custom-skill-content') {
     throw new Error('Brownfield SKILL.md was overwritten!');
@@ -843,8 +877,8 @@ addTest('CLI Init Skips Existing Flow Files (Brownfield)', () => {
   }
 });
 
-// 15. Ledger Schema Validation Test
-addTest('CLI Init Generates Valid Ledger Schema', () => {
+// 15. State Schema Validation Test
+addTest('CLI Init Generates Valid State Schema', () => {
   setupSandbox();
 
   const res = runCLI(['init']);
@@ -852,80 +886,44 @@ addTest('CLI Init Generates Valid Ledger Schema', () => {
     throw new Error(`Expected exit code 0 on init, got ${res.code}. Stderr: ${res.stderr}`);
   }
 
-  const ledger = readJson('.ai/state/flow-ledger.json');
-  if (!ledger) {
-    throw new Error('Failed to read or parse flow-ledger.json');
+  const state = readJson('.ai/state/flow-state.json');
+  if (!state) {
+    throw new Error('Failed to read or parse flow-state.json');
   }
 
   // Check top-level fields
-  if (ledger.flow_name !== 'rough-project-flow') {
-    throw new Error(`Expected flow_name "rough-project-flow", got "${ledger.flow_name}"`);
+  if (state.schema_version !== '2.0') {
+    throw new Error(`Expected schema_version "2.0", got "${state.schema_version}"`);
   }
-  if (!ledger.flow_version) {
-    throw new Error('Expected flow_version to be set');
+  if (!state.run_id) {
+    throw new Error('Expected run_id to be set');
   }
-  if (ledger.flow_definition_path !== '.ai/flows/rough-project-flow.yaml') {
-    throw new Error(`Expected flow_definition_path ".ai/flows/rough-project-flow.yaml", got "${ledger.flow_definition_path}"`);
+  if (state.stage !== 'align') {
+    throw new Error(`Expected stage "align", got "${state.stage}"`);
   }
-  if (!ledger.created_at) {
-    throw new Error('Expected created_at timestamp');
+  if (state.status !== 'running') {
+    throw new Error(`Expected status "running", got "${state.status}"`);
   }
-  if (!ledger.updated_at) {
-    throw new Error('Expected updated_at timestamp');
+  if (state.risk_profile !== 'STANDARD') {
+    throw new Error(`Expected risk_profile "STANDARD", got "${state.risk_profile}"`);
   }
-
-  // Check stages array
-  if (!Array.isArray(ledger.stages) || ledger.stages.length === 0) {
-    throw new Error('Expected non-empty stages array');
+  if (state.work_mode !== 'FEATURE') {
+    throw new Error(`Expected work_mode "FEATURE", got "${state.work_mode}"`);
   }
-
-  // Verify 10 stages (matching rough-project-flow.yaml)
-  if (ledger.stages.length !== 10) {
-    throw new Error(`Expected 10 stages, got ${ledger.stages.length}`);
+  if (state.attempt !== 1) {
+    throw new Error(`Expected attempt 1, got ${state.attempt}`);
   }
-
-  // Verify current_stage is the first stage
-  if (ledger.current_stage !== ledger.stages[0].id) {
-    throw new Error(`Expected current_stage to be first stage "${ledger.stages[0].id}", got "${ledger.current_stage}"`);
+  if (!Array.isArray(state.completed_steps) || state.completed_steps.length !== 0) {
+    throw new Error('Expected completed_steps to be an empty array');
   }
-
-  // Verify expected stage IDs match the flow definition
-  const expectedStageIds = [
-    'decision_discovery', 'decision_challenge', 'canonical_spec',
-    'implementation_plan', 'plan_critique', 'revision_loop',
-    'vertical_slicing', 'execution', 'verification', 'release_readiness'
-  ];
-  for (let i = 0; i < expectedStageIds.length; i++) {
-    if (ledger.stages[i].id !== expectedStageIds[i]) {
-      throw new Error(`Expected stage ${i} id "${expectedStageIds[i]}", got "${ledger.stages[i].id}"`);
-    }
+  if (state.pending_step !== 'align.pending') {
+    throw new Error(`Expected pending_step "align.pending", got "${state.pending_step}"`);
   }
-
-  // Verify all stages are pending with correct default fields
-  for (const stage of ledger.stages) {
-    if (stage.status !== 'pending') {
-      throw new Error(`Expected stage "${stage.id}" status "pending", got "${stage.status}"`);
-    }
-    if (!Array.isArray(stage.artifacts)) {
-      throw new Error(`Expected stage "${stage.id}" artifacts to be an array`);
-    }
-    if (stage.gate_result !== null) {
-      throw new Error(`Expected stage "${stage.id}" gate_result to be null`);
-    }
-    if (stage.started_at !== null) {
-      throw new Error(`Expected stage "${stage.id}" started_at to be null`);
-    }
-    if (stage.completed_at !== null) {
-      throw new Error(`Expected stage "${stage.id}" completed_at to be null`);
-    }
-    if (stage.revision_count !== 0) {
-      throw new Error(`Expected stage "${stage.id}" revision_count to be 0`);
-    }
+  if (!Array.isArray(state.locks) || state.locks.length !== 0) {
+    throw new Error('Expected locks to be an empty array');
   }
-
-  // Verify revision_history is empty
-  if (!Array.isArray(ledger.revision_history) || ledger.revision_history.length !== 0) {
-    throw new Error('Expected revision_history to be an empty array');
+  if (!Array.isArray(state.signals) || state.signals.length !== 0) {
+    throw new Error('Expected signals to be an empty array');
   }
 });
 
@@ -954,10 +952,9 @@ addTest('CLI Init Handles YAML Parse Failure Gracefully', () => {
     // Check that the ledger was NOT created (since YAML was invalid)
   }
 
-  // Verify ledger was NOT created (parse failed)
-  if (fileExists('.ai/state/flow-ledger.json')) {
-    // If it was created, it might be from the package template fallback
-    // which is acceptable. Let's just verify init didn't crash.
+  // Verify flow state was created (since state init doesn't parse flow definition anymore)
+  if (!fileExists('.ai/state/flow-state.json')) {
+    throw new Error('Expected flow-state.json to be created');
   }
 
   // Verify other init files were still created
