@@ -1,15 +1,21 @@
 # Memory Handoff Report
 
-**Feature:** 015-014-improve-ai-spawn
+**Feature:** 18.1-ownership-store-primitive-atomic-file-lock-foundation-for-cl
 
 ## Promoted to project memory
-- **Dynamic Localization:** Scans and localizes GSD global skills into workspace `.agents/skills/` and `.claude/skills/` paths.
-- **Subagent Guidelines:** Guidelines are appended to `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` to direct agents to use subagents for parallel execution.
+- Greenfield exclusive lock acquisition utilizes OS kernel-level atomic `fs.openSync(..., 'wx')` calls.
+- Crash-safety guarantees writing JSON payloads to temp files and atomically renaming them via `fs.renameSync`.
+- Path traversal prevention ensuring keys must strictly match `^[a-zA-Z0-9_-]+$`.
+- Lazy stale-stealing logic when encountering dead process PIDs, expired TTL timestamps, or empty/corrupt lock files.
+- Race-proof concurrent stale-stealing where losing the rename race is handled gracefully via automatic retries.
+- Thread-safe active lock listing filtering out invalid, empty, corrupt, or stale lock files.
 
 ## Architecture updated
-- Modified `bin/adp.js` `handleInit()` function to call `localizeGlobalSkills()` and `appendSubagentGuidelines()`.
-- Added helper functions to resolve global home paths, parse `<execution_context>`, copy files, rewrite paths, and append instructions.
+- Created new `lib/ownership-store.js` file with `OwnershipStore` class.
+- Modified `lib/init-checks.js` to add `.ai/claims` and `.ai/locks` to required directories list.
+- Modified `bin/adp.js` to add `.ai/claims` and `.ai/locks` to initialization directory list and update `handleDoctor` lock counts reporting.
 
 ## Verification promoted
-- Added complete unit/integration coverage for both localization and instruction guidelines in `validators/scripts/test-cli.js`.
-- Verified all CLI tests pass.
+- Created a comprehensive test suite at `validators/scripts/test-ownership-store.js`.
+- Integrated OwnershipStore tests into the root test suite under `package.json`.
+- Verified all unit and integration tests pass successfully.
