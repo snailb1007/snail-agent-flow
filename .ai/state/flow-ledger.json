@@ -113,5 +113,13 @@
       "revision_count": 0
     }
   ],
-  "revision_history": []
+  "revision_history": [
+    {
+      "task": "atlas-refactor",
+      "from": null,
+      "to": "P-0",
+      "at": "2026-05-28T15:37:46.000Z",
+      "artifacts": [".ai/claims/atlas-refactor.json"]
+    }
+  ]
 }

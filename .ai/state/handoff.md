@@ -1,21 +1,21 @@
 # Memory Handoff Report
 
-**Feature:** 18.1-ownership-store-primitive-atomic-file-lock-foundation-for-cl
+**Feature:** 018-pure-task-scoring-profile and Phase 19 (atlas-refactor-CONTEXT)
 
 ## Promoted to project memory
-- Greenfield exclusive lock acquisition utilizes OS kernel-level atomic `fs.openSync(..., 'wx')` calls.
-- Crash-safety guarantees writing JSON payloads to temp files and atomically renaming them via `fs.renameSync`.
-- Path traversal prevention ensuring keys must strictly match `^[a-zA-Z0-9_-]+$`.
-- Lazy stale-stealing logic when encountering dead process PIDs, expired TTL timestamps, or empty/corrupt lock files.
-- Race-proof concurrent stale-stealing where losing the rename race is handled gracefully via automatic retries.
-- Thread-safe active lock listing filtering out invalid, empty, corrupt, or stale lock files.
+- Implemented task risk evaluation module `lib/profile-scorer.js` supporting Novelty, Blast Radius, Ambiguity, Reversibility, and User/Biz Risk dimensions.
+- Consolidated the GSD 10-stage flow into the 5-stage ATLAS Loop (Align, Trace, Lay, Act, Settle).
+- Replaced `flow-ledger.json` and `run-state.json` with `flow-state.json` (v2.0 schema) to record pipeline executions.
+- Designed and registered Schema Contracts (`artifact-map.json`, `entities.schema.json`, `gate-result.schema.json`) for data integrity.
+- Implemented Workspace Drift Validator to enforce path boundaries, lock state compliance, and prevent duplicate specifications.
 
 ## Architecture updated
-- Created new `lib/ownership-store.js` file with `OwnershipStore` class.
-- Modified `lib/init-checks.js` to add `.ai/claims` and `.ai/locks` to required directories list.
-- Modified `bin/adp.js` to add `.ai/claims` and `.ai/locks` to initialization directory list and update `handleDoctor` lock counts reporting.
+- Created `lib/profile-scorer.js` for risk assessment.
+- Implemented `lib/validate-drift.js` to validate workspace anomalies.
+- Integrated `flow-state.json` support into `bin/adp.js`, `lib/init-checks.js`, and `lib/flow-engine.js`.
+- Registered `atlas-routing`, `atlas-gates`, `atlas-settle`, and `atlas-review` skills under `.claude/skills/`.
 
 ## Verification promoted
-- Created a comprehensive test suite at `validators/scripts/test-ownership-store.js`.
-- Integrated OwnershipStore tests into the root test suite under `package.json`.
-- Verified all unit and integration tests pass successfully.
+- Added unit tests for profile scoring in `validators/scripts/test-profile-scorer.js`.
+- Implemented new E2E integration test suite simulating the full ATLAS loop in `validators/scripts/test-atlas-e2e.js`.
+- Updated test validation suites in `validators/scripts/test-cli.js`, `validators/scripts/test-init-checks.js`, `validators/scripts/test-validate-drift.js`, and `package.json`.

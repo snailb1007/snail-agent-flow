@@ -197,29 +197,47 @@ function handleInit() {
     console.log('[init] .ai/flows/rough-project-flow.yaml already exists, skipping.');
   }
 
-  // Generate flow ledger state
-  const ledgerPath = path.join(repoRoot, '.ai/state/flow-ledger.json');
-  if (!fs.existsSync(ledgerPath)) {
+  // Generate flow state
+  const statePath = path.join(repoRoot, '.ai/state/flow-state.json');
+  if (!fs.existsSync(statePath)) {
     try {
-      const { parseYaml } = require('../lib/yaml-parser');
-      const { createLedgerFromFlow } = require('../lib/flow-ledger');
-      // Read the flow definition (prefer the just-copied project copy, fall back to package template)
-      const flowSource = fs.existsSync(flowDestPath) ? flowDestPath : flowTemplatePath;
-      if (fs.existsSync(flowSource)) {
-        const flowYaml = fs.readFileSync(flowSource, 'utf8');
-        const flowDef = parseYaml(flowYaml);
-        const ledger = createLedgerFromFlow(flowDef, '.ai/flows/rough-project-flow.yaml');
-        fs.writeFileSync(ledgerPath, JSON.stringify(ledger, null, 2) + '\n', 'utf8');
-        console.log('[init] Created .ai/state/flow-ledger.json (initialized from flow definition)');
-      } else {
-        console.warn('[init] WARNING: No flow definition available, skipping ledger generation.');
+      let featureSlug = 'unknown';
+      const specifyFeaturePath = path.join(repoRoot, '.specify/feature.json');
+      if (fs.existsSync(specifyFeaturePath)) {
+        try {
+          const raw = JSON.parse(fs.readFileSync(specifyFeaturePath, 'utf8'));
+          if (raw.feature_directory) {
+            featureSlug = path.basename(raw.feature_directory.replace(/\/+$/, ''));
+          }
+        } catch (e) {}
       }
+
+      const defaultState = {
+        schema_version: '2.0',
+        run_id: 'run_' + Math.random().toString(36).substr(2, 9),
+        feature_slug: featureSlug,
+        risk_profile: 'STANDARD',
+        work_mode: 'FEATURE',
+        stage: 'align',
+        status: 'running',
+        attempt: 1,
+        completed_steps: [],
+        pending_step: 'align.pending',
+        locks: [],
+        signals: [],
+        consecutive_failures: 0,
+        retry_count: 0,
+        verified_artifacts: []
+      };
+
+      const flowState = require('../lib/flow-state');
+      flowState.save(repoRoot, defaultState);
+      console.log('[init] Created .ai/state/flow-state.json');
     } catch (e) {
-      console.warn(`[init] WARNING: Could not generate flow ledger: ${e.message}`);
-      console.warn('[init] Flow definition may be malformed. Ledger generation skipped.');
+      console.warn(`[init] WARNING: Could not generate flow state: ${e.message}`);
     }
   } else {
-    console.log('[init] .ai/state/flow-ledger.json already exists, skipping.');
+    console.log('[init] .ai/state/flow-state.json already exists, skipping.');
   }
 
   // Generate project-flow SKILL.md stub
@@ -627,7 +645,7 @@ function handleNewSession(cmdArgs) {
 
 function handleStatus() {
   const specifyFeaturePath = path.join(repoRoot, '.specify/feature.json');
-  const runStatePath = path.join(repoRoot, '.ai/state/run-state.json');
+  const statePath = path.join(repoRoot, '.ai/state/flow-state.json');
 
   if (!fs.existsSync(specifyFeaturePath)) {
     console.log('No active feature found. Run adp init or specify active-feature in .specify/feature.json.');
@@ -655,11 +673,15 @@ function handleStatus() {
   console.log(`Active Feature Slug: ${featureSlug}`);
   console.log(`Active Feature Directory: ${featureDirectory}`);
 
-  if (fs.existsSync(runStatePath)) {
+  if (fs.existsSync(statePath)) {
     try {
-      const raw = fs.readFileSync(runStatePath, 'utf8');
+      const raw = fs.readFileSync(statePath, 'utf8');
       const state = JSON.parse(raw);
-      console.log(`Current Phase: ${state.current_phase || 'N/A'}`);
+      console.log(`Current Stage: ${state.stage || 'N/A'}`);
+      console.log(`Status: ${state.status || 'N/A'}`);
+      console.log(`Risk Profile: ${state.risk_profile || 'N/A'}`);
+      console.log(`Work Mode: ${state.work_mode || 'N/A'}`);
+      console.log(`Attempt: ${state.attempt || '1'}`);
       console.log(`Last Gate: ${state.last_gate || 'N/A'}`);
       console.log(`Last Gate Status: ${state.last_gate_status || 'N/A'}`);
       console.log(`Retry Count: ${state.retry_count !== undefined ? state.retry_count : '0'}`);
@@ -670,11 +692,11 @@ function handleStatus() {
         });
       }
     } catch (e) {
-      console.error(`Error parsing .ai/state/run-state.json: ${e.message}`);
+      console.error(`Error parsing .ai/state/flow-state.json: ${e.message}`);
       process.exit(1);
     }
   } else {
-    console.log('No run state progress recorded yet.');
+    console.log('No flow state progress recorded yet.');
   }
   process.exit(0);
 }
@@ -806,6 +828,17 @@ function handleDoctor(cmdArgs = []) {
     }
   } else {
     console.log(`[doctor] Context handoff: none`);
+  }
+
+  console.log('[doctor] Running artifact drift validator...');
+  try {
+    const { validateDrift } = require('../lib/validate-drift');
+    const driftResults = validateDrift(repoRoot);
+    for (const res of driftResults) {
+      console.log(`[doctor] Drift Check [${res.check}]: ${res.status} - ${res.message}`);
+    }
+  } catch (e) {
+    console.error(`[doctor] Error running drift validator: ${e.message}`);
   }
 
   console.log('[doctor] Running spec validation gate...');
