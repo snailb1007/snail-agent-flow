@@ -1,0 +1,14 @@
+{
+  "owner": "ethan",
+  "pid": 58079,
+  "acquired_at": "2026-05-28T10:06:26.399Z",
+  "stale_lock_cap_seconds": 3600,
+  "purpose": null,
+  "task": "task-abc",
+  "profile": "STANDARD",
+  "scope": [
+    "lib/foo.js"
+  ],
+  "start_time": "2026-05-28T10:06:26.399Z",
+  "status": "active"
+}
