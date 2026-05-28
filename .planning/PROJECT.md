@@ -10,32 +10,32 @@ Milestone v2.0 focuses on packaging the rough-project-flow ledger into a portabl
 
 Milestone v4.0 implements the Risk-Adaptive AI Delivery Operating System (RAOS) kernel, supporting dynamic operating profiles, resource claiming/leasing for parallel work safety, profile checkpoints, and decision-coupled metrics logging.
 
-## Current Milestone: v4.0 Risk-Adaptive AI Delivery Operating System (Kernel)
-
-**Goal:** Implement the RAOS kernel to enforce risk-adaptive rigor, claiming/leasing mechanisms for parallel safety, switch checkpoints, and decision-coupled metrics loggers.
-
-**Target features:**
-- Pure task scoring and operating profile selection (RAOS-01)
-- Parallel-safety work claiming in `.ai/claims/` (RAOS-02)
-- Shared resource leasing locks in `.ai/locks/` (RAOS-03)
-- Profile-switch checkpoints and transient state tracking (RAOS-04, RAOS-05)
-- Logging of 5 decision-aligned metrics in `.ai/signals/current-period.md` (RAOS-06)
-- Pipeline failure recovery and CLI health verification integration (RAOS-07, RAOS-08)
-
 ## Core Value
 
 Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
 
 ## Requirements
 
-### Active (v4.0)
+### Validated (v4.0)
 
-- [ ] Implement task scoring and dynamic profile selection (FAST/STANDARD/FULL/BUGFIX/PROTOTYPE) (RAOS-01).
-- [ ] Implement work claiming under `.ai/claims/` (RAOS-02).
-- [ ] Implement file leasing locks under `.ai/locks/` (RAOS-03).
-- [ ] Implement profile-switch checkpoints and enforce durable ADR usage (RAOS-04, RAOS-05).
-- [ ] Implement logging of 5 decision-linked metrics under `.ai/signals/` (RAOS-06).
-- [ ] Implement failure recovery rules and CLI `adp doctor` check integration (RAOS-07, RAOS-08).
+- [x] Implement task scoring and dynamic profile selection (FAST/STANDARD/FULL/BUGFIX/PROTOTYPE) (RAOS-01).
+- [x] Implement work claiming under `.ai/claims/` (RAOS-02).
+- [x] Implement file leasing locks under `.ai/locks/` (RAOS-03).
+- [x] Implement profile-switch checkpoints and enforce durable ADR usage (RAOS-04, RAOS-05).
+- [x] Implement logging of 5 decision-linked metrics under `.ai/signals/` (RAOS-06).
+- [x] Implement failure recovery rules and CLI `adp doctor` check integration (RAOS-07, RAOS-08).
+
+### Validated (v2.0)
+
+- [x] Define a declarative flow definition format (YAML) that captures stage order, required skills, artifact gates, and revision routing rules.
+- [x] Ship the built-in `rough-project-flow` as a data-driven flow definition encoding the 10-stage ledger.
+- [x] Extend `adp init` to copy flow definitions into `.ai/flows/` and create the flow ledger state file.
+- [x] Package the flow orchestrator as a Gemini skill that agents mention in chat to start, resume, or inspect the flow.
+- [x] Implement deterministic artifact gate enforcement with circuit breaker behavior.
+- [x] Add a flow validator for definition syntax, ledger consistency, and gate status.
+- [x] Add tests covering flow lifecycle: normal completion, revision routing, gate blocking, brownfield merge.
+- [x] Warn or guide installation of required tools to use skills if the user lacks them.
+- [x] Add context budget gate and subagent orchestration policies (Phase 16).
 
 ### Validated (v1.0)
 
@@ -49,19 +49,7 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 - [x] CLI with `init`, `feature`, `run`, `new-session`, `status`, `doctor`, `validate-spec`, and `handoff` commands.
 - [x] Greenfield and brownfield fixtures, CI verification matrix, and optional evaluation rubrics.
 
-### Validated (v2.0)
-
-- [x] Define a declarative flow definition format (YAML) that captures stage order, required skills, artifact gates, and revision routing.
-- [x] Ship the built-in `rough-project-flow` as a data-driven flow definition encoding the 10-stage ledger.
-- [x] Extend `adp init` to copy flow definitions into `.ai/flows/` and create the flow ledger state file.
-- [x] Package the flow orchestrator as a Gemini skill that agents mention in chat to start, resume, or inspect the flow.
-- [x] Implement deterministic artifact gate enforcement with circuit breaker behavior.
-- [x] Add a flow validator for definition syntax, ledger consistency, and gate status.
-- [x] Add tests covering flow lifecycle: normal completion, revision routing, gate blocking, brownfield merge.
-- [x] Warn or guide installation of required tools to use skills if the user lacks them.
-- [x] Add context budget gate and subagent orchestration policies (Phase 16).
-
-### Out of Scope
+## Out of Scope
 
 - Replacing GSD, GStack, Superpowers, Spec-Kit, Serena, Semble, GitNexus, Context7, Promptfoo, or Playwright — this project orchestrates them rather than reimplementing them.
 - Building a full IDE or hosted agent platform — the near-term value is a local protocol and artifact system.
@@ -76,15 +64,7 @@ The motivating problem is tool-order confusion in modern AI coding workflows. Th
 
 Milestone v2.0 extends this to **workflow portability**: the rough-project-flow ledger pattern proved valuable during v1.0 development. Packaging it as a declarative, init-able flow definition with artifact gates allows any project to adopt the same rigorous decision → spec → plan → critique → execute → verify → ship pipeline without manually remembering the stage order.
 
-Current source material:
-
-- `docs/prd.md` defines the product direction and recommended pipeline.
-- `.ai/constitution.md` defines non-negotiable operating rules and failure boundaries.
-- `.ai/recon.md`, `.ai/specs/`, `.ai/sessions/`, `.ai/memory/`, and `.ai/reviews/` define durable workflow memory locations.
-- `.gemini/commands/` and `.specify/` contain the current Spec-Kit/Gemini integration scaffold.
-- `.planning/codebase/` captures the current brownfield map produced during initialization.
-- `bin/adp.js` implements the CLI with init, feature, run, validate, doctor, and handoff commands.
-- `.agents/skills/` contains the Gemini skill scaffolding.
+Milestone v4.0 delivers the **Risk-Adaptive AI Delivery Operating System (RAOS)** kernel, enabling dynamic control loops, resource claiming/leasing for concurrency safety, profile checkpoints, and metric signal loggers.
 
 ## Constraints
 
@@ -114,6 +94,8 @@ Current source material:
 | Enforce prerequisite tool checking on engine startup | Halting or warning early avoids runtime execution errors due to missing system tools (GSD, GStack, etc.). | Accepted |
 | Localize GSD workflows inside the workspace | Solves sandbox path security restrictions by carrying workflows under `.agents/skills/`. | Accepted |
 | Establish `.ai/state/context-handoff.json` as handoff target | A fixed well-known workspace path allows clean session resumes. | Accepted |
+| Implement task risk scoring and recommended profiles | Allows dynamically matching process overhead to task risk, preventing overkill on simple features while enforcing rigor on complex ones. | Accepted (v4.0) |
+| Establish work claiming and artifact leasing under `.ai/` | Ensures safety in parallel multi-agent workspaces by preventing collision and concurrent file write races. | Accepted (v4.0) |
 
 ## Evolution
 
@@ -135,4 +117,4 @@ After each milestone:
 4. Update Context with current state, feedback, and verification results.
 
 ---
-*Last updated: 2026-05-28 — Milestone v4.0 started*
+*Last updated: 2026-05-28 — Milestone v4.0 completed*

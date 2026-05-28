@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: risk-adaptive-operating-system
-status: "Phase 18.1 shipped — PR #64"
-last_updated: "2026-05-28T09:43:46.467Z"
+status: "Milestone v4.0 complete — RAOS kernel shipped"
+last_updated: "2026-05-28T17:52:00.000Z"
 last_activity: 2026-05-28
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 1
-  completed_plans: 9
-  percent: 0
+  completed_phases: 7
+  total_plans: 8
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State
@@ -22,17 +22,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-28)
 
 **Core value:** Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
-**Current focus:** Phase 19 — work claiming backend & storage format
+**Current focus:** Archive Milestone v4.0 and prepare next roadmap.
 
 ## Current Status
 
 Milestone v1.0 is complete (Phases 1-7).
 Milestone v2.0 is complete (Phases 8-16).
-Milestone v4.0 is active. Scoped requirements (RAOS-01 to RAOS-08) and roadmap (Phases 18-23) defined.
+Milestone v4.0 is complete (Phases 18-23, including Phase 18.1).
 
 ## Active Phase
 
-Phase 18: Pure task scoring & profile selection module
+None (Milestone v4.0 is fully complete)
 
 ## Decisions
 
@@ -87,7 +87,7 @@ Phase 18: Pure task scoring & profile selection module
 
 ## Next Action
 
-Define spec for Phase 18.
+Archive Milestone v4.0 and define next milestone requirements.
 
 ## Accumulated Context
 
@@ -102,14 +102,15 @@ Define spec for Phase 18.
 *State updated: 2026-05-28*
 
 - Phase 18.1 inserted after Phase 18: Ownership-store primitive (#56) — atomic file lock foundation for claims and leases (URGENT)
+- Phases 18 to 23: RAOS kernel modules completed and merged to main.
 
 ## Current Position
 
-Phase: 19
-Plan: Not started
-Status: Phase 18.1 shipped — PR #64
+Phase: None (Milestone v4.0 Complete)
+Plan: Completed
+Status: Milestone v4.0 shipped
 Last activity: 2026-05-28
 
 ## Operator Next Steps
 
-- Run `/gsd-discuss-phase 18` or `/gsd-plan-phase 18`
+- Define requirements and roadmap for the next milestone (e.g. Milestone v5.0).

@@ -1,5 +1,18 @@
 # Milestones
 
+## v4.0 (Shipped: 2026-05-28)
+
+**Phases completed:** 7 phases (Phases 18-23, including 18.1), 8 plans, all complete and verified.
+
+**Key accomplishments:**
+- **Risk-Adaptive Operating Profiles**: Implemented task risk evaluation based on 5 dimensions and dynamic profile selection (`FAST`, `STANDARD`, `FULL`, `BUGFIX`, `PROTOTYPE`).
+- **Resource Claiming & File Leasing**: Built race-proof filesystem-based claims (`.ai/claims/`) and advisory locks (`.ai/locks/`) to guarantee safety in parallel agent work environments.
+- **Switch Checkpoints & ADR Enforcement**: Implemented transition state checkpoints and validation constraints to ensure transient state is not committed to ADRs.
+- **Observability Signals**: Deployed a decision-aligned signal logging subsystem in `.ai/signals/current-period.md` tracking durations, revisions, escalations, test pain, and review feedback.
+- **Integrations & Failure Recovery**: Integrated RAOS checks into CLI subcommands (`adp score/claim/lease/checkpoint/signal`) and `adp doctor`.
+
+---
+
 ## v2.0 (Shipped: 2026-05-27)
 
 **Phases completed:** 8 phases (Phases 8-16), 14 plans, all complete and verified.

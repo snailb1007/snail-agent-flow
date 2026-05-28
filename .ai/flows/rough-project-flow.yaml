@@ -17,7 +17,7 @@ prerequisites:
     check: command -v speckit-specify || test -d .agents/skills/speckit-specify || test -d ~/.gemini/config/skills/speckit-specify
   - name: GStack
     command: plan-ceo-review
-    check: command -v plan-ceo-review || test -d .agents/skills/plan-ceo-review || test -d ~/.gemini/config/skills/plan-ceo-review
+    check: command -v plan-ceo-review || test -d .agents/skills/plan-ceo-review || test -d ~/.gemini/config/skills/plan-ceo-review || test -d ~/.gemini/config/skills/gstack-plan-ceo-review || test -d .agents/skills/gstack-plan-ceo-review
 
 stages:
   - id: decision_discovery
