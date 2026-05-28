@@ -23,6 +23,7 @@ Commands:
   validate-spec         Run the deterministic specification validation gate.
   handoff               Validate memory handoff checklist completeness.
   score <task.json>     Score task risk and output profile selection.
+  claim <task-slug>     Claim work unit ownership.
 `;
 
 if (!command || command === '--help' || command === '-h') {
@@ -53,7 +54,7 @@ switch (command) {
     handleStatus();
     break;
   case 'doctor':
-    handleDoctor();
+    handleDoctor(args.slice(1));
     break;
   case 'validate-spec':
     handleValidateSpec();
@@ -63,6 +64,9 @@ switch (command) {
     break;
   case 'score':
     handleScore(args.slice(1));
+    break;
+  case 'claim':
+    handleClaim(args.slice(1));
     break;
   default:
     console.error(`Error: Unknown command "${command}"`);
@@ -662,13 +666,34 @@ function handleStatus() {
   process.exit(0);
 }
 
-function handleDoctor() {
+function handleDoctor(cmdArgs = []) {
+  const checkLocks = cmdArgs.includes('--check-locks');
+
   runAndReport(repoRoot, 'doctor');
 
   const claimsStore = new OwnershipStore(path.join(repoRoot, '.ai/claims'));
   const locksStore = new OwnershipStore(path.join(repoRoot, '.ai/locks'));
-  console.log(`[doctor] Active claims: ${claimsStore.list().length}`);
-  console.log(`[doctor] Active locks: ${locksStore.list().length}`);
+  
+  const claims = claimsStore.list();
+  const locks = locksStore.list();
+
+  console.log(`[doctor] Active claims: ${claims.length}`);
+  console.log(`[doctor] Active locks: ${locks.length}`);
+
+  if (checkLocks) {
+    if (claims.length > 0) {
+      console.log('\nActive Claims:');
+      for (const c of claims) {
+        console.log(`  - Task: ${c.key} (owner: ${c.owner}, pid: ${c.pid}, acquired: ${c.acquired_at})`);
+      }
+    }
+    if (locks.length > 0) {
+      console.log('\nActive Leases/Locks:');
+      for (const l of locks) {
+        console.log(`  - File: ${l.key} (owner: ${l.owner}, pid: ${l.pid}, acquired: ${l.acquired_at})`);
+      }
+    }
+  }
 
   console.log('[doctor] Running spec validation gate...');
   const valResult = runSpecValidatorSync(false);
@@ -1007,4 +1032,73 @@ function handleScore(cmdArgs) {
     process.exit(1);
   }
 }
+
+function handleClaim(cmdArgs) {
+  const { ClaimManager } = require('../lib/claim-manager');
+  const claimManager = new ClaimManager(path.join(repoRoot, '.ai/claims'));
+
+  // parse options
+  let release = false;
+  let status = false;
+  let taskSlug = null;
+  let owner = process.env.USER || process.env.USERNAME || 'agent';
+  let profile = null;
+  let scope = [];
+
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--release') {
+      release = true;
+    } else if (arg === '--status') {
+      status = true;
+    } else if (arg === '--owner') {
+      owner = cmdArgs[++i];
+    } else if (arg === '--profile') {
+      profile = cmdArgs[++i];
+    } else if (arg === '--scope') {
+      scope = cmdArgs[++i].split(',');
+    } else if (arg.startsWith('--')) {
+      console.error(`Error: Unknown flag "${arg}"`);
+      process.exit(1);
+    } else {
+      taskSlug = arg;
+    }
+  }
+
+  if (!taskSlug) {
+    console.error('Error: Missing task slug. Usage: adp claim <task-slug> [options]');
+    process.exit(1);
+  }
+
+  try {
+    if (release) {
+      const released = claimManager.release(taskSlug, owner);
+      if (released) {
+        console.log(`[claim] Released task: ${taskSlug}`);
+      } else {
+        console.log(`[claim] No active claim found for task: ${taskSlug}`);
+      }
+      process.exit(0);
+    }
+
+    if (status) {
+      const record = claimManager.status(taskSlug);
+      if (record) {
+        console.log(JSON.stringify(record, null, 2));
+      } else {
+        console.log(`[claim] Task ${taskSlug} is not currently claimed.`);
+      }
+      process.exit(0);
+    }
+
+    // Default: acquire claim
+    claimManager.claim(taskSlug, { owner, profile, scope });
+    console.log(`[claim] Successfully claimed task: ${taskSlug} (owner: ${owner})`);
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error handling claim: ${e.message}`);
+    process.exit(1);
+  }
+}
+
 
