@@ -13,7 +13,16 @@
 **Requirements:** RAOS-01
 **Depends on:** Phase 17
 **Plans:** 1 plan
-- [ ] 18-01-PLAN.md — lib/profile-scorer.js + test suite
+
+- [ ] [#57](https://github.com/snailb1007/snail-agent-flow/issues/57) (S4) — lib/profile-scorer.js + test suite
+
+### Phase 18.1: Ownership-store primitive (atomic file lock foundation) (INSERTED)
+
+**Goal:** Build a reusable record store at `lib/ownership-store.js` providing race-proof `acquire`/`release`/`list` primitives on the local filesystem. Uses exclusive-create (`fs.openSync(path, 'wx')`) for atomicity and tmp-rename for crash-safety. Lazy stale-steal on acquire (PID-dead OR past `stale_lock_cap_seconds`, default 3600). No daemon, no heartbeat — short-lived locks only. Foundation that Phase 19 (claims) and Phase 20 (leases) both wrap as thin domain wrappers; building it once dedupes the atomic-write logic.
+**Requirements:** Foundation for RAOS-02, RAOS-03
+**Depends on:** Phase 18**Plans:** 1 plan
+
+- [ ] [#56](https://github.com/snailb1007/snail-agent-flow/issues/56) (S1) — lib/ownership-store.js + race/stale-steal/crash-recovery test suite
 
 ### Phase 19: Work claiming backend & storage format
 
@@ -21,6 +30,7 @@
 **Requirements:** RAOS-02
 **Depends on:** Phase 18
 **Plans:** 1 plan
+
 - [ ] 19-01-PLAN.md — lib/claim-manager.js + test suite
 
 ### Phase 20: Artifact leasing, TTL, heartbeat & concurrency guards
@@ -29,6 +39,7 @@
 **Requirements:** RAOS-03
 **Depends on:** Phase 19
 **Plans:** 2 plans
+
 - [ ] 20-01-PLAN.md — lib/lease-manager.js + TTL/heartbeat daemon
 - [ ] 20-02-PLAN.md — Concurrency lock checks in flow execution path
 
@@ -38,6 +49,7 @@
 **Requirements:** RAOS-04, RAOS-05
 **Depends on:** Phase 20
 **Plans:** 1 plan
+
 - [ ] 21-01-PLAN.md — Checkpoint generation and ADR lock validators
 
 ### Phase 22: Observability signal logger
@@ -46,7 +58,8 @@
 **Requirements:** RAOS-06
 **Depends on:** Phase 21
 **Plans:** 1 plan
-- [ ] 22-01-PLAN.md — lib/signal-logger.js + metrics compiler
+
+- [ ] [#58](https://github.com/snailb1007/snail-agent-flow/issues/58) (S5) — lib/signal-logger.js + metrics compiler
 
 ### Phase 23: Failure recovery & CLI integration
 
@@ -54,6 +67,7 @@
 **Requirements:** RAOS-07, RAOS-08
 **Depends on:** Phase 22
 **Plans:** 2 plans
+
 - [ ] 23-01-PLAN.md — Failure recovery policies in flow engine
 - [ ] 23-02-PLAN.md — Integration with `adp validate-spec`, `adp doctor`, and strict init checks
 

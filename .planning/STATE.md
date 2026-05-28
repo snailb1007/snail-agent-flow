@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: risk-adaptive-operating-system
-status: planning
-last_updated: "2026-05-28T00:35:00.000Z"
-last_activity: 2026-05-28 — Milestone v4.0 active; Phase 18 pending
+status: executing
+last_updated: "2026-05-28T09:27:30.879Z"
+last_activity: 2026-05-28 -- Phase 18.1 planning complete
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 0
-  total_plans: 8
+  total_plans: 1
   completed_plans: 0
   percent: 0
 ---
@@ -101,12 +101,14 @@ Define spec for Phase 18.
 ---
 *State updated: 2026-05-28*
 
+- Phase 18.1 inserted after Phase 18: Ownership-store primitive (#56) — atomic file lock foundation for claims and leases (URGENT)
+
 ## Current Position
 
 Phase: Phase 18
 Plan: —
-Status: Planning complete
-Last activity: 2026-05-28 — Milestone v4.0 active; Phase 18 pending
+Status: Ready to execute
+Last activity: 2026-05-28 -- Phase 18.1 planning complete
 
 ## Operator Next Steps
 
