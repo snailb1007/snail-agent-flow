@@ -25,6 +25,7 @@ Commands:
   score <task.json>     Score task risk and output profile selection.
   claim <task-slug>     Claim work unit ownership.
   lease <file>          Acquire advisory file lease lock.
+  checkpoint            Write profile-switch checkpoint.
 `;
 
 if (!command || command === '--help' || command === '-h') {
@@ -71,6 +72,9 @@ switch (command) {
     break;
   case 'lease':
     handleLease(args.slice(1));
+    break;
+  case 'checkpoint':
+    handleCheckpoint(args.slice(1));
     break;
   default:
     console.error(`Error: Unknown command "${command}"`);
@@ -1165,6 +1169,63 @@ function handleLease(cmdArgs) {
     process.exit(0);
   } catch (e) {
     console.error(`Error handling lease: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+function handleCheckpoint(cmdArgs) {
+  const { writeProfileSwitch } = require('../lib/checkpoint-writer');
+  
+  let from = null;
+  let to = null;
+  let reason = '';
+  let completed_files = [];
+  let active_risks = [];
+  let resume_steps = [];
+  
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--switch') {
+      from = cmdArgs[++i];
+      to = cmdArgs[++i];
+    } else if (arg === '--reason') {
+      reason = cmdArgs[++i];
+    } else if (arg === '--completed') {
+      completed_files = cmdArgs[++i].split(',').map(f => f.trim()).filter(Boolean);
+    } else if (arg === '--risks') {
+      active_risks = cmdArgs[++i].split(',').map(r => r.trim()).filter(Boolean);
+    } else if (arg === '--resume') {
+      resume_steps = cmdArgs[++i].split(',').map(s => s.trim()).filter(Boolean);
+    } else {
+      console.error(`Error: Unknown argument or flag "${arg}"`);
+      process.exit(1);
+    }
+  }
+
+  if (!from || !to) {
+    console.error('Error: Missing --switch <from> <to>.');
+    process.exit(1);
+  }
+  
+  if (!reason) {
+    console.error('Error: Missing --reason "<text>".');
+    process.exit(1);
+  }
+
+  try {
+    const targetDir = path.join(repoRoot, '.ai/state');
+    const writtenPath = writeProfileSwitch({
+      from,
+      to,
+      reason,
+      completed_files,
+      active_risks,
+      resume_steps
+    }, targetDir);
+    console.log(`[checkpoint] Checkpoint written to: ${path.relative(repoRoot, writtenPath)}`);
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error writing checkpoint: ${e.message}`);
     process.exit(1);
   }
 }

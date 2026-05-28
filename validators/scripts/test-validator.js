@@ -379,6 +379,36 @@ addTest('Placeholder Variant Scan', () => {
   }
 });
 
+// 16. ADR Purity Block - Filename
+addTest('ADR Purity Block - Filename', () => {
+  setupSandbox();
+  writeValidSpecFolder();
+  writeFile('docs/adr/profile-switch-2026-05-28.md', '# Checkpoint');
+  
+  const res = runValidator();
+  if (res.code !== 1) {
+    throw new Error(`Expected exit code 1, got ${res.code}`);
+  }
+  
+  const state = readJson('.ai/state/run-state.json');
+  if (state.last_failed_rule !== 'ADR Purity') throw new Error(`Expected ADR Purity, got ${state.last_failed_rule}`);
+});
+
+// 17. ADR Purity Block - Content
+addTest('ADR Purity Block - Content', () => {
+  setupSandbox();
+  writeValidSpecFolder();
+  writeFile('docs/adr/some-adr.md', '---\nStatus: transient\n---\n# Transient ADR');
+  
+  const res = runValidator();
+  if (res.code !== 1) {
+    throw new Error(`Expected exit code 1, got ${res.code}`);
+  }
+  
+  const state = readJson('.ai/state/run-state.json');
+  if (state.last_failed_rule !== 'ADR Purity') throw new Error(`Expected ADR Purity, got ${state.last_failed_rule}`);
+});
+
 // 15. pipeline script handles missing command arguments cleanly
 addTest('Pipeline Script Missing Command Usage', () => {
   const scriptPath = path.resolve(__dirname, '../../.specify/scripts/bash/validate-pipeline-state.sh');

@@ -321,6 +321,33 @@ if (fs.existsSync(activeFeaturePath)) {
   fail('Path Drift', `Path Drift detected! Redundant active feature pointer found at legacy path: .ai/state/active-feature.json`);
 }
 
+// Check 1.5: ADR Purity Check
+const adrDir = path.join(repoRoot, 'docs/adr');
+if (fs.existsSync(adrDir)) {
+  const adrFiles = getMarkdownFiles(adrDir);
+  for (const file of adrFiles) {
+    const filename = path.basename(file);
+    const isProfileSwitchFile = /^profile-switch-.*\.md$/.test(filename);
+    
+    let isTransient = false;
+    try {
+      const fileContent = fs.readFileSync(file, 'utf8');
+      const frontmatterMatch = fileContent.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      if (frontmatterMatch) {
+        const fmLines = frontmatterMatch[1].split(/\r?\n/).map(l => l.trim());
+        isTransient = fmLines.some(line => /^status:\s*transient$/i.test(line));
+      }
+    } catch (e) {
+      // ignore read errors
+    }
+    
+    if (isProfileSwitchFile || isTransient) {
+      const relPath = path.relative(repoRoot, file);
+      fail('ADR Purity', `ADR Purity check failed: Transient file "${relPath}" found in docs/adr/ directory.`);
+    }
+  }
+}
+
 // Check 2: Spec-Kit Ownership & Existence of Files (FR-005)
 const requiredFiles = ['spec.md', 'plan.md', 'tasks.md'];
 const missingFiles = [];
