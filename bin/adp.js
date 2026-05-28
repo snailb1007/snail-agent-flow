@@ -22,6 +22,7 @@ Commands:
   doctor                Run static project integrity checks and validations.
   validate-spec         Run the deterministic specification validation gate.
   handoff               Validate memory handoff checklist completeness.
+  score <task.json>     Score task risk and output profile selection.
 `;
 
 if (!command || command === '--help' || command === '-h') {
@@ -59,6 +60,9 @@ switch (command) {
     break;
   case 'handoff':
     handleHandoff();
+    break;
+  case 'score':
+    handleScore(args.slice(1));
     break;
   default:
     console.error(`Error: Unknown command "${command}"`);
@@ -978,3 +982,29 @@ function appendContextPolicyGuidelines(repoRoot) {
     }
   }
 }
+
+function handleScore(cmdArgs) {
+  if (cmdArgs.length === 0) {
+    console.error('Error: Missing task JSON file. Usage: adp score <task.json>');
+    process.exit(1);
+  }
+
+  const filePath = path.resolve(repoRoot, cmdArgs[0]);
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const task = JSON.parse(raw);
+    const { score } = require('../lib/profile-scorer');
+    const result = score(task);
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error scoring task: ${e.message}`);
+    process.exit(1);
+  }
+}
+
