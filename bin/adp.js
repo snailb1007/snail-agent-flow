@@ -26,6 +26,7 @@ Commands:
   claim <task-slug>     Claim work unit ownership.
   lease <file>          Acquire advisory file lease lock.
   checkpoint            Write profile-switch checkpoint.
+  signal <type> <val>   Log observability signal.
 `;
 
 if (!command || command === '--help' || command === '-h') {
@@ -76,6 +77,9 @@ switch (command) {
   case 'checkpoint':
     handleCheckpoint(args.slice(1));
     break;
+  case 'signal':
+    handleSignal(args.slice(1));
+    break;
   default:
     console.error(`Error: Unknown command "${command}"`);
     console.log(USAGE.trim());
@@ -93,7 +97,8 @@ function handleInit() {
     'specs',
     '.ai/context-packs',
     '.ai/claims',
-    '.ai/locks'
+    '.ai/locks',
+    '.ai/signals'
   ];
 
   console.log('[init] Initializing directories...');
@@ -1226,6 +1231,39 @@ function handleCheckpoint(cmdArgs) {
     process.exit(0);
   } catch (e) {
     console.error(`Error writing checkpoint: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+function handleSignal(cmdArgs) {
+  const { logSignal } = require('../lib/signal-logger');
+  
+  if (cmdArgs.length < 2) {
+    console.error('Error: Missing signal type or value. Usage: adp signal <type> <value> [--reason "<text>"]');
+    process.exit(1);
+  }
+
+  const type = cmdArgs[0];
+  const value = cmdArgs[1];
+  let reason = '';
+
+  for (let i = 2; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--reason') {
+      reason = cmdArgs[++i];
+    } else {
+      console.error(`Error: Unknown flag/argument "${arg}"`);
+      process.exit(1);
+    }
+  }
+
+  try {
+    const targetDir = path.join(repoRoot, '.ai/signals');
+    const writtenPath = logSignal(type, value, reason, targetDir);
+    console.log(`[signal] Observability signal logged to: ${path.relative(repoRoot, writtenPath)}`);
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error logging signal: ${e.message}`);
     process.exit(1);
   }
 }

@@ -23,7 +23,7 @@
   },
   "scripts": {
     "validate": "node validators/scripts/validate-spec.js",
-    "test": "npm run validate && npm run test:validator && npm run test:init-checks && npm run test:pipeline && npm run test:cli && node validators/scripts/test-flow-parser.js && node validators/scripts/test-flow-engine.js && node validators/scripts/test-context-budget.js && node validators/scripts/test-ownership-store.js && node validators/scripts/test-profile-scorer.js && node validators/scripts/test-claim-manager.js && node validators/scripts/test-lease-manager.js && node validators/scripts/test-checkpoint-writer.js",
+    "test": "npm run validate && npm run test:validator && npm run test:init-checks && npm run test:pipeline && npm run test:cli && node validators/scripts/test-flow-parser.js && node validators/scripts/test-flow-engine.js && node validators/scripts/test-context-budget.js && node validators/scripts/test-ownership-store.js && node validators/scripts/test-profile-scorer.js && node validators/scripts/test-claim-manager.js && node validators/scripts/test-lease-manager.js && node validators/scripts/test-checkpoint-writer.js && node validators/scripts/test-signal-logger.js",
     "test:validator": "node validators/scripts/test-validator.js",
     "test:init-checks": "node validators/scripts/test-init-checks.js",
     "test:pipeline": "bash .specify/scripts/bash/simulate-phase2-pipeline.sh",

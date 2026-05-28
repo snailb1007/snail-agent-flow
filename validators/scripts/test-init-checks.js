@@ -22,6 +22,7 @@ function populateGreenfield(tempdir) {
     '.ai/context-packs',
     '.ai/claims',
     '.ai/locks',
+    '.ai/signals',
     '.agents/skills/project-flow',
     '.claude/skills/project-flow'
   ];
