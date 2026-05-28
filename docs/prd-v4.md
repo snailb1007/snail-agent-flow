@@ -62,11 +62,12 @@ Prevents race conditions, duplicate effort, and write conflicts in parallel agen
 ### 3.2. Lease (Shared Artifact Lock)
 - **Target**: Source-of-truth files (`CONTEXT.md`, specs, roadmaps, ADRs).
 - **Record**: `.ai/locks/<file-hash>.json`.
-- **Properties**: `owner`, `target_file`, `purpose`, `acquired_time`, `expiry` (TTL), `heartbeat`.
+- **Properties**: `owner`, `target_file`, `purpose`, `acquired_time`, `stale_lock_cap_seconds`.
 - **Invariants**:
   - Writers must acquire lease before write.
   - Active lease blocks other writers.
-  - Heartbeat extends TTL. Expired lease auto-releases.
+  - Leases are advisory. Cooperative writers only — nothing at the filesystem level enforces them. Short-lived: acquire → write → release within a single operation.
+
 
 ---
 

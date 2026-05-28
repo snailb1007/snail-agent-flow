@@ -24,6 +24,7 @@ Commands:
   handoff               Validate memory handoff checklist completeness.
   score <task.json>     Score task risk and output profile selection.
   claim <task-slug>     Claim work unit ownership.
+  lease <file>          Acquire advisory file lease lock.
 `;
 
 if (!command || command === '--help' || command === '-h') {
@@ -67,6 +68,9 @@ switch (command) {
     break;
   case 'claim':
     handleClaim(args.slice(1));
+    break;
+  case 'lease':
+    handleLease(args.slice(1));
     break;
   default:
     console.error(`Error: Unknown command "${command}"`);
@@ -684,13 +688,22 @@ function handleDoctor(cmdArgs = []) {
     if (claims.length > 0) {
       console.log('\nActive Claims:');
       for (const c of claims) {
-        console.log(`  - Task: ${c.key} (owner: ${c.owner}, pid: ${c.pid}, acquired: ${c.acquired_at})`);
+        const taskName = c.task || c.key;
+        console.log(`  - Task: ${taskName} (owner: ${c.owner}, pid: ${c.pid}, acquired: ${c.acquired_at})`);
       }
     }
     if (locks.length > 0) {
       console.log('\nActive Leases/Locks:');
       for (const l of locks) {
-        console.log(`  - File: ${l.key} (owner: ${l.owner}, pid: ${l.pid}, acquired: ${l.acquired_at})`);
+        let targetFile = l.key;
+        try {
+          const lockPath = path.join(locksStore.dirPath, l.key + '.json');
+          const data = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+          if (data.target_file) {
+            targetFile = path.relative(repoRoot, data.target_file);
+          }
+        } catch (e) {}
+        console.log(`  - File: ${targetFile} (owner: ${l.owner}, pid: ${l.pid}, acquired: ${l.acquired_at})`);
       }
     }
   }
@@ -1100,5 +1113,61 @@ function handleClaim(cmdArgs) {
     process.exit(1);
   }
 }
+
+function handleLease(cmdArgs) {
+  const { LeaseManager } = require('../lib/lease-manager');
+  const leaseManager = new LeaseManager(path.join(repoRoot, '.ai/locks'));
+
+  // parse options
+  let release = false;
+  let file = null;
+  let owner = process.env.USER || process.env.USERNAME || 'agent';
+  let purpose = null;
+  let stale_lock_cap_seconds = 3600;
+
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--release') {
+      release = true;
+    } else if (arg === '--owner') {
+      owner = cmdArgs[++i];
+    } else if (arg === '--purpose') {
+      purpose = cmdArgs[++i];
+    } else if (arg === '--stale_lock_cap_seconds') {
+      stale_lock_cap_seconds = parseInt(cmdArgs[++i], 10);
+    } else if (arg.startsWith('--')) {
+      console.error(`Error: Unknown flag "${arg}"`);
+      process.exit(1);
+    } else {
+      file = arg;
+    }
+  }
+
+  if (!file) {
+    console.error('Error: Missing file path. Usage: adp lease <file> [options]');
+    process.exit(1);
+  }
+
+  try {
+    if (release) {
+      const released = leaseManager.release(file, owner);
+      if (released) {
+        console.log(`[lease] Released lease on: ${file}`);
+      } else {
+        console.log(`[lease] No active lease found for file: ${file}`);
+      }
+      process.exit(0);
+    }
+
+    // Default: acquire lease
+    leaseManager.acquire(file, { owner, purpose, stale_lock_cap_seconds });
+    console.log(`[lease] Successfully leased file: ${file} (owner: ${owner})`);
+    process.exit(0);
+  } catch (e) {
+    console.error(`Error handling lease: ${e.message}`);
+    process.exit(1);
+  }
+}
+
 
 
