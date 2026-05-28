@@ -1,6 +1,6 @@
 {
-  "feature_slug": "017-context-budget-gate",
-  "spec_path": "specs/017-context-budget-gate/",
+  "feature_slug": "18.1-ownership-store-primitive-atomic-file-lock-foundation-for-cl",
+  "spec_path": "specs/18.1-ownership-store-primitive-atomic-file-lock-foundation-for-cl/",
   "current_phase": "Recon",
   "last_gate": "Spec-Validation",
   "consecutive_failures": 0,
@@ -8,7 +8,7 @@
   "last_failed_step": null,
   "last_failed_rule": null,
   "last_validator_output": null,
-  "updated_at": "2026-05-28T09:37:11.189Z",
+  "updated_at": "2026-05-28T09:46:42.897Z",
   "last_gate_status": "PASS",
   "verified_artifacts": [],
   "blocked_reason": "none",
