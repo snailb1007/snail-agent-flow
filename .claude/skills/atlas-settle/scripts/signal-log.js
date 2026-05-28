@@ -15,9 +15,11 @@ function main() {
     process.exit(1);
   }
 
+  const signalsDir = path.join(repoRoot, '.ai', 'signals');
+
   // 1. Log using the signal-logger utility (writes to Markdown)
   try {
-    signalLogger.logSignal('revision_count', state.attempt || 1, 'Final attempt count for feature', repoRoot);
+    signalLogger.logSignal('revision_count', state.attempt || 1, 'Final attempt count for feature', signalsDir);
   } catch (e) {
     console.error('Failed to log revision_count to md:', e);
   }
