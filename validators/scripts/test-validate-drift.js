@@ -81,6 +81,17 @@ addTest('drift validator flags stale locks/claims', () => {
   assert.strictEqual(staleCheck.status, 'WARN');
 });
 
+addTest('drift validator flags path outside contract with prefix-colliding sibling folder', () => {
+  const backupDir = path.join(tempDir, '.ai', 'state-backup');
+  fs.mkdirSync(backupDir, { recursive: true });
+  fs.writeFileSync(path.join(backupDir, 'foo.json'), '{"some": "data"}', 'utf8');
+
+  const results = validateDrift(tempDir);
+  const pathCheck = results.find(r => r.check === 'path_outside_contract');
+  assert.strictEqual(pathCheck.status, 'WARN');
+  assert.ok(pathCheck.message.includes('state-backup'));
+});
+
 // Run tests
 setup();
 let failed = false;

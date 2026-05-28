@@ -4,6 +4,30 @@ const fs = require('fs');
 const path = require('path');
 const flowState = require('../../../../lib/flow-state');
 
+function normalizeRiskProfile(profile) {
+  if (!profile) return 'STANDARD';
+  const upper = String(profile).toUpperCase();
+  if (['FAST', 'STANDARD', 'FULL'].includes(upper)) {
+    return upper;
+  }
+  if (upper === 'BALANCED') {
+    return 'STANDARD';
+  }
+  return 'STANDARD';
+}
+
+function normalizeWorkMode(mode) {
+  if (!mode) return 'FEATURE';
+  const upper = String(mode).toUpperCase();
+  if (['FEATURE', 'BUGFIX', 'PROTOTYPE', 'REFACTOR', 'DOCS'].includes(upper)) {
+    return upper;
+  }
+  if (upper === 'FIX') {
+    return 'BUGFIX';
+  }
+  return 'FEATURE';
+}
+
 function migrate(repoRoot) {
   const statePath = path.join(repoRoot, '.ai', 'state', 'flow-state.json');
   const ledgerPath = path.join(repoRoot, '.ai', 'state', 'flow-ledger.json');
@@ -64,8 +88,8 @@ function migrate(repoRoot) {
     schema_version: '2.0',
     run_id: runState.run_id || 'run_' + Math.random().toString(36).substr(2, 9),
     feature_slug: ledger.feature_slug || path.basename(ledger.flow_definition_path || 'unknown').replace('-flow.yaml', ''),
-    risk_profile: runState.risk_profile || 'STANDARD',
-    work_mode: runState.work_mode || 'FEATURE',
+    risk_profile: normalizeRiskProfile(runState.risk_profile),
+    work_mode: normalizeWorkMode(runState.work_mode),
     stage: v2Stage,
     status: ledger.status || 'running',
     attempt: runState.attempt || 1,

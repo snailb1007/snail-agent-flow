@@ -151,6 +151,81 @@ addTest('migrate-ledger functionality', () => {
   assert.deepStrictEqual(state.completed_steps, ['align.complete']); // mapped from decision_discovery
 });
 
+addTest('flow-state validation rejects non-array locks', () => {
+  const state = {
+    schema_version: '2.0',
+    run_id: 'run_111',
+    feature_slug: 'feature_slug_test',
+    risk_profile: 'STANDARD',
+    work_mode: 'FEATURE',
+    stage: 'act',
+    status: 'running',
+    attempt: 1,
+    completed_steps: [],
+    pending_step: 'act.test',
+    locks: 'oops',
+    signals: [],
+    consecutive_failures: 0,
+    retry_count: 0,
+    verified_artifacts: []
+  };
+
+  assert.throws(() => {
+    flowState.validate(state);
+  }, /'locks' must be an array/);
+});
+
+addTest('flow-state validation rejects invalid locks element shape', () => {
+  const state = {
+    schema_version: '2.0',
+    run_id: 'run_111',
+    feature_slug: 'feature_slug_test',
+    risk_profile: 'STANDARD',
+    work_mode: 'FEATURE',
+    stage: 'act',
+    status: 'running',
+    attempt: 1,
+    completed_steps: [],
+    pending_step: 'act.test',
+    locks: [{ file: 123, acquired_at: 'now' }],
+    signals: [],
+    consecutive_failures: 0,
+    retry_count: 0,
+    verified_artifacts: []
+  };
+
+  assert.throws(() => {
+    flowState.validate(state);
+  }, /'locks\[0\].file' must be a string/);
+});
+
+addTest('migrate-ledger legacy normalization', () => {
+  const aiDir = path.join(tempDir, '.ai', 'state');
+  fs.mkdirSync(aiDir, { recursive: true });
+
+  const ledger = {
+    flow_name: 'rough-project-flow',
+    current_stage: 'execution',
+    status: 'running',
+    stages: []
+  };
+  fs.writeFileSync(path.join(aiDir, 'flow-ledger.json'), JSON.stringify(ledger), 'utf8');
+
+  const runState = {
+    run_id: 'run_999',
+    risk_profile: 'balanced', // legacy/case check
+    work_mode: 'fix',         // legacy check
+    attempt: 1
+  };
+  fs.writeFileSync(path.join(aiDir, 'run-state.json'), JSON.stringify(runState), 'utf8');
+
+  migrate(tempDir);
+
+  const state = flowState.load(tempDir);
+  assert.strictEqual(state.risk_profile, 'STANDARD'); // normalized
+  assert.strictEqual(state.work_mode, 'BUGFIX');      // normalized
+});
+
 // Run tests
 let failed = false;
 for (const test of tests) {

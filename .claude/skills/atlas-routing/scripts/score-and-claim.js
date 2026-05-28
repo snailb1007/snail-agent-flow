@@ -72,6 +72,75 @@ function main() {
       blocking.push('Failed to claim work unit ownership: ' + err.message);
     }
 
+    // Git commit hash retrieval
+    let commit = '';
+    try {
+      const { execSync } = require('child_process');
+      commit = execSync('git rev-parse HEAD', { cwd: repoRoot, encoding: 'utf8' }).trim();
+    } catch (e) {
+      // ignore
+    }
+
+    // Write-scope file leasing
+    const { LeaseManager } = require('../../../../lib/lease-manager');
+    const locksDir = resolvePath('locks_dir');
+    const absLocksDir = path.isAbsolute(locksDir) ? locksDir : path.join(repoRoot, locksDir);
+    if (!fs.existsSync(absLocksDir)) {
+      fs.mkdirSync(absLocksDir, { recursive: true });
+    }
+    const leaseManager = new LeaseManager(absLocksDir);
+
+    let scope = task.writeScope || [];
+    if (scope.length === 0) {
+      const specMd = path.join('specs', slug, 'spec.md');
+      const contextMd = path.join('.planning/phases', slug, 'CONTEXT.md');
+      if (fs.existsSync(path.join(repoRoot, specMd))) {
+        scope = [specMd];
+      } else if (fs.existsSync(path.join(repoRoot, contextMd))) {
+        scope = [contextMd];
+      } else {
+        scope = ['.specify/feature.json'];
+      }
+    }
+
+    const acquiredLocks = [];
+    let leaseSuccess = true;
+
+    if (claimSuccess) {
+      for (const f of scope) {
+        try {
+          const absoluteFilePath = path.isAbsolute(f) ? f : path.join(repoRoot, f);
+          leaseManager.acquire(absoluteFilePath, { owner });
+          acquiredLocks.push({
+            file: path.isAbsolute(f) ? path.relative(repoRoot, f) : f,
+            acquired_at: new Date().toISOString()
+          });
+        } catch (err) {
+          leaseSuccess = false;
+          blocking.push(`Failed to acquire lease on file '${f}': ${err.message}`);
+          break;
+        }
+      }
+
+      if (!leaseSuccess) {
+        // Rollback claim
+        try {
+          const claimsDir = resolvePath('claims_dir');
+          const absClaimsDir = path.isAbsolute(claimsDir) ? claimsDir : path.join(repoRoot, claimsDir);
+          const claimManager = new ClaimManager(absClaimsDir);
+          claimManager.release(slug, owner);
+        } catch (e) {}
+        // Rollback acquired leases
+        for (const lock of acquiredLocks) {
+          try {
+            const absoluteFilePath = path.isAbsolute(lock.file) ? lock.file : path.join(repoRoot, lock.file);
+            leaseManager.release(absoluteFilePath, owner);
+          } catch (e) {}
+        }
+        claimSuccess = false;
+      }
+    }
+
     // 3. Initialize/Load flow state
     let state = flowState.load(repoRoot);
     if (!state) {
@@ -84,10 +153,10 @@ function main() {
         stage: 'align',
         status: 'running',
         attempt: 1,
-        last_verified_commit: '',
+        last_verified_commit: commit || 'unknown',
         completed_steps: ['align.score'],
         pending_step: 'align.claim',
-        locks: [],
+        locks: acquiredLocks,
         signals: [],
         consecutive_failures: 0,
         retry_count: 0,
@@ -97,6 +166,8 @@ function main() {
       state.risk_profile = scoreResult.profile;
       state.work_mode = workMode;
       state.feature_slug = slug;
+      state.last_verified_commit = commit || state.last_verified_commit || 'unknown';
+      state.locks = acquiredLocks;
       if (!state.completed_steps.includes('align.score')) {
         state.completed_steps.push('align.score');
       }
