@@ -26,19 +26,19 @@ Plans:
 **Goal:** Package the completed ATLAS Loop runtime so fresh target projects initialized with `saf init` receive the ATLAS skills, contract schemas, flow templates, state scaffolding, and validation coverage needed to pass `saf doctor`.
 **Requirements**: TBD
 **Depends on:** Phase 19
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 
 Plans:
 
 **Wave 1**
 
-- [ ] 20-01-PLAN.md — Package Inventory and Manifest
-- [ ] 20-02-PLAN.md — Init Asset Copying and Runtime Layout
+- [x] 20-01-PLAN.md — Package Inventory and Manifest
+- [x] 20-02-PLAN.md — Init Asset Copying and Runtime Layout
 
-**Wave 2 *(blocked on Wave 1 completion)***
+**Wave 2**
 
-- [ ] 20-03-PLAN.md — Target Project Bootstrap Smoke Test
-- [ ] 20-04-PLAN.md — Documentation and Release Checklist
+- [x] 20-03-PLAN.md — Target Project Bootstrap Smoke Test
+- [x] 20-04-PLAN.md — Documentation and Release Checklist
 
 ---
 

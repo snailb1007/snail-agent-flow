@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Added
+- Added a package inventory regression test (`validators/scripts/test-package-inventory.js`) to assert required ATLAS assets are correctly packed and that forbidden workspace directories (like `.planning/`, `.ai/state/`, and `.git/`) are excluded.
+- Added a target project bootstrap smoke test (`validators/scripts/test-target-project-bootstrap.js`) to verify that the packaged tarball successfully initializes a fresh target project (scaffolds directories, creates config/flow files, copies ATLAS skills/contracts, and successfully passes `doctor` checks).
+- Documented the packaged ATLAS bootstrap path and added a release verification checklist to `docs/installation.md`.
+
 ## [0.4.0.0] - 2026-05-26
 
 ### Added

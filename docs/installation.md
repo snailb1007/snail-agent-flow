@@ -55,12 +55,13 @@ Snail Agent Flow is designed to structure AI context and execution for **any** r
    saf doctor
    ```
 
+---
 
 ## Common Commands
 
 | Command | Purpose |
 |---|---|
-| `init` | Create protocol directories, starter agent docs, default flow definition, flow ledger, local skill stubs, and strict init checks. |
+| `init` | Create protocol directories, starter agent docs, default flow definition, flow state schema, and copies ATLAS loop runtime assets. |
 | `feature <description>` | Create a validated Spec-Kit feature scaffold under `specs/<feature-slug>/` and update `.specify/feature.json`. |
 | `run <description>` | Initialize the protocol if needed, create a feature scaffold, run validation, and print next steps. |
 | `new-session <name>` | Create a dated session note under `.ai/sessions/`. |
@@ -108,3 +109,28 @@ npm test                   # full validation suite
 ```
 
 The release workflow runs `npm test`, builds an npm tarball with `npm pack`, uploads the package artifact, and attaches it to tagged GitHub releases matching `v*.*.*.*`.
+
+## Release Verification Checklist
+
+Before publishing or creating a release, verify the package integrity and target project bootstrap behavior using the following steps:
+
+1. **Validate Feature Spec**:
+   ```bash
+   node validators/scripts/validate-spec.js
+   ```
+2. **Verify Packaged Assets (Inventory check)**:
+   ```bash
+   node validators/scripts/test-package-inventory.js
+   ```
+3. **Verify Target Project Bootstrap (Smoke test)**:
+   ```bash
+   node validators/scripts/test-target-project-bootstrap.js
+   ```
+4. **Run Full Test Suite**:
+   ```bash
+   npm test
+   ```
+5. **Dry-Run Package Assembly**:
+   ```bash
+   npm pack --dry-run --json
+   ```
