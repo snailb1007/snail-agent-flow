@@ -94,6 +94,7 @@ Milestone v4.0 is complete (Phases 18-23, including Phase 18.1, and Phase 19).
 | `update-readme-install-instructions` | 2026-05-25 | Add installation and CLI linking instructions to README.md. |
 | `claude-code-project-flow-skill` | 2026-05-25 | Fix visibility of project-flow skill in Claude Code by copying/init to .claude/skills. |
 | `260527-152-update-readme` | 2026-05-26 | Sync README with v0.4.0.0 — expanded `init` description, added `test:init-checks`, added `lib/` and `.ai/flows/` to project structure (commit c58dd92). |
+| `update-readme-with-logo` | 2026-05-29 | Add the new pixel snail logo icon to the top of README.md (commit cab9a08). |
 
 ## Next Action
 
