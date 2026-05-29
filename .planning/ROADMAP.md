@@ -20,6 +20,16 @@ Plans:
 - [x] 19-07-PLAN.md — Template Aliases + Artifact Drift Validator
 - [x] 19-08-PLAN.md — E2E Integration + CONTEXT.md Update
 
+### Phase 20: Packaging and Target Project Integration for ATLAS Loop
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 19
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 20 to break down)
+
 ---
 
 ## Next Milestone: Proposed v5.0 (Multi-Flow & Observability Dashboard)

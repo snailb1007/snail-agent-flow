@@ -1,28 +1,28 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: risk-adaptive-operating-system
-status: "Milestone v4.0 complete — RAOS kernel & ATLAS loop refactor shipped"
-last_updated: "2026-05-28T23:42:00.000Z"
-last_activity: 2026-05-28
+milestone: v5.0
+milestone_name: multi-flow-observability-dashboard
+status: "Phase 20 (Packaging and Target Project Integration for ATLAS Loop) added"
+last_updated: "2026-05-29T15:10:52.000Z"
+last_activity: 2026-05-29
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 8
   total_plans: 16
   completed_plans: 16
-  percent: 100
+  percent: 88
 ---
 
 # Project State
 
-**Last updated:** 2026-05-28
+**Last updated:** 2026-05-29
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-05-28)
 
 **Core value:** Make it obvious which AI engineering tool should run next, what artifact it should consume, and what validation must pass before work can continue.
-**Current focus:** Archive Milestone v4.0 and prepare next roadmap.
+**Current focus:** Phase 20 planning & execution.
 
 ## Current Status
 
@@ -116,15 +116,16 @@ Archive Milestone v4.0 and define next milestone requirements.
 - Phase 18.1 inserted after Phase 18: Ownership-store primitive (#56) — atomic file lock foundation for claims and leases (URGENT)
 - Phases 18 to 23: RAOS kernel modules completed and merged to main.
 - Phase 19 added: atlas-refactor-CONTEXT
+- Phase 20 added: Packaging and Target Project Integration for ATLAS Loop
 
 ## Current Position
 
-Phase: None
-Stage: Settle (Complete) ✅
-Status: Phase 19 and Milestone v4.0 close-out completed.
-Last activity: 2026-05-28
+Phase: 20
+Stage: Align
+Status: Phase 20 added, ready for planning.
+Last activity: 2026-05-29
 
 ## Operator Next Steps
 
-- Define requirements and roadmap for the next milestone (e.g. Milestone v5.0).
-- Archive Milestone v4.0 and transition.
+- Formulate plans for Phase 20 under `.planning/phases/20-packaging-and-target-project-integration-for-atlas-loop/`.
+- Run validations to verify the project environment.
