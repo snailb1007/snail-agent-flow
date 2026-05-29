@@ -109,26 +109,42 @@ Snail Agent Flow coordinates planning, execution, and release quality gates thro
 
 ---
 
-## Quick Start
+## Quick Start & Integration
 
-For detailed installation and setup, read [docs/installation.md](docs/installation.md).
+Snail Agent Flow is designed to structure AI context and execution for **any** repository. For detailed setup steps, refer to [docs/installation.md](docs/installation.md).
 
+### 1. Global Setup (Install CLI)
+Clone the repository and link or install the CLI globally:
 ```bash
-# Install dependencies
+git clone <repository-url>
+cd snail-agent-flow
 npm install
-
-# Initialize protocol directories
-node bin/adp.js init
-
-# Create and validate a new feature scaffold
-node bin/adp.js run "Add user login"
-
-# Check active status and current stage
-node bin/adp.js status
-
-# Run full project integrity checks
-node bin/adp.js doctor
+npm link  # makes 'saf' and 'adp' commands available globally
 ```
+
+### 2. Integration in Your Target Project
+Navigate to your project directory and initialize the operating protocol:
+```bash
+cd /path/to/your/target-project
+saf init
+```
+This bootstraps all protocol directories (`.ai/`, `.specify/`, `specs/`), copies agent instruction documents (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`), and localizes global GSD skills into your project directory.
+
+### 3. Create a Feature Flow
+Start a new feature flow with specifications, architectural plans, and checklists:
+```bash
+saf run "Add user login"
+```
+
+### 4. Monitor & Validate
+```bash
+# Check current stage status
+saf status
+
+# Verify spec and project health
+saf doctor
+```
+
 
 ## CLI Reference
 

@@ -1,47 +1,59 @@
-# Installation
+# Installation & Project Integration
 
-This guide covers local setup, CLI usage, and verification commands for Snail Agent Flow. The README stays focused on the flow design and tool map.
+This guide covers CLI setup, integration with other target projects, and verification commands for Snail Agent Flow.
 
-## Local Setup
+## CLI Installation (Global Setup)
 
-Clone the repository and install dependencies:
+To make the CLI commands available globally across any repository on your system, clone this repository and install/link it:
 
 ```bash
 git clone <repository-url>
 cd snail-agent-flow
 npm install
+npm link
+# OR: npm install -g .
 ```
 
-Run the CLI directly from the checkout:
+After linking or global installation, the CLI is registered on your system path. You can invoke it using either alias:
+
+```bash
+saf <command>
+adp <command>
+```
+
+To run the CLI directly from this checkout without linking:
 
 ```bash
 node bin/adp.js <command>
 ```
 
-To make the package commands available globally from this checkout:
+---
 
-```bash
-npm link
-```
+## Integrating with Target Projects
 
-Alternatively, install globally from the local path:
+Snail Agent Flow is designed to structure AI context and execution for **any** repository. To introduce Snail Agent Flow to your target project:
 
-```bash
-npm install -g .
-```
+1. **Navigate to the target project directory:**
+   ```bash
+   cd /path/to/your/target-project
+   ```
 
-After linking or global installation, both command names point to the same CLI:
+2. **Initialize the protocol:**
+   ```bash
+   saf init
+   ```
+   This command automatically generates the required protocol structures in the target directory:
+   - Configures agent instructions (`CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`).
+   - Sets up protocol directories (`.ai/`, `.specify/`, `specs/`).
+   - Creates the default flow definition (`.ai/flows/rough-project-flow.yaml`).
+   - Sets up context size policy limits (`.ai/state/context-policy.json`).
+   - Localizes global GSD skills to `.agents/skills` or `.claude/skills` to make them relative to the target project.
 
-```bash
-adp <command>
-saf <command>
-```
+3. **Verify the target environment:**
+   ```bash
+   saf doctor
+   ```
 
-Verify the local environment:
-
-```bash
-saf doctor
-```
 
 ## Common Commands
 
