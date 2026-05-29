@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: multi-flow-observability-dashboard
-status: "Phase 20 (Packaging and Target Project Integration for ATLAS Loop) added"
+status: "Phase 20 (Packaging and Target Project Integration for ATLAS Loop) planned"
 last_updated: "2026-05-29T15:10:52.000Z"
 last_activity: 2026-05-29
 progress:
   total_phases: 9
   completed_phases: 8
-  total_plans: 16
+  total_plans: 20
   completed_plans: 16
-  percent: 88
+  percent: 80
 ---
 
 # Project State
@@ -122,7 +122,7 @@ Archive Milestone v4.0 and define next milestone requirements.
 
 Phase: 20
 Stage: Align
-Status: Phase 20 added, ready for planning.
+Status: Ready to execute
 Last activity: 2026-05-29
 
 ## Operator Next Steps
