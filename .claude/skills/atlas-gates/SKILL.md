@@ -1,3 +1,8 @@
+---
+name: atlas-gates
+description: Evaluates ATLAS Loop preflight, test-readiness, and act-stage verification gates.
+---
+
 # Atlas Gates Skill
 
 This skill defines the instructions and checklists for the human-like **judgment gates** used in Snail Agent Flow. It governs the transition criteria between phases of the AI Delivery Pipeline, ensuring spec quality, alignment, and architectural sanity before execution.

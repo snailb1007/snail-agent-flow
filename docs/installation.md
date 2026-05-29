@@ -45,7 +45,8 @@ Snail Agent Flow is designed to structure AI context and execution for **any** r
    This command automatically generates the required protocol structures in the target directory:
    - Configures agent instructions (`CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`).
    - Sets up protocol directories (`.ai/`, `.specify/`, `specs/`).
-   - Creates the default flow definition (`.ai/flows/rough-project-flow.yaml`).
+   - Creates the default ATLAS flow definition (`.ai/flows/atlas-flow.yaml`).
+   - Copies the packaged ATLAS skills and contracts into `.claude/skills/atlas-*` and `.claude/skills/contracts`.
    - Sets up context size policy limits (`.ai/state/context-policy.json`).
    - Localizes global GSD skills to `.agents/skills` or `.claude/skills` to make them relative to the target project.
 

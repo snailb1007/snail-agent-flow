@@ -141,6 +141,12 @@ function handleInit() {
   if (!fs.existsSync(claudePath)) {
     const defaultClaude = `# CLAUDE.md
 
+## ATLAS Loop
+- Use the 5-stage ATLAS Loop: align -> trace -> lay -> act -> settle.
+- Read flow state from \`.ai/state/flow-state.json\`.
+- Use local ATLAS skills under \`.claude/skills/atlas-routing\`, \`.claude/skills/atlas-gates\`, \`.claude/skills/atlas-settle\`, and \`.claude/skills/atlas-review\`.
+- Do not use the deprecated \`.ai/state/flow-ledger.json\` ledger.
+
 ## Build & Test Commands
 - Build: \`npm run build\` (if applicable)
 - Test: \`npm test\`
@@ -157,6 +163,12 @@ function handleInit() {
   if (!fs.existsSync(geminiPath)) {
     const defaultGemini = `# GEMINI.md
 
+## ATLAS Loop
+- Use the 5-stage ATLAS Loop: align -> trace -> lay -> act -> settle.
+- Read flow state from \`.ai/state/flow-state.json\`.
+- Use local ATLAS skills under \`.claude/skills/atlas-routing\`, \`.claude/skills/atlas-gates\`, \`.claude/skills/atlas-settle\`, and \`.claude/skills/atlas-review\`.
+- Do not use the deprecated \`.ai/state/flow-ledger.json\` ledger.
+
 ## Execution guidelines
 - Respect environment constraints.
 - Run deterministic validators.
@@ -172,6 +184,12 @@ function handleInit() {
   if (!fs.existsSync(agentsPath)) {
     const defaultAgents = `# AGENTS.md
 
+## ATLAS Loop
+- Use the 5-stage ATLAS Loop: align -> trace -> lay -> act -> settle.
+- Read flow state from \`.ai/state/flow-state.json\`.
+- Use local ATLAS skills under \`.claude/skills/atlas-routing\`, \`.claude/skills/atlas-gates\`, \`.claude/skills/atlas-settle\`, and \`.claude/skills/atlas-review\`.
+- Do not use the deprecated \`.ai/state/flow-ledger.json\` ledger.
+
 ## Agent Protocol Instructions
 - Read spec.md for feature requirements.
 - Follow plan.md for architecture.
@@ -183,18 +201,18 @@ function handleInit() {
     console.log('[init] AGENTS.md already exists, skipping.');
   }
 
-  // Copy default flow definition
-  const flowDestPath = path.join(repoRoot, '.ai/flows/rough-project-flow.yaml');
-  const flowTemplatePath = path.join(packageRoot, '.specify/templates/rough-project-flow.yaml');
+  // Copy default ATLAS flow definition
+  const flowDestPath = path.join(repoRoot, '.ai/flows/atlas-flow.yaml');
+  const flowTemplatePath = path.join(packageRoot, '.specify/templates/atlas-flow.yaml');
   if (!fs.existsSync(flowDestPath)) {
     if (fs.existsSync(flowTemplatePath)) {
       fs.copyFileSync(flowTemplatePath, flowDestPath);
-      console.log('[init] Created .ai/flows/rough-project-flow.yaml (copied from template)');
+      console.log('[init] Created .ai/flows/atlas-flow.yaml (copied from template)');
     } else {
-      console.warn('[init] WARNING: Flow template not found at .specify/templates/rough-project-flow.yaml, skipping flow definition copy.');
+      console.warn('[init] WARNING: Flow template not found at .specify/templates/atlas-flow.yaml, skipping flow definition copy.');
     }
   } else {
-    console.log('[init] .ai/flows/rough-project-flow.yaml already exists, skipping.');
+    console.log('[init] .ai/flows/atlas-flow.yaml already exists, skipping.');
   }
 
   // Generate flow state
@@ -240,37 +258,11 @@ function handleInit() {
     console.log('[init] .ai/state/flow-state.json already exists, skipping.');
   }
 
-  // Generate project-flow SKILL.md stub
-  const skillDir = path.join(repoRoot, '.agents/skills/project-flow');
-  const skillPath = path.join(skillDir, 'SKILL.md');
-  const skillTemplatePath = path.join(packageRoot, '.specify/templates/project-flow-skill-template.md');
-  if (!fs.existsSync(skillPath)) {
-    if (fs.existsSync(skillTemplatePath)) {
-      fs.mkdirSync(skillDir, { recursive: true });
-      fs.copyFileSync(skillTemplatePath, skillPath);
-      console.log('[init] Created .agents/skills/project-flow/SKILL.md (copied from template)');
-    } else {
-      console.warn('[init] WARNING: SKILL.md template not found, skipping skill stub generation.');
-    }
-  } else {
-    console.log('[init] .agents/skills/project-flow/SKILL.md already exists, skipping.');
-  }
-
-  // Also initialize for Claude Code if needed
-  const claudeSkillDir = path.join(repoRoot, '.claude/skills/project-flow');
-  const claudeSkillPath = path.join(claudeSkillDir, 'SKILL.md');
-  if (!fs.existsSync(claudeSkillPath)) {
-    if (fs.existsSync(skillTemplatePath)) {
-      fs.mkdirSync(claudeSkillDir, { recursive: true });
-      fs.copyFileSync(skillTemplatePath, claudeSkillPath);
-      console.log('[init] Created .claude/skills/project-flow/SKILL.md (copied from template)');
-    }
-  } else {
-    console.log('[init] .claude/skills/project-flow/SKILL.md already exists, skipping.');
-  }
+  initializePackagedAtlasAssets(repoRoot);
 
   // Localize GSD skills and append subagent guidelines
   localizeGlobalSkills(repoRoot);
+  appendAtlasGuidelines(repoRoot);
   appendSubagentGuidelines(repoRoot);
   appendContextPolicyGuidelines(repoRoot);
 
@@ -853,6 +845,63 @@ function handleDoctor(cmdArgs = []) {
   process.exit(0);
 }
 
+function copyDirectoryNoOverwrite(srcDir, destDir) {
+  if (!fs.existsSync(srcDir)) {
+    return { copied: 0, skipped: 0, missing: true };
+  }
+
+  let copied = 0;
+  let skipped = 0;
+  fs.mkdirSync(destDir, { recursive: true });
+
+  for (const entry of fs.readdirSync(srcDir, { withFileTypes: true })) {
+    const srcPath = path.join(srcDir, entry.name);
+    const destPath = path.join(destDir, entry.name);
+
+    if (entry.isDirectory()) {
+      const child = copyDirectoryNoOverwrite(srcPath, destPath);
+      copied += child.copied;
+      skipped += child.skipped;
+      continue;
+    }
+
+    if (fs.existsSync(destPath)) {
+      skipped++;
+      continue;
+    }
+
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.copyFileSync(srcPath, destPath);
+    copied++;
+  }
+
+  return { copied, skipped, missing: false };
+}
+
+function initializePackagedAtlasAssets(repoRoot) {
+  const assetDirs = [
+    '.claude/skills/atlas-routing',
+    '.claude/skills/atlas-gates',
+    '.claude/skills/atlas-settle',
+    '.claude/skills/atlas-review',
+    '.claude/skills/contracts'
+  ];
+
+  for (const relDir of assetDirs) {
+    const srcDir = path.join(packageRoot, relDir);
+    const destDir = path.join(repoRoot, relDir);
+    const result = copyDirectoryNoOverwrite(srcDir, destDir);
+
+    if (result.missing) {
+      console.warn(`[init] WARNING: Packaged ATLAS asset missing: ${relDir}`);
+    } else if (result.copied > 0) {
+      console.log(`[init] Created ${relDir} (${result.copied} files copied, ${result.skipped} existing skipped)`);
+    } else {
+      console.log(`[init] ${relDir} already exists, skipping.`);
+    }
+  }
+}
+
 function handleValidateSpec() {
   const validatorScript = path.join(packageRoot, 'validators/scripts/validate-spec.js');
   const result = spawnSync('node', [validatorScript, ...args.slice(1)], {
@@ -975,18 +1024,19 @@ function handleHandoff() {
 
 function resolveHomePath(filePath) {
   const os = require('os');
+  const homeDir = process.env.HOME || os.homedir();
   if (filePath.startsWith('~')) {
-    return path.join(os.homedir(), filePath.slice(1));
+    return path.join(homeDir, filePath.slice(1));
   }
   if (filePath.startsWith('$HOME')) {
-    return path.join(os.homedir(), filePath.slice(5));
+    return path.join(homeDir, filePath.slice(5));
   }
   return filePath;
 }
 
 function localizeGlobalSkills(repoRoot) {
   const os = require('os');
-  const homeDir = os.homedir();
+  const homeDir = process.env.HOME || os.homedir();
   const globalSkillsDir = path.join(homeDir, '.gemini/config/skills');
 
   if (!fs.existsSync(globalSkillsDir)) {
@@ -1038,7 +1088,8 @@ function localizeGlobalSkills(repoRoot) {
         for (const rawPath of referencedFiles) {
           const absPath = resolveHomePath(rawPath);
           if (fs.existsSync(absPath)) {
-            const isWorkflow = absPath.includes('/workflows/');
+            const normalizedAbsPath = absPath.replace(/\\/g, '/');
+            const isWorkflow = normalizedAbsPath.includes('/workflows/');
             const subFolder = isWorkflow ? 'workflows' : 'references';
             const fileName = path.basename(absPath);
 
@@ -1083,6 +1134,34 @@ function localizeGlobalSkills(repoRoot) {
     }
   } catch (e) {
     console.warn(`[init] WARNING: Failed to localize global skills: ${e.message}`);
+  }
+}
+
+function appendAtlasGuidelines(repoRoot) {
+  const guidelinesBlock = `
+## ATLAS Loop
+
+1. **Use the current flow:** Follow the 5-stage ATLAS Loop: align, trace, lay, act, settle.
+2. **Read current state:** Use \`.ai/state/flow-state.json\` as the execution state snapshot.
+3. **Use ATLAS skills:** Route stage work through \`.claude/skills/atlas-routing\`, \`.claude/skills/atlas-gates\`, \`.claude/skills/atlas-settle\`, and \`.claude/skills/atlas-review\`.
+4. **Use contracts:** Resolve canonical artifacts through \`.claude/skills/contracts\`.
+5. **Avoid deprecated ledger:** Do not read or create \`.ai/state/flow-ledger.json\`.
+`;
+
+  for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
+    const p = path.join(repoRoot, f);
+    try {
+      if (!fs.existsSync(p)) continue;
+      const content = fs.readFileSync(p, 'utf8');
+      if (!content.includes('## ATLAS Loop')) {
+        fs.appendFileSync(p, guidelinesBlock, 'utf8');
+        console.log(`[init] Appended ATLAS Loop guidelines to ${f}`);
+      } else {
+        console.log(`[init] ATLAS Loop guidelines already present in ${f}, skipping.`);
+      }
+    } catch (e) {
+      console.warn(`[init] WARNING: Failed to update ${f} with ATLAS Loop guidelines: ${e.message}`);
+    }
   }
 }
 

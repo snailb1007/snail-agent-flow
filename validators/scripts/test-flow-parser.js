@@ -24,29 +24,28 @@ function test(name, fn) {
 }
 
 // 1. YAML Parser Tests
-test('parse default rough-project-flow.yaml', () => {
-  const yamlPath = path.join(repoRoot, '.specify/templates/rough-project-flow.yaml');
+test('parse default atlas-flow.yaml', () => {
+  const yamlPath = path.join(repoRoot, '.specify/templates/atlas-flow.yaml');
   const yamlStr = fs.readFileSync(yamlPath, 'utf8');
   const parsed = parseYaml(yamlStr);
 
-  assert.strictEqual(parsed.name, 'rough-project-flow');
-  assert.strictEqual(parsed.version, '1.0.0');
-  assert.ok(parsed.description.includes('10-stage sequential engineering flow'));
+  assert.strictEqual(parsed.name, 'atlas-flow');
+  assert.strictEqual(parsed.version, '2.0.0');
+  assert.ok(parsed.description.includes('5-stage ATLAS Loop'));
   
   assert.ok(Array.isArray(parsed.prerequisites));
   assert.strictEqual(parsed.prerequisites.length, 4);
-  assert.strictEqual(parsed.prerequisites[0].name, 'GSD');
+  assert.strictEqual(parsed.prerequisites[0].name, 'Atlas Routing');
 
   assert.ok(Array.isArray(parsed.stages));
-  assert.strictEqual(parsed.stages.length, 10);
+  assert.deepStrictEqual(parsed.stages.map((stage) => stage.id), ['align', 'trace', 'lay', 'act', 'settle']);
   
   // Verify stage details
-  assert.strictEqual(parsed.stages[0].id, 'decision_discovery');
-  assert.strictEqual(parsed.stages[0].name, 'Decision discovery');
-  assert.strictEqual(parsed.stages[0].skill, 'gsd-discuss-phase');
+  assert.strictEqual(parsed.stages[0].id, 'align');
+  assert.strictEqual(parsed.stages[0].name, 'Align');
+  assert.strictEqual(parsed.stages[0].skill, 'atlas-routing');
   assert.ok(Array.isArray(parsed.stages[0].required_artifacts));
-  assert.strictEqual(parsed.stages[0].required_artifacts[0].path, '.planning/phases/{phase_id}-CONTEXT.md');
-  assert.strictEqual(parsed.stages[0].required_artifacts[0].headings[0], '## Decisions');
+  assert.strictEqual(parsed.stages[0].required_artifacts[0].path, '.ai/state/flow-state.json');
 });
 
 test('parse custom-flow-example.yaml', () => {
@@ -135,7 +134,7 @@ test('validatePrerequisites - check command runs with cwd=repoRoot (P2 regressio
   process.chdir(require('os').tmpdir());
   try {
     const prereqs = [
-      { name: 'SomeTool', check: 'test -d .agents/skills/some-tool' }
+      { name: 'SomeTool', check: 'node -e "process.exit(require(\'fs\').existsSync(\'.agents/skills/some-tool\') ? 0 : 1)"' }
     ];
     const results = validatePrerequisites(prereqs, tmp);
     assert.strictEqual(results[0].available, true,

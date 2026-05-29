@@ -23,8 +23,10 @@ function populateGreenfield(tempdir) {
     '.ai/claims',
     '.ai/locks',
     '.ai/signals',
-    '.agents/skills/project-flow',
-    '.claude/skills/project-flow',
+    '.claude/skills/atlas-routing',
+    '.claude/skills/atlas-gates',
+    '.claude/skills/atlas-settle',
+    '.claude/skills/atlas-review',
     '.claude/skills/contracts'
   ];
   for (const d of dirs) {
@@ -45,17 +47,23 @@ function populateGreenfield(tempdir) {
     path.join(tempdir, '.claude', 'skills', 'contracts', 'gate-result.schema.json')
   );
 
+  for (const skill of ['atlas-routing', 'atlas-gates', 'atlas-settle', 'atlas-review']) {
+    const src = path.resolve(__dirname, `../../.claude/skills/${skill}`);
+    const dest = path.join(tempdir, '.claude', 'skills', skill);
+    fs.cpSync(src, dest, { recursive: true });
+  }
+
   // flow yaml
   const flowYaml = `
-name: rough-project-flow
-version: 1.0.0
+name: atlas-flow
+version: 2.0.0
 prerequisites: []
 stages:
-  - id: decision_discovery
-    name: Decision discovery
-    skill: project-flow
+  - id: align
+    name: Align
+    skill: atlas-routing
 `;
-  fs.writeFileSync(path.join(tempdir, '.ai/flows/rough-project-flow.yaml'), flowYaml, 'utf8');
+  fs.writeFileSync(path.join(tempdir, '.ai/flows/atlas-flow.yaml'), flowYaml, 'utf8');
 
   // state JSON
   const stateJson = {
@@ -77,17 +85,6 @@ stages:
     revision_history: []
   };
   fs.writeFileSync(path.join(tempdir, '.ai/state/flow-state.json'), JSON.stringify(stateJson, null, 2), 'utf8');
-
-  // skill project-flow SKILL.md
-  const skillMd = `---
-name: project-flow
-description: "Flow skill"
----
-<execution_context>
-</execution_context>
-`;
-  fs.writeFileSync(path.join(tempdir, '.agents/skills/project-flow/SKILL.md'), skillMd, 'utf8');
-  fs.writeFileSync(path.join(tempdir, '.claude/skills/project-flow/SKILL.md'), skillMd, 'utf8');
 
   // constitution
   fs.writeFileSync(path.join(tempdir, '.ai/constitution.md'), '# Constitution', 'utf8');
@@ -140,7 +137,7 @@ addTest('init-checks: missing flow YAML produces failure with id=flow.yaml.exist
   const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
   try {
     populateGreenfield(tempdir);
-    fs.unlinkSync(path.join(tempdir, '.ai/flows/rough-project-flow.yaml'));
+    fs.unlinkSync(path.join(tempdir, '.ai/flows/atlas-flow.yaml'));
     const report = runStrictChecks(tempdir);
     if (report.ok) {
       throw new Error('Expected report.ok to be false when flow YAML is missing');
@@ -152,7 +149,7 @@ addTest('init-checks: missing flow YAML produces failure with id=flow.yaml.exist
     if (fail.passed !== false) {
       throw new Error('Expected fail.passed to be false');
     }
-    if (!fail.evidence || !fail.evidence.checkedPaths || !fail.evidence.checkedPaths.includes('.ai/flows/rough-project-flow.yaml')) {
+    if (!fail.evidence || !fail.evidence.checkedPaths || !fail.evidence.checkedPaths.includes('.ai/flows/atlas-flow.yaml')) {
       throw new Error('Evidence shape incorrect for flow.yaml.exists');
     }
   } finally {
@@ -165,7 +162,7 @@ addTest('init-checks: malformed flow YAML produces failure with id=flow.yaml.par
   const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
   try {
     populateGreenfield(tempdir);
-    fs.writeFileSync(path.join(tempdir, '.ai/flows/rough-project-flow.yaml'), 'completely_broken_line_with_no_colon', 'utf8');
+    fs.writeFileSync(path.join(tempdir, '.ai/flows/atlas-flow.yaml'), 'completely_broken_line_with_no_colon', 'utf8');
     const report = runStrictChecks(tempdir);
     if (report.ok) {
       throw new Error('Expected report.ok to be false when flow YAML is malformed');
@@ -244,18 +241,18 @@ addTest('init-checks: valid prerequisite passes', () => {
     populateGreenfield(tempdir);
     // write a flow YAML with a prerequisite that will succeed
     const flowYaml = `
-name: rough-project-flow
+name: atlas-flow
 version: 1.0.0
 prerequisites:
   - name: Echo
     command: echo
     check: echo "ok"
 stages:
-  - id: decision_discovery
-    name: Decision discovery
+  - id: align
+    name: Align
     skill: echo
 `;
-    fs.writeFileSync(path.join(tempdir, '.ai/flows/rough-project-flow.yaml'), flowYaml, 'utf8');
+    fs.writeFileSync(path.join(tempdir, '.ai/flows/atlas-flow.yaml'), flowYaml, 'utf8');
     const report = runStrictChecks(tempdir);
     const fail = report.failures.find(f => f.id === 'prereqs.echo');
     if (fail) {
@@ -279,18 +276,18 @@ addTest('init-checks: missing prereq produces failure with category=tool and gui
   try {
     populateGreenfield(tempdir);
     const flowYaml = `
-name: rough-project-flow
+name: atlas-flow
 version: 1.0.0
 prerequisites:
   - name: GSD
     command: gsd-discuss-phase
     check: nonexistent-command-123
 stages:
-  - id: decision_discovery
-    name: Decision discovery
+  - id: align
+    name: Align
     skill: gsd-discuss-phase
 `;
-    fs.writeFileSync(path.join(tempdir, '.ai/flows/rough-project-flow.yaml'), flowYaml, 'utf8');
+    fs.writeFileSync(path.join(tempdir, '.ai/flows/atlas-flow.yaml'), flowYaml, 'utf8');
     const report = runStrictChecks(tempdir);
     if (report.ok) {
       throw new Error('Expected report.ok to be false when prerequisite is missing');
@@ -318,18 +315,18 @@ addTest('init-checks: missing declared prereq fails even when no stage reference
   try {
     populateGreenfield(tempdir);
     const flowYaml = `
-name: rough-project-flow
+name: atlas-flow
 version: 1.0.0
 prerequisites:
   - name: Superpowers
     command: using-superpowers
     check: nonexistent-command-123
 stages:
-  - id: decision_discovery
-    name: Decision discovery
-    skill: project-flow
+  - id: align
+    name: Align
+    skill: atlas-routing
 `;
-    fs.writeFileSync(path.join(tempdir, '.ai/flows/rough-project-flow.yaml'), flowYaml, 'utf8');
+    fs.writeFileSync(path.join(tempdir, '.ai/flows/atlas-flow.yaml'), flowYaml, 'utf8');
     const report = runStrictChecks(tempdir);
     if (report.ok) {
       throw new Error('Expected report.ok to be false when a declared prerequisite is missing');
@@ -439,19 +436,19 @@ description: "Test description"
   }
 });
 
-// 12. missing project-flow SKILL.md -> skill.projectFlow.exists
-addTest('init-checks: missing project-flow SKILL.md produces failure with id=skill.projectFlow.exists', () => {
+// 12. missing atlas-routing SKILL.md -> skill.atlas.exists
+addTest('init-checks: missing atlas-routing SKILL.md produces failure with id=skill.atlas.exists', () => {
   const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
   try {
     populateGreenfield(tempdir);
-    fs.unlinkSync(path.join(tempdir, '.agents/skills/project-flow/SKILL.md'));
+    fs.unlinkSync(path.join(tempdir, '.claude/skills/atlas-routing/SKILL.md'));
     const report = runStrictChecks(tempdir);
     if (report.ok) {
-      throw new Error('Expected report.ok to be false when project-flow SKILL.md is missing');
+      throw new Error('Expected report.ok to be false when atlas-routing SKILL.md is missing');
     }
-    const fail = report.failures.find(f => f.id === 'skill.projectFlow.exists');
+    const fail = report.failures.find(f => f.id === 'skill.atlas.exists');
     if (!fail) {
-      throw new Error('Expected failure with id "skill.projectFlow.exists"');
+      throw new Error('Expected failure with id "skill.atlas.exists"');
     }
     if (fail.passed !== false) {
       throw new Error('Expected fail.passed to be false');
@@ -618,7 +615,7 @@ addTest('init-checks: formatTerminal output is ≤120 chars per line', () => {
         category: 'artifact',
         required: true,
         passed: false,
-        subject: '.ai/flows/rough-project-flow.yaml',
+        subject: '.ai/flows/atlas-flow.yaml',
         evidence: { parseError: 'Flow YAML file is missing.' }
       },
       {
@@ -779,7 +776,7 @@ addTest('init-checks: context.packs validation fails when context pack has missi
     const validPack = {
       schema_version: '1.0.0',
       created_at: new Date().toISOString(),
-      stage_id: 'decision_discovery',
+      stage_id: 'align',
       objective: 'test',
       required_files: [{ path: 'missing-file-123.md' }],
       omissions: [],
