@@ -80,6 +80,35 @@ Profiles are evaluated using a 5-dimension risk rubric:
 
 ---
 
+## Protocol Skills
+
+Snail Agent Flow coordinates planning, execution, and release quality gates through modular, purpose-built skills:
+
+### 1. Core ATLAS Loop
+* `atlas-routing`: Maps tasks to operating profiles and drives stage transitions dynamically.
+* `atlas-gates`: Evaluates preflight checklists, context budgets, and validation gates.
+* `atlas-review`: Conducts pre-landing reviews, threat models, and code quality checks.
+* `atlas-settle`: Automates post-execution validation, repository cleanup, and signal logging.
+
+### 2. Spec-Kit & Planning
+* `speckit-specify` / `speckit-plan`: Scaffolds specifications (`spec.md`) and designs architecture (`plan.md`).
+* `speckit-tasks` / `speckit-checklist`: Generates dependency-ordered lists and verifies artifact consistency.
+* `speckit-taskstoissues`: Projects canonical `tasks.md` checklist items as GitHub tracking issues.
+
+### 3. Execution (GSD)
+* `gsd-fast` / `gsd-quick`: Inline execution for trivial fixes (<2m) or medium-scale checklists.
+* `gsd-execute-phase` / `gsd-autonomous`: Manages parallel execution of phases using dedicated subagents.
+* `gsd-progress` / `gsd-manager`: Interactively displays active work status and routes commands.
+* `gsd-workspace` / `gsd-workstreams`: Manages isolated branch sandboxes and checkpoint states.
+
+### 4. Utility & Engineering Discipline
+* `using-superpowers`: Guides overall skill discovery and requires skill preflight checks.
+* `systematic-debugging` / `test-driven-development`: Enforces Red-Green-Refactor testing rigor.
+* `using-git-worktrees`: Allocates isolated workspace directories to parallel features.
+* `logo-generator`: Builds professional geometric and vector SVG product logo assets.
+
+---
+
 ## Quick Start
 
 For detailed installation and setup, read [docs/installation.md](docs/installation.md).
