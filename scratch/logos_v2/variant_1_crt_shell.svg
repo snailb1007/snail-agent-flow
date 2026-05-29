@@ -1,0 +1,28 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Scanline pattern -->
+    <pattern id="scanlines-v2" width="100" height="2" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="100" y2="0" stroke="#000000" stroke-width="0.8" opacity="0.3" />
+    </pattern>
+  </defs>
+  <!-- Retro CRT Green-screen background -->
+  <rect width="100" height="100" rx="6" fill="#080c07" stroke="#1f2d1e" stroke-width="2"/>
+  
+  <!-- Wireframe shell and terminal nodes -->
+  <g stroke="#22c55e" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Spiral shell path composed of angled retro CLI console segments -->
+    <path d="M 25,65 L 20,40 L 45,20 L 75,20 L 85,45 L 75,70 L 40,75 L 25,55 L 45,35 L 65,35 L 70,50 L 55,58 L 45,48" />
+    
+    <!-- Crosshair ticks indicating coordinate alignment -->
+    <line x1="50" y1="6" x2="50" y2="12" stroke-width="1" opacity="0.4" />
+    <line x1="50" y1="88" x2="50" y2="94" stroke-width="1" opacity="0.4" />
+    <line x1="6" y1="50" x2="12" y2="50" stroke-width="1" opacity="0.4" />
+    <line x1="88" y1="50" x2="94" y2="50" stroke-width="1" opacity="0.4" />
+    
+    <!-- Active monospace terminal block cursor -->
+    <rect x="42" y="45" width="5" height="6" fill="#22c55e" stroke="none" opacity="0.8"/>
+  </g>
+  
+  <!-- Overlaid scanlines -->
+  <rect width="100" height="100" fill="url(#scanlines-v2)" pointer-events="none" />
+</svg>

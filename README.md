@@ -1,5 +1,9 @@
 # Snail Agent Flow
 
+<p align="center">
+  <img src="scratch/logos_v2/variant_3_pixel_snail.svg" alt="Snail Agent Flow Logo" width="160" height="160">
+</p>
+
 Snail Agent Flow is a local operating protocol for AI coding agents. It keeps specs, plans, validation gates, execution notes, reviews, and durable memory in predictable paths so a project can move from idea to release without scattered agent state.
 
 It implements the **ATLAS Loop** (`Align → Trace → Lay → Act → Settle`), a 5-stage risk-adaptive execution protocol.

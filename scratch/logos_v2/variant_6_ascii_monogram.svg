@@ -1,0 +1,30 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Terminal Console background -->
+  <rect width="100" height="100" rx="6" fill="#090d0b" stroke="#1f2d26" stroke-width="2"/>
+  
+  <!-- Scanline pattern -->
+  <defs>
+    <pattern id="scanlines-ascii" width="100" height="3" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="100" y2="0" stroke="#000" stroke-width="1.2" opacity="0.3" />
+    </pattern>
+  </defs>
+  
+  <!-- ASCII shell layout using vector text styling -->
+  <g fill="#34d399" font-family="Courier, monospace, system-ui" font-weight="bold" font-size="7.5" xml:space="preserve">
+    <!-- Retro console text logs -->
+    <text x="8" y="16" fill="#4b5563" font-size="5">saf status --active</text>
+    <text x="8" y="23" fill="#4b5563" font-size="5">stage: settle (PASS)</text>
+    <text x="8" y="31" fill="#34d399" font-size="5.5">> [ATLAS KERNEL ONLINE]</text>
+    
+    <!-- Snail ASCII Art representation aligned strictly by coordinates -->
+    <text x="26" y="48" fill="#10b981">.----.</text>
+    <text x="21" y="56" fill="#10b981">/ [T]  \</text>
+    <text x="17" y="64" fill="#10b981">| [A] [L] |</text>
+    <text x="13" y="72" fill="#10b981">| [S] [Act] |__@</text>
+    <text x="17" y="80" fill="#10b981">\__________/</text>
+    
+    <!-- Blinking console cursor -->
+    <rect x="74" y="66" width="4.5" height="6.5" fill="#34d399" />
+  </g>
+  <rect width="100" height="100" fill="url(#scanlines-ascii)" pointer-events="none" />
+</svg>
