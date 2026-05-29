@@ -1,9 +1,12 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
 const repoRoot = path.resolve(__dirname, '../..');
-const tempRoot = path.resolve(repoRoot, '.specify/fixtures/test-bootstrap-sandbox');
+// Sandbox lives in the OS temp dir, never inside packaged paths (e.g. .specify/fixtures/),
+// so `npm pack` cannot pick it up and concurrent test runs cannot pollute the tarball.
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-bootstrap-'));
 
 function rmSyncWithRetry(dirPath, maxRetries = 10, delayMs = 50) {
   let retries = 0;

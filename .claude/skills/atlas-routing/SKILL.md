@@ -21,7 +21,7 @@ The ATLAS Loop consolidates the pipeline into 5 core stages. Each stage has a di
 4. **Act**: Execute code modifications and satisfy local acceptance criteria iteratively.
 5. **Settle**: Perform workspace cleanup, release claims/leases, log metrics, and promote memory.
 
-For a detailed mapping of stages, actions, and gates, see [stages.md](file:///Users/ethan/.gemini/antigravity/brain/cc1958f1-5896-474e-a34a-da14bf2eafc6/.system_generated/worktrees/subagent-Plan-19-03-Executor-gsd-executor-c5634be8/.claude/skills/atlas-routing/reference/stages.md).
+For a detailed mapping of stages, actions, and gates, see [stages.md](reference/stages.md).
 
 ---
 
@@ -38,7 +38,7 @@ Work modes provide situational overrides:
 * **PROTOTYPE**: Exploration path. No production spec updates, no durable memory promotion.
 * **DOCS**: Documentation-only. Skips test-setup in Lay and skips Act coding entirely.
 
-For detailed profile rules and work mode configurations, see [profiles.md](file:///Users/ethan/.gemini/antigravity/brain/cc1958f1-5896-474e-a34a-da14bf2eafc6/.system_generated/worktrees/subagent-Plan-19-03-Executor-gsd-executor-c5634be8/.claude/skills/atlas-routing/reference/profiles.md).
+For detailed profile rules and work mode configurations, see [profiles.md](reference/profiles.md).
 
 ---
 
