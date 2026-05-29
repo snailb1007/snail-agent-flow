@@ -119,7 +119,11 @@ addTest('score-and-claim script Integration Test', () => {
   };
 
   try {
-    const stdout = cp.execSync(`node ${scriptPath} '${taskPayload}' ${tempDir}`, { encoding: 'utf8' });
+    const res = cp.spawnSync(process.execPath, [scriptPath, taskPayload, tempDir], { encoding: 'utf8' });
+    if (res.status !== 0) {
+      throw new Error(`score-and-claim failed: ${res.stderr || res.stdout || (res.error && res.error.message)}`);
+    }
+    const stdout = res.stdout;
     const output = JSON.parse(stdout);
     assert.strictEqual(output.stage_id, 'align');
     assert.strictEqual(output.status, 'PASS');

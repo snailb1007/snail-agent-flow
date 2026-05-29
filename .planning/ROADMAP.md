@@ -11,6 +11,7 @@
 **Plans:** 8/8 plans complete
 
 Plans:
+
 - [x] 19-01-PLAN.md — Schema Contracts Foundation
 - [x] 19-02-PLAN.md — Flow State v2 + Migration
 - [x] 19-03-PLAN.md — Atlas Routing Skill
@@ -22,13 +23,22 @@ Plans:
 
 ### Phase 20: Packaging and Target Project Integration for ATLAS Loop
 
-**Goal:** [To be planned]
+**Goal:** Package the completed ATLAS Loop runtime so fresh target projects initialized with `saf init` receive the ATLAS skills, contract schemas, flow templates, state scaffolding, and validation coverage needed to pass `saf doctor`.
 **Requirements**: TBD
 **Depends on:** Phase 19
-**Plans:** 0 plans
+**Plans:** 4/4 plans complete
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 20 to break down)
+
+**Wave 1**
+
+- [x] 20-01-PLAN.md — Package Inventory and Manifest
+- [x] 20-02-PLAN.md — Init Asset Copying and Runtime Layout
+
+**Wave 2**
+
+- [x] 20-03-PLAN.md — Target Project Bootstrap Smoke Test
+- [x] 20-04-PLAN.md — Documentation and Release Checklist
 
 ---
 

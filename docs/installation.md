@@ -45,7 +45,8 @@ Snail Agent Flow is designed to structure AI context and execution for **any** r
    This command automatically generates the required protocol structures in the target directory:
    - Configures agent instructions (`CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`).
    - Sets up protocol directories (`.ai/`, `.specify/`, `specs/`).
-   - Creates the default flow definition (`.ai/flows/rough-project-flow.yaml`).
+   - Creates the default ATLAS flow definition (`.ai/flows/atlas-flow.yaml`).
+   - Copies the packaged ATLAS skills and contracts into `.claude/skills/atlas-*` and `.claude/skills/contracts`.
    - Sets up context size policy limits (`.ai/state/context-policy.json`).
    - Localizes global GSD skills to `.agents/skills` or `.claude/skills` to make them relative to the target project.
 
@@ -54,12 +55,13 @@ Snail Agent Flow is designed to structure AI context and execution for **any** r
    saf doctor
    ```
 
+---
 
 ## Common Commands
 
 | Command | Purpose |
 |---|---|
-| `init` | Create protocol directories, starter agent docs, default flow definition, flow ledger, local skill stubs, and strict init checks. |
+| `init` | Create protocol directories, starter agent docs, default flow definition, flow state schema, and copies ATLAS loop runtime assets. |
 | `feature <description>` | Create a validated Spec-Kit feature scaffold under `specs/<feature-slug>/` and update `.specify/feature.json`. |
 | `run <description>` | Initialize the protocol if needed, create a feature scaffold, run validation, and print next steps. |
 | `new-session <name>` | Create a dated session note under `.ai/sessions/`. |
@@ -107,3 +109,28 @@ npm test                   # full validation suite
 ```
 
 The release workflow runs `npm test`, builds an npm tarball with `npm pack`, uploads the package artifact, and attaches it to tagged GitHub releases matching `v*.*.*.*`.
+
+## Release Verification Checklist
+
+Before publishing or creating a release, verify the package integrity and target project bootstrap behavior using the following steps:
+
+1. **Validate Feature Spec**:
+   ```bash
+   node validators/scripts/validate-spec.js
+   ```
+2. **Verify Packaged Assets (Inventory check)**:
+   ```bash
+   node validators/scripts/test-package-inventory.js
+   ```
+3. **Verify Target Project Bootstrap (Smoke test)**:
+   ```bash
+   node validators/scripts/test-target-project-bootstrap.js
+   ```
+4. **Run Full Test Suite**:
+   ```bash
+   npm test
+   ```
+5. **Dry-Run Package Assembly**:
+   ```bash
+   npm pack --dry-run --json
+   ```

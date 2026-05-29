@@ -4,7 +4,18 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { spawnSync } = require('child_process');
+
+function runNode(args, options = {}) {
+  const res = spawnSync(process.execPath, args, {
+    ...options,
+    encoding: 'utf8'
+  });
+  if (res.status !== 0) {
+    throw new Error(`node ${args.join(' ')} failed: ${res.stderr || res.stdout || (res.error && res.error.message)}`);
+  }
+  return res.stdout;
+}
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-e2e-test-'));
 
@@ -34,7 +45,7 @@ for (const s of skills) {
 fs.writeFileSync(path.join(projectDir, 'package.json'), '{}');
 
 // Run adp init
-execSync(`node ${path.resolve(__dirname, '../../bin/adp.js')} init`, { cwd: projectDir });
+runNode([path.resolve(__dirname, '../../bin/adp.js'), 'init'], { cwd: projectDir });
 
 // 1. Align
 const taskJson = JSON.stringify({
@@ -45,12 +56,19 @@ const taskJson = JSON.stringify({
   reversibility: 0,
   user_biz_risk: 0
 });
-const alignRes = execSync(`node ${path.resolve(__dirname, '../../.claude/skills/atlas-routing/scripts/score-and-claim.js')} '${taskJson}' "${projectDir}"`).toString();
+const alignRes = runNode([
+  path.resolve(__dirname, '../../.claude/skills/atlas-routing/scripts/score-and-claim.js'),
+  taskJson,
+  projectDir
+]);
 const alignGate = JSON.parse(alignRes);
 assert.strictEqual(alignGate.status, 'PASS');
 
 // 2. Trace -> Skip align-gate & resolve next stage (trace)
-const trans1Res = execSync(`node ${path.resolve(__dirname, '../../.claude/skills/atlas-routing/scripts/transition.js')} "${projectDir}"`).toString();
+const trans1Res = runNode([
+  path.resolve(__dirname, '../../.claude/skills/atlas-routing/scripts/transition.js'),
+  projectDir
+]);
 const trans1 = JSON.parse(trans1Res);
 assert.strictEqual(trans1.next_stage, 'trace');
 
@@ -66,13 +84,19 @@ fs.writeFileSync(path.join(projectDir, '.ai', 'state', 'flow-state.json'), JSON.
 fs.mkdirSync(path.join(projectDir, 'validators', 'scripts'), { recursive: true });
 fs.writeFileSync(path.join(projectDir, 'validators', 'scripts', 'test-dummy.js'), '// failing mock test');
 
-const layRes = execSync(`node ${path.resolve(__dirname, '../../.claude/skills/atlas-gates/scripts/lay-preflight.js')} "${projectDir}"`).toString();
+const layRes = runNode([
+  path.resolve(__dirname, '../../.claude/skills/atlas-gates/scripts/lay-preflight.js'),
+  projectDir
+]);
 const layGate = JSON.parse(layRes);
 assert.strictEqual(layGate.status, 'PASS');
 
 // 4. Settle
 // Release locks
-execSync(`node ${path.resolve(__dirname, '../../.claude/skills/atlas-settle/scripts/release-locks.js')} "${projectDir}"`);
+runNode([
+  path.resolve(__dirname, '../../.claude/skills/atlas-settle/scripts/release-locks.js'),
+  projectDir
+]);
 const finalState = JSON.parse(fs.readFileSync(path.join(projectDir, '.ai', 'state', 'flow-state.json'), 'utf8'));
 assert.deepStrictEqual(finalState.locks, []);
 

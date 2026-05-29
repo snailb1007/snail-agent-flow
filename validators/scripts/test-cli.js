@@ -786,55 +786,55 @@ addTest('CLI Init Creates Flow Infrastructure (Greenfield)', () => {
     throw new Error('Expected .ai/flows directory to be created');
   }
 
-  // Verify flow definition was copied
-  if (!fileExists('.ai/flows/rough-project-flow.yaml')) {
-    throw new Error('Expected .ai/flows/rough-project-flow.yaml to be created');
+  // Verify ATLAS flow definition was copied
+  if (!fileExists('.ai/flows/atlas-flow.yaml')) {
+    throw new Error('Expected .ai/flows/atlas-flow.yaml to be created');
   }
 
   // Verify flow definition content matches the template
-  const templatePath = path.resolve(__dirname, '../../.specify/templates/rough-project-flow.yaml');
+  const templatePath = path.resolve(__dirname, '../../.specify/templates/atlas-flow.yaml');
   const templateContent = fs.readFileSync(templatePath, 'utf8');
-  const copiedContent = readFile('.ai/flows/rough-project-flow.yaml');
+  const copiedContent = readFile('.ai/flows/atlas-flow.yaml');
   if (copiedContent !== templateContent) {
     throw new Error('Flow definition content does not match template');
+  }
+  if (!copiedContent.includes('name: atlas-flow')) {
+    throw new Error('Expected default flow definition to be atlas-flow');
   }
 
   // Verify flow state was created
   if (!fileExists('.ai/state/flow-state.json')) {
     throw new Error('Expected .ai/state/flow-state.json to be created');
   }
-
-  // Verify SKILL.md stub was created
-  if (!fileExists('.agents/skills/project-flow/SKILL.md')) {
-    throw new Error('Expected .agents/skills/project-flow/SKILL.md to be created');
-  }
-  if (!fileExists('.claude/skills/project-flow/SKILL.md')) {
-    throw new Error('Expected .claude/skills/project-flow/SKILL.md to be created');
+  if (fileExists('.ai/state/flow-ledger.json')) {
+    throw new Error('Expected init not to create deprecated flow-ledger.json');
   }
 
-  // Verify SKILL.md has correct frontmatter
-  const skillContent = readFile('.agents/skills/project-flow/SKILL.md');
-  if (!skillContent.includes('name: project-flow')) {
-    throw new Error('Expected SKILL.md to contain "name: project-flow" in frontmatter');
+  // Verify ATLAS skills and contracts were copied
+  for (const skill of ['atlas-routing', 'atlas-gates', 'atlas-settle', 'atlas-review']) {
+    const skillPath = `.claude/skills/${skill}/SKILL.md`;
+    if (!fileExists(skillPath)) {
+      throw new Error(`Expected ${skillPath} to be created`);
+    }
+    if (!readFile(skillPath).includes(`name: ${skill}`)) {
+      throw new Error(`Expected ${skillPath} to contain name: ${skill}`);
+    }
   }
-  if (!skillContent.includes('description:')) {
-    throw new Error('Expected SKILL.md to contain "description:" in frontmatter');
-  }
-
-  const claudeSkillContent = readFile('.claude/skills/project-flow/SKILL.md');
-  if (!claudeSkillContent.includes('name: project-flow')) {
-    throw new Error('Expected Claude SKILL.md to contain "name: project-flow" in frontmatter');
+  for (const contract of ['artifact-map.json', 'entities.schema.json', 'gate-result.schema.json']) {
+    if (!fileExists(`.claude/skills/contracts/${contract}`)) {
+      throw new Error(`Expected .claude/skills/contracts/${contract} to be created`);
+    }
   }
 
   // Verify init output mentions flow files
-  if (!res.stdout.includes('rough-project-flow.yaml')) {
+  if (!res.stdout.includes('atlas-flow.yaml')) {
     throw new Error(`Expected init output to mention flow definition, got: ${res.stdout}`);
   }
   if (!res.stdout.includes('flow-state.json')) {
     throw new Error(`Expected init output to mention flow state, got: ${res.stdout}`);
   }
-  if (!res.stdout.includes('SKILL.md')) {
-    throw new Error(`Expected init output to mention SKILL.md, got: ${res.stdout}`);
+  if (!res.stdout.includes('atlas-routing')) {
+    throw new Error(`Expected init output to mention ATLAS skills, got: ${res.stdout}`);
   }
 });
 
@@ -843,12 +843,10 @@ addTest('CLI Init Skips Existing Flow Files (Brownfield)', () => {
   setupSandbox();
 
   // Pre-create flow files with custom content
-  writeFile('.ai/flows/rough-project-flow.yaml', 'custom-flow-content');
+  writeFile('.ai/flows/atlas-flow.yaml', 'custom-flow-content');
   writeFile('.ai/state/flow-state.json', '{"custom": true}');
-  fs.mkdirSync(path.join(testSandboxRoot, '.agents/skills/project-flow'), { recursive: true });
-  writeFile('.agents/skills/project-flow/SKILL.md', 'custom-skill-content');
-  fs.mkdirSync(path.join(testSandboxRoot, '.claude/skills/project-flow'), { recursive: true });
-  writeFile('.claude/skills/project-flow/SKILL.md', 'custom-claude-skill-content');
+  fs.mkdirSync(path.join(testSandboxRoot, '.claude/skills/atlas-routing'), { recursive: true });
+  writeFile('.claude/skills/atlas-routing/SKILL.md', 'custom-atlas-routing-content');
 
   process.env.ADP_NO_STRICT = '1';
   const res = runCLI(['init']);
@@ -858,17 +856,14 @@ addTest('CLI Init Skips Existing Flow Files (Brownfield)', () => {
   }
 
   // Verify flow files were NOT overwritten
-  if (readFile('.ai/flows/rough-project-flow.yaml') !== 'custom-flow-content') {
+  if (readFile('.ai/flows/atlas-flow.yaml') !== 'custom-flow-content') {
     throw new Error('Brownfield flow definition was overwritten!');
   }
   if (readFile('.ai/state/flow-state.json') !== '{"custom": true}') {
     throw new Error('Brownfield flow state was overwritten!');
   }
-  if (readFile('.agents/skills/project-flow/SKILL.md') !== 'custom-skill-content') {
-    throw new Error('Brownfield SKILL.md was overwritten!');
-  }
-  if (readFile('.claude/skills/project-flow/SKILL.md') !== 'custom-claude-skill-content') {
-    throw new Error('Brownfield Claude SKILL.md was overwritten!');
+  if (readFile('.claude/skills/atlas-routing/SKILL.md') !== 'custom-atlas-routing-content') {
+    throw new Error('Brownfield atlas-routing SKILL.md was overwritten!');
   }
 
   // Verify skip messages in output
@@ -933,7 +928,7 @@ addTest('CLI Init Handles YAML Parse Failure Gracefully', () => {
 
   // Pre-create an invalid flow definition file to trigger parse failure
   // We need the flow definition to be there (so the copy step skips), but be invalid YAML
-  writeFile('.ai/flows/rough-project-flow.yaml', 'invalid: yaml: content: [[[broken');
+  writeFile('.ai/flows/atlas-flow.yaml', 'invalid: yaml: content: [[[broken');
 
   // Remove the ledger so init tries to generate it from the invalid YAML
   // The .ai/state dir will be created by init
@@ -984,8 +979,8 @@ addTest('CLI Doctor Reports Missing Prerequisites and Exits 1', () => {
   fs.writeFileSync(path.join(testSandboxRoot, 'specs/001-test/tasks.md'), '# Tasks\n- [ ] Task\n', 'utf8');
   fs.writeFileSync(path.join(testSandboxRoot, 'specs/001-test/checklists/requirements.md'), '# Checklist\n- [x] Done\n', 'utf8');
 
-  // Modify .ai/flows/rough-project-flow.yaml to inject a missing prerequisite
-  const flowPath = path.join(testSandboxRoot, '.ai/flows/rough-project-flow.yaml');
+  // Modify .ai/flows/atlas-flow.yaml to inject a missing prerequisite
+  const flowPath = path.join(testSandboxRoot, '.ai/flows/atlas-flow.yaml');
   const badFlow = `
 name: bad-flow
 version: 1.0.0
@@ -1220,9 +1215,20 @@ addTest('CLI Init Strict Gate Fails on Missing Prerequisite', () => {
   const mockHome = path.join(testSandboxRoot, 'mock-home');
   fs.mkdirSync(mockHome, { recursive: true });
 
-  // Delete one of the required skill folders to trigger prerequisite check failure
-  const p = path.join(testSandboxRoot, '.agents/skills/gsd-discuss-phase');
-  rmSyncWithRetry(p);
+  // Pre-create a custom flow with a missing prerequisite. Init must preserve
+  // existing flow files and fail the strict gate against this declared prereq.
+  writeFile('.ai/flows/atlas-flow.yaml', `
+name: custom-missing-prereq
+version: 1.0.0
+prerequisites:
+  - name: GSD
+    command: gsd-discuss-phase
+    check: nonexistent-command-123
+stages:
+  - id: align
+    name: Align
+    skill: gsd-discuss-phase
+`);
 
   const originalHome = process.env.HOME;
   let res;

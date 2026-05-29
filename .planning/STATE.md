@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: multi-flow-observability-dashboard
-status: "Phase 20 (Packaging and Target Project Integration for ATLAS Loop) added"
+status: "Phase 20 (Packaging and Target Project Integration for ATLAS Loop) complete"
 last_updated: "2026-05-29T15:10:52.000Z"
 last_activity: 2026-05-29
 progress:
   total_phases: 9
-  completed_phases: 8
-  total_plans: 16
-  completed_plans: 16
-  percent: 88
+  completed_phases: 9
+  total_plans: 20
+  completed_plans: 20
+  percent: 100
 ---
 
 # Project State
@@ -33,7 +33,7 @@ Milestone v4.0 is complete (Phases 18-23, including Phase 18.1, and Phase 19).
 ## Active Phase
 
 **None**
-- Phase 19 (atlas-refactor-CONTEXT) is complete.
+- Phase 20 (Packaging and Target Project Integration for ATLAS Loop) is complete.
 
 ## Decisions
 
@@ -86,6 +86,13 @@ Milestone v4.0 is complete (Phases 18-23, including Phase 18.1, and Phase 19).
 - Updated `CONTEXT.md` with ATLAS project vocabulary.
 - Implemented E2E integration test suite (`validators/scripts/test-atlas-e2e.js`) and verified the entire loop.
 
+### Phase 20 (Complete)
+
+- Verified the npm package allow-list recursively packs only the minimal ATLAS runtime assets (`.claude/skills/atlas-*`) and excludes planning artifacts, logs, and other mutable state.
+- Implemented a package inventory regression test (`test-package-inventory.js`) to programmatically check packed assets before release.
+- Created an integration smoke test (`test-target-project-bootstrap.js`) that packages Snail Agent Flow, initializes it in a fresh temporary directory, and verifies that `saf init` and `saf doctor` succeed with the packaged assets.
+- Updated user documentation (`README.md` and `docs/installation.md`) to define the ATLAS Loop bootstrap sequence and release checklist.
+
 ## Quick Tasks Completed
 
 | Slug | Date | Description |
@@ -99,7 +106,7 @@ Milestone v4.0 is complete (Phases 18-23, including Phase 18.1, and Phase 19).
 
 ## Next Action
 
-Archive Milestone v4.0 and define next milestone requirements.
+Scope Milestone v5.0 (Multi-Flow & Observability Dashboard) requirements and plans.
 
 ## Accumulated Context
 
@@ -111,7 +118,7 @@ Archive Milestone v4.0 and define next milestone requirements.
 - Phases 18-23 added: Milestone v4.0 RAOS kernel phases.
 
 ---
-*State updated: 2026-05-28*
+*State updated: 2026-05-29*
 
 - Phase 18.1 inserted after Phase 18: Ownership-store primitive (#56) — atomic file lock foundation for claims and leases (URGENT)
 - Phases 18 to 23: RAOS kernel modules completed and merged to main.
@@ -120,12 +127,12 @@ Archive Milestone v4.0 and define next milestone requirements.
 
 ## Current Position
 
-Phase: 20
-Stage: Align
-Status: Phase 20 added, ready for planning.
+Phase: None
+Stage: Settle
+Status: Complete
 Last activity: 2026-05-29
 
 ## Operator Next Steps
 
-- Formulate plans for Phase 20 under `.planning/phases/20-packaging-and-target-project-integration-for-atlas-loop/`.
+- Define next milestone (v5.0) requirements.
 - Run validations to verify the project environment.

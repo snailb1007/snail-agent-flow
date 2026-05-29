@@ -128,7 +128,7 @@ Navigate to your project directory and initialize the operating protocol:
 cd /path/to/your/target-project
 saf init
 ```
-This bootstraps all protocol directories (`.ai/`, `.specify/`, `specs/`), copies agent instruction documents (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`), and localizes global GSD skills into your project directory.
+This bootstraps all protocol directories (`.ai/`, `.specify/`, `specs/`), copies agent instruction documents (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) with ATLAS Loop guidance, configures the default ATLAS flow (`.ai/flows/atlas-flow.yaml`), sets up the context policy (`.ai/state/context-policy.json`), and copies the packaged ATLAS skills and contracts into `.claude/skills/atlas-*` and `.claude/skills/contracts`.
 
 ### 3. Create a Feature Flow
 Start a new feature flow with specifications, architectural plans, and checklists:
