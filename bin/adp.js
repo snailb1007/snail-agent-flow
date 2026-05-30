@@ -833,6 +833,28 @@ function handleDoctor(cmdArgs = []) {
     console.error(`[doctor] Error running drift validator: ${e.message}`);
   }
 
+  // Check if an active feature exists before running spec validation
+  const specifyFeatureCheck = path.join(repoRoot, '.specify/feature.json');
+  let hasActiveFeature = false;
+  if (fs.existsSync(specifyFeatureCheck)) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(specifyFeatureCheck, 'utf8'));
+      if (raw.feature_directory) {
+        const normDir = raw.feature_directory.replace(/\/+$/, '');
+        hasActiveFeature = fs.existsSync(path.join(repoRoot, normDir));
+      }
+    } catch (e) {
+      // malformed pointer — let validator report it
+      hasActiveFeature = true;
+    }
+  }
+
+  if (!hasActiveFeature) {
+    console.log('[doctor] Spec validation gate SKIPPED (no active feature). Run `saf feature "..."` to create one.');
+    console.log('[doctor] Project is healthy.');
+    process.exit(0);
+  }
+
   console.log('[doctor] Running spec validation gate...');
   const valResult = runSpecValidatorSync(false);
   if (valResult.status !== 0) {

@@ -178,6 +178,29 @@ None.
   }
 
   console.log('[test-bootstrap] saf doctor passed successfully!');
+
+  // 8. Run score-and-claim.js script in the bootstrapped target project to verify path resolution
+  console.log('[test-bootstrap] Running score-and-claim.js inside sandbox...');
+  const taskPayload = JSON.stringify({
+    slug: 'test-feature',
+    novelty: 0,
+    blast_radius: 0,
+    ambiguity: 0,
+    reversibility: 0,
+    user_biz_risk: 0
+  });
+  const scoreResult = spawnSync('node', [
+    path.join(tempRoot, '.claude/skills/atlas-routing/scripts/score-and-claim.js'),
+    taskPayload,
+    tempRoot
+  ], {
+    cwd: tempRoot,
+    encoding: 'utf8'
+  });
+  if (scoreResult.status !== 0) {
+    throw new Error(`score-and-claim.js inside sandbox failed: ${scoreResult.stderr || scoreResult.stdout}`);
+  }
+  console.log('[test-bootstrap] score-and-claim.js passed inside sandbox!');
 } finally {
   // Clean up
   console.log('[test-bootstrap] Cleaning up...');

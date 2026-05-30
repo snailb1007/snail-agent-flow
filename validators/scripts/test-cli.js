@@ -175,7 +175,7 @@ addTest('CLI Init Command', () => {
 addTest('CLI Doctor Command', () => {
   setupSandbox();
 
-  // Running on uninitialized sandbox should fail
+  // Running on uninitialized sandbox should fail (strict checks fail)
   let res = runCLI(['doctor']);
   if (res.code !== 1) {
     throw new Error(`Expected exit code 1 on uninitialized sandbox doctor, got ${res.code}`);
@@ -184,10 +184,14 @@ addTest('CLI Doctor Command', () => {
   // Initialize sandbox via init
   runCLI(['init']);
 
-  // Should still fail because specs/ is empty (no active feature spec files)
+  // Should now pass with SKIPPED because no active feature exists yet
   res = runCLI(['doctor']);
-  if (res.code !== 1) {
-    throw new Error(`Expected exit code 1 on doctor with empty specs, got ${res.code}`);
+  if (res.code !== 0) {
+    throw new Error(`Expected exit code 0 on doctor with no active feature (should skip spec validation), got ${res.code}. Stderr: ${res.stderr}`);
+  }
+  const combinedOutput = (res.stdout || '') + (res.stderr || '');
+  if (!combinedOutput.includes('SKIPPED')) {
+    throw new Error(`Expected doctor output to contain 'SKIPPED' when no active feature, got: ${combinedOutput}`);
   }
 
   // Set up mock feature spec files
@@ -222,13 +226,7 @@ Do not break anything.
   writeFile(`${mockSpecPath}/plan.md`, validPlanContent);
   writeFile(`${mockSpecPath}/tasks.md`, validTasksContent);
 
-  // Now doctor should pass successfully!
-  // Wait, the doctor command spawns validators/scripts/validate-spec.js.
-  // We need to write a mock validate-spec.js in the sandbox, or make sure validate-spec.js is resolved relative to the real project!
-  // Yes! The adp.js script will spawn path.join(__dirname, '../validators/scripts/validate-spec.js') which resides in the real repository root.
-  // But wait! If we run inside sandbox, we should pass REPO_ROOT/PROJECT_ROOT env variables to validate-spec.js so it runs on our sandbox.
-  // We'll design bin/adp.js to pass process.env.PROJECT_ROOT/REPO_ROOT through to the subprocess!
-
+  // Now doctor should pass with full spec validation
   res = runCLI(['doctor']);
   if (res.code !== 0) {
     throw new Error(`Expected exit code 0 on doctor with valid specs, got ${res.code}. Stderr: ${res.stderr}. Stdout: ${res.stdout}`);

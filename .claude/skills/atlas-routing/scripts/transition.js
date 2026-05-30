@@ -1,6 +1,46 @@
 'use strict';
 
-const flowState = require('../../../../lib/flow-state');
+const fs = require('fs');
+const path = require('path');
+
+function requireLib(moduleName) {
+  try {
+    const relativePath = path.resolve(__dirname, '../../../../lib', moduleName);
+    if (fs.existsSync(relativePath + '.js') || fs.existsSync(relativePath)) {
+      return require(relativePath);
+    }
+  } catch (e) {}
+  try {
+    return require(`snail-agent-flow/lib/${moduleName}`);
+  } catch (e) {}
+  try {
+    const { execSync } = require('child_process');
+    let cmdPath = '';
+    try {
+      cmdPath = execSync('which adp', { encoding: 'utf8', stdio: [] }).trim();
+    } catch (e) {
+      try {
+        cmdPath = execSync('which saf', { encoding: 'utf8', stdio: [] }).trim();
+      } catch (err) {}
+    }
+    if (cmdPath) {
+      const realCmdPath = fs.realpathSync(cmdPath);
+      const libPath = path.resolve(path.dirname(realCmdPath), '../lib', moduleName);
+      if (fs.existsSync(libPath + '.js') || fs.existsSync(libPath)) {
+        return require(libPath);
+      }
+    }
+  } catch (e) {}
+  try {
+    const localNodeModulesLib = path.resolve(process.cwd(), 'node_modules/snail-agent-flow/lib', moduleName);
+    if (fs.existsSync(localNodeModulesLib + '.js') || fs.existsSync(localNodeModulesLib)) {
+      return require(localNodeModulesLib);
+    }
+  } catch (e) {}
+  throw new Error(`[snail-agent-flow] Cannot find required library module: "${moduleName}". Please ensure snail-agent-flow is installed.`);
+}
+
+const flowState = requireLib('flow-state');
 
 function resolveNext(state) {
   const stages = ['align', 'trace', 'lay', 'act', 'settle'];
