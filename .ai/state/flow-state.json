@@ -1,17 +1,50 @@
 {
   "schema_version": "2.0",
   "run_id": "run_1r640q4v2",
-  "feature_slug": "018-pure-task-scoring-profile",
+  "feature_slug": "autonomous-atlas-loop",
   "risk_profile": "STANDARD",
   "work_mode": "FEATURE",
-  "stage": "align",
-  "status": "running",
+  "stage": "settle",
+  "status": "done",
   "attempt": 1,
-  "completed_steps": [],
-  "pending_step": "align.pending",
+  "completed_steps": [
+    "align.score",
+    "align.claim",
+    "settle.verify",
+    "settle.signal",
+    "settle.release"
+  ],
+  "pending_step": "",
   "locks": [],
   "signals": [],
   "consecutive_failures": 0,
   "retry_count": 0,
-  "verified_artifacts": []
+  "verified_artifacts": [],
+  "last_verified_commit": "3ee05b0376a93e36e664d2247f534b61c32384f1",
+  "revision_history": [
+    {
+      "task": "autonomous-atlas-loop",
+      "from": "align",
+      "to": "trace",
+      "at": "2026-05-30T16:31:07.940Z"
+    },
+    {
+      "task": "autonomous-atlas-loop",
+      "from": "trace",
+      "to": "lay",
+      "at": "2026-05-30T16:34:14.906Z"
+    },
+    {
+      "task": "autonomous-atlas-loop",
+      "from": "lay",
+      "to": "act",
+      "at": "2026-05-30T16:46:28.323Z"
+    },
+    {
+      "task": "autonomous-atlas-loop",
+      "from": "act",
+      "to": "settle",
+      "at": "2026-05-30T16:51:20.146Z"
+    }
+  ]
 }

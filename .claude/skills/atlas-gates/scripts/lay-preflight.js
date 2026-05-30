@@ -87,7 +87,31 @@ function main() {
 
   // 2. Check leases/locks
   if (!state.locks || state.locks.length === 0) {
-    blocking.push('No active file advisory leases acquired in flow state.');
+    const locksDir = path.join(repoRoot, '.ai', 'locks');
+    const dirLocks = [];
+    if (fs.existsSync(locksDir)) {
+      const lockFiles = fs.readdirSync(locksDir).filter(f => f.endsWith('.json'));
+      for (const f of lockFiles) {
+        try {
+          const data = JSON.parse(fs.readFileSync(path.join(locksDir, f), 'utf8'));
+          if (data.owner && data.target_file) {
+            dirLocks.push({
+              file: path.relative(repoRoot, data.target_file),
+              acquired_at: data.acquired_time || data.acquired_at || new Date().toISOString()
+            });
+          }
+        } catch (e) { /* skip invalid */ }
+      }
+    }
+    if (dirLocks.length > 0) {
+      state.locks = dirLocks;
+      try {
+        if (typeof flowState.save === 'function') { flowState.save(repoRoot, state); }
+      } catch (e) { /* warn */ }
+      warnings.push('Synced ' + dirLocks.length + ' lock(s) from .ai/locks/ into flow-state (state was out of sync)');
+    } else {
+      blocking.push('No active file advisory leases acquired in flow state.');
+    }
   }
 
   // 3. Check for unit/validation test file

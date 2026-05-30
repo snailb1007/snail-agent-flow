@@ -30,7 +30,7 @@ test('parse default atlas-flow.yaml', () => {
   const parsed = parseYaml(yamlStr);
 
   assert.strictEqual(parsed.name, 'atlas-flow');
-  assert.strictEqual(parsed.version, '2.0.0');
+  assert.strictEqual(parsed.version, '3.0.0');
   assert.ok(parsed.description.includes('5-stage ATLAS Loop'));
   
   assert.ok(Array.isArray(parsed.prerequisites));

@@ -1,0 +1,18 @@
+{
+  "slug": "autonomous-atlas-loop",
+  "description": "Implement autonomous ATLAS loop: fix script/state mismatches, extend atlas-flow.yaml as machine-readable contract, add --auto mode to score-and-claim, create settle-full.js, fix handleLease sync, fix lay-preflight fallback, upsert agent instructions, add 22 deterministic rail tests.",
+  "novelty": 1,
+  "blast_radius": 2,
+  "ambiguity": 1,
+  "reversibility": 1,
+  "user_biz_risk": 0,
+  "workMode": "FEATURE",
+  "owner": "agent",
+  "writeScope": [
+    ".claude/skills/atlas-routing/scripts/score-and-claim.js",
+    ".claude/skills/atlas-settle/scripts/settle-full.js",
+    ".claude/skills/atlas-gates/scripts/lay-preflight.js",
+    "bin/adp.js",
+    ".specify/templates/atlas-flow.yaml"
+  ]
+}

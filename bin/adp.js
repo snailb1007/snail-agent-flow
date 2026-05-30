@@ -262,7 +262,7 @@ function handleInit() {
 
   // Localize GSD skills and append subagent guidelines
   localizeGlobalSkills(repoRoot);
-  appendAtlasGuidelines(repoRoot);
+  upsertAtlasGuidelines(repoRoot);
   appendSubagentGuidelines(repoRoot);
   appendContextPolicyGuidelines(repoRoot);
 
@@ -1170,27 +1170,28 @@ function localizeGlobalSkills(repoRoot) {
   }
 }
 
-function appendAtlasGuidelines(repoRoot) {
-  const guidelinesBlock = `
-## ATLAS Loop
+function upsertAtlasGuidelines(repoRoot) {
+  const newBlock = `\n## Autonomous ATLAS Loop\n\n1. **Read current state:** Load \`.ai/state/flow-state.json\` to determine current stage.\n2. **Execute stage action:** Read \`atlas-flow.yaml\` for the current stage's \`agent_action\`.\n3. **Run gate:** Execute the stage's \`gate\` script. If FAIL, fix and retry.\n4. **Transition:** On gate PASS, run the stage's \`post_gate\` script.\n5. **Loop:** Repeat from step 1 until stage = settle and status = done.\n6. **HIL stops:** validate-spec fail ×3, FULL profile at act needs sign-off.\n7. **Contracts:** Resolve artifacts via \`.claude/skills/contracts\`.\n8. **Avoid deprecated:** Do not read/create \`.ai/state/flow-ledger.json\`.\n`;
 
-1. **Use the current flow:** Follow the 5-stage ATLAS Loop: align, trace, lay, act, settle.
-2. **Read current state:** Use \`.ai/state/flow-state.json\` as the execution state snapshot.
-3. **Use ATLAS skills:** Route stage work through \`.claude/skills/atlas-routing\`, \`.claude/skills/atlas-gates\`, \`.claude/skills/atlas-settle\`, and \`.claude/skills/atlas-review\`.
-4. **Use contracts:** Resolve canonical artifacts through \`.claude/skills/contracts\`.
-5. **Avoid deprecated ledger:** Do not read or create \`.ai/state/flow-ledger.json\`.
-`;
+  // Pattern matches both old "## ATLAS Loop" and new "## Autonomous ATLAS Loop"
+  // Captures everything from the heading to the next ## heading or end of file
+  const sectionPattern = /\n## (?:Autonomous )?ATLAS Loop\n[\s\S]*?(?=\n## |\s*$)/;
 
   for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
     const p = path.join(repoRoot, f);
     try {
       if (!fs.existsSync(p)) continue;
-      const content = fs.readFileSync(p, 'utf8');
-      if (!content.includes('## ATLAS Loop')) {
-        fs.appendFileSync(p, guidelinesBlock, 'utf8');
-        console.log(`[init] Appended ATLAS Loop guidelines to ${f}`);
+      let content = fs.readFileSync(p, 'utf8');
+
+      if (sectionPattern.test(content)) {
+        content = content.replace(sectionPattern, newBlock);
+        fs.writeFileSync(p, content, 'utf8');
+        console.log(`[init] Replaced ATLAS Loop section in ${f}`);
       } else {
-        console.log(`[init] ATLAS Loop guidelines already present in ${f}, skipping.`);
+        if (!content.endsWith('\n')) content += '\n';
+        content += newBlock;
+        fs.writeFileSync(p, content, 'utf8');
+        console.log(`[init] Appended Autonomous ATLAS Loop to ${f}`);
       }
     } catch (e) {
       console.warn(`[init] WARNING: Failed to update ${f} with ATLAS Loop guidelines: ${e.message}`);
@@ -1393,20 +1394,50 @@ function handleLease(cmdArgs) {
     process.exit(1);
   }
 
+  // Normalize to absolute path
+  const absFile = path.resolve(repoRoot, file);
+
   try {
     if (release) {
-      const released = leaseManager.release(file, owner);
+      const released = leaseManager.release(absFile, owner);
       if (released) {
         console.log(`[lease] Released lease on: ${file}`);
       } else {
         console.log(`[lease] No active lease found for file: ${file}`);
       }
+      // Sync lock removal to flow-state
+      try {
+        const flowStateMod = require('../lib/flow-state');
+        const state = flowStateMod.load(repoRoot);
+        if (state) {
+          const relFile = path.relative(repoRoot, absFile);
+          state.locks = (state.locks || []).filter(l => l.file !== relFile);
+          flowStateMod.save(repoRoot, state);
+        }
+      } catch (syncErr) {
+        console.warn('[lease] Warning: Could not sync to flow-state.json:', syncErr.message);
+      }
       process.exit(0);
     }
 
     // Default: acquire lease
-    leaseManager.acquire(file, { owner, purpose, stale_lock_cap_seconds });
+    leaseManager.acquire(absFile, { owner, purpose, stale_lock_cap_seconds });
     console.log(`[lease] Successfully leased file: ${file} (owner: ${owner})`);
+    // Sync lock acquisition to flow-state
+    try {
+      const flowStateMod = require('../lib/flow-state');
+      const state = flowStateMod.load(repoRoot);
+      if (state) {
+        const relFile = path.relative(repoRoot, absFile);
+        if (!state.locks) state.locks = [];
+        if (!state.locks.some(l => l.file === relFile)) {
+          state.locks.push({ file: relFile, acquired_at: new Date().toISOString() });
+        }
+        flowStateMod.save(repoRoot, state);
+      }
+    } catch (syncErr) {
+      console.warn('[lease] Warning: Could not sync to flow-state.json:', syncErr.message);
+    }
     process.exit(0);
   } catch (e) {
     console.error(`Error handling lease: ${e.message}`);
