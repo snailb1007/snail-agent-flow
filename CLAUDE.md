@@ -143,3 +143,11 @@ This project is indexed by GitNexus as **snail-agent-flow** (2199 symbols, 2467 
 3. **Generate Context Packs:** When context packs are required, generate a structured pack containing only essential files and omit all others.
 4. **Use Fresh Sessions:** When byte pressure exceeds limits, write a handoff artifact (`.ai/state/context-handoff.json`) and resume from a clean session.
 5. **Protect Ledger State:** Parallel subagents must run in isolated workspaces with disjoint write targets and must never modify the central ledger.
+
+## ATLAS Loop
+
+1. **Use the current flow:** Follow the 5-stage ATLAS Loop: align, trace, lay, act, settle.
+2. **Read current state:** Use `.ai/state/flow-state.json` as the execution state snapshot.
+3. **Use ATLAS skills:** Route stage work through `.claude/skills/atlas-routing`, `.claude/skills/atlas-gates`, `.claude/skills/atlas-settle`, and `.claude/skills/atlas-review`.
+4. **Use contracts:** Resolve canonical artifacts through `.claude/skills/contracts`.
+5. **Avoid deprecated ledger:** Do not read or create `.ai/state/flow-ledger.json`.

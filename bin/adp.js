@@ -889,15 +889,26 @@ function initializePackagedAtlasAssets(repoRoot) {
 
   for (const relDir of assetDirs) {
     const srcDir = path.join(packageRoot, relDir);
+    
+    // Copy to .claude/skills/...
     const destDir = path.join(repoRoot, relDir);
     const result = copyDirectoryNoOverwrite(srcDir, destDir);
 
     if (result.missing) {
       console.warn(`[init] WARNING: Packaged ATLAS asset missing: ${relDir}`);
+      continue;
     } else if (result.copied > 0) {
       console.log(`[init] Created ${relDir} (${result.copied} files copied, ${result.skipped} existing skipped)`);
     } else {
       console.log(`[init] ${relDir} already exists, skipping.`);
+    }
+
+    // Also copy to .agents/skills/... to support Gemini/Antigravity and other agents that look there
+    const agentsRelDir = relDir.replace('.claude/skills', '.agents/skills');
+    const agentsDestDir = path.join(repoRoot, agentsRelDir);
+    const agentsResult = copyDirectoryNoOverwrite(srcDir, agentsDestDir);
+    if (agentsResult.copied > 0) {
+      console.log(`[init] Created ${agentsRelDir} (${agentsResult.copied} files copied, ${agentsResult.skipped} existing skipped)`);
     }
   }
 }

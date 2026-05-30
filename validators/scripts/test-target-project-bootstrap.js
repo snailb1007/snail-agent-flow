@@ -101,7 +101,14 @@ try {
     '.claude/skills/atlas-review/SKILL.md',
     '.claude/skills/contracts/artifact-map.json',
     '.claude/skills/contracts/entities.schema.json',
-    '.claude/skills/contracts/gate-result.schema.json'
+    '.claude/skills/contracts/gate-result.schema.json',
+    '.agents/skills/atlas-routing/SKILL.md',
+    '.agents/skills/atlas-gates/SKILL.md',
+    '.agents/skills/atlas-settle/SKILL.md',
+    '.agents/skills/atlas-review/SKILL.md',
+    '.agents/skills/contracts/artifact-map.json',
+    '.agents/skills/contracts/entities.schema.json',
+    '.agents/skills/contracts/gate-result.schema.json'
   ];
 
   for (const file of expectedFiles) {

@@ -1,0 +1,75 @@
+name: atlas-flow
+version: 2.0.0
+description: |
+  The 5-stage ATLAS Loop for risk-adaptive AI delivery.
+  Align scores and claims work, Trace establishes scope, Lay prepares verification,
+  Act executes changes, and Settle verifies, cleans up, and records signals.
+
+prerequisites:
+  - name: Atlas Routing
+    command: atlas-routing
+  - name: Atlas Gates
+    command: atlas-gates
+  - name: Atlas Settle
+    command: atlas-settle
+  - name: Atlas Review
+    command: atlas-review
+
+stages:
+  - id: align
+    name: Align
+    description: Score task risk, choose the profile and work mode, and acquire work-unit claims.
+    skill: atlas-routing
+    command: node .claude/skills/atlas-routing/scripts/score-and-claim.js
+    required_artifacts:
+      - path: .ai/state/flow-state.json
+      - path: .ai/claims
+    revision_routing: []
+
+  - id: trace
+    name: Trace
+    description: Establish scope, impacted artifacts, acceptance criteria, and implementation plan.
+    skill: atlas-routing
+    command: node .claude/skills/atlas-routing/scripts/transition.js
+    required_artifacts:
+      - path: specs/{feature_slug}/spec.md
+      - path: specs/{feature_slug}/plan.md
+      - path: specs/{feature_slug}/tasks.md
+    revision_routing:
+      - on: trace_failed
+        to: align
+
+  - id: lay
+    name: Lay
+    description: Prepare verification, write failing tests or checks, and acquire file leases.
+    skill: atlas-gates
+    command: node .claude/skills/atlas-gates/scripts/lay-preflight.js
+    required_artifacts:
+      - path: .ai/locks
+      - path: .ai/state/flow-state.json
+    revision_routing:
+      - on: lay_failed
+        to: trace
+
+  - id: act
+    name: Act
+    description: Execute implementation work under the selected risk profile and satisfy local checks.
+    skill: atlas-gates
+    command: node .claude/skills/atlas-gates/scripts/act-evaluator.js
+    required_artifacts:
+      - path: .ai/state/flow-state.json
+    revision_routing:
+      - on: act_failed
+        to: lay
+
+  - id: settle
+    name: Settle
+    description: Verify results, run review policy, release claims and leases, and log observability signals.
+    skill: atlas-settle
+    command: node .claude/skills/atlas-settle/scripts/settle.js
+    required_artifacts:
+      - path: .ai/signals
+      - path: .ai/state/flow-state.json
+    revision_routing:
+      - on: settle_failed
+        to: act

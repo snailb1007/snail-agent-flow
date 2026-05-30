@@ -1,0 +1,17 @@
+{
+  "schema_version": "2.0",
+  "run_id": "run_1r640q4v2",
+  "feature_slug": "018-pure-task-scoring-profile",
+  "risk_profile": "STANDARD",
+  "work_mode": "FEATURE",
+  "stage": "align",
+  "status": "running",
+  "attempt": 1,
+  "completed_steps": [],
+  "pending_step": "align.pending",
+  "locks": [],
+  "signals": [],
+  "consecutive_failures": 0,
+  "retry_count": 0,
+  "verified_artifacts": []
+}
