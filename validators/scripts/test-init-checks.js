@@ -23,6 +23,7 @@ function populateGreenfield(tempdir) {
     '.ai/claims',
     '.ai/locks',
     '.ai/signals',
+    '.claude/skills/atlas-auto-loop',
     '.claude/skills/atlas-routing',
     '.claude/skills/atlas-gates',
     '.claude/skills/atlas-settle',
@@ -47,7 +48,7 @@ function populateGreenfield(tempdir) {
     path.join(tempdir, '.claude', 'skills', 'contracts', 'gate-result.schema.json')
   );
 
-  for (const skill of ['atlas-routing', 'atlas-gates', 'atlas-settle', 'atlas-review']) {
+  for (const skill of ['atlas-auto-loop', 'atlas-routing', 'atlas-gates', 'atlas-settle', 'atlas-review']) {
     const src = path.resolve(__dirname, `../../.claude/skills/${skill}`);
     const dest = path.join(tempdir, '.claude', 'skills', skill);
     fs.cpSync(src, dest, { recursive: true });

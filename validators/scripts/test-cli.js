@@ -809,7 +809,7 @@ addTest('CLI Init Creates Flow Infrastructure (Greenfield)', () => {
   }
 
   // Verify ATLAS skills and contracts were copied
-  for (const skill of ['atlas-routing', 'atlas-gates', 'atlas-settle', 'atlas-review']) {
+  for (const skill of ['atlas-auto-loop', 'atlas-routing', 'atlas-gates', 'atlas-settle', 'atlas-review']) {
     const skillPath = `.claude/skills/${skill}/SKILL.md`;
     if (!fileExists(skillPath)) {
       throw new Error(`Expected ${skillPath} to be created`);

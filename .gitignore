@@ -100,3 +100,11 @@ coverage/
 !.specify/
 .specify/**/*.local
 specs/**/*.local
+# Snail Agent Flow / ATLAS Loop
+.ai/sessions/
+.ai/state/
+.ai/claims/
+.ai/locks/
+.ai/signals/
+.ai/context-packs/
+.gsd/

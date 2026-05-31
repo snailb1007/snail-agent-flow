@@ -56,7 +56,7 @@ Profiles are evaluated using a 5-dimension risk rubric:
 | Constitution | Superpowers | Defines non-negotiable engineering behavior before work starts. |
 | Canonical spec | Spec-Kit | Owns `specs/<feature-slug>/spec.md`, `plan.md`, `tasks.md`, and checklists. |
 | Orchestration | Snail Agent Flow CLI (`adp` / `saf`) | Initializes paths, creates feature packets, tracks status, manages claims/leases, and logs signals. |
-| Custom gates | ATLAS Skills | Custom control skills (`atlas-routing`, `atlas-gates`, `atlas-settle`, `atlas-review`). |
+| Custom gates | ATLAS Skills | Custom control skills (`atlas-auto-loop`, `atlas-routing`, `atlas-gates`, `atlas-settle`, `atlas-review`). |
 | Deterministic gates | Node.js validators | Checks spec headings, scans placeholders, detects drift, and creates human review packets. |
 | Recon support | Serena, Semble, Context7, GitNexus | Codebase indexing, context lookup, semantic search, and impact analysis. |
 
@@ -68,7 +68,7 @@ Profiles are evaluated using a 5-dimension risk rubric:
 |---|---|---|
 | `.specify/` | Spec-Kit | Presets, templates, validation scripts, and the active feature pointer (`.specify/feature.json`). |
 | `specs/<feature-slug>/` | Spec-Kit | Feature Spec Source of Truth (`spec.md`, `plan.md`, `tasks.md`). |
-| `.claude/skills/` | ATLAS Loop | Custom ATLAS control skills (`atlas-routing`, `atlas-gates`, `atlas-settle`, `atlas-review`, `contracts`). |
+| `.claude/skills/` | ATLAS Loop | Custom ATLAS control skills (`atlas-auto-loop`, `atlas-routing`, `atlas-gates`, `atlas-settle`, `atlas-review`, `contracts`). |
 | `.ai/` | Orchestration | Session logs, reviews, memory, and runtime metadata. |
 | `.ai/state/flow-state.json` | Flow state | Durable execution state snapshot (replaces legacy `flow-ledger` and `run-state`). |
 | `.ai/claims/` | Claims manager | Active work unit claims (`.ai/claims/*.json`). |
@@ -85,6 +85,7 @@ Profiles are evaluated using a 5-dimension risk rubric:
 Snail Agent Flow coordinates planning, execution, and release quality gates through modular, purpose-built skills:
 
 ### 1. Core ATLAS Loop
+* `atlas-auto-loop`: Entry skill for running the autonomous loop from `flow-state` and `atlas-flow`.
 * `atlas-routing`: Maps tasks to operating profiles and drives stage transitions dynamically.
 * `atlas-gates`: Evaluates preflight checklists, context budgets, and validation gates.
 * `atlas-review`: Conducts pre-landing reviews, threat models, and code quality checks.
@@ -128,7 +129,7 @@ Navigate to your project directory and initialize the operating protocol:
 cd /path/to/your/target-project
 saf init
 ```
-This bootstraps all protocol directories (`.ai/`, `.specify/`, `specs/`), copies agent instruction documents (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) with ATLAS Loop guidance, configures the default ATLAS flow (`.ai/flows/atlas-flow.yaml`), sets up the context policy (`.ai/state/context-policy.json`), and copies the packaged ATLAS skills and contracts into `.claude/skills/atlas-*` and `.claude/skills/contracts`.
+This bootstraps all protocol directories (`.ai/`, `.specify/`, `specs/`), copies agent instruction documents (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) with ATLAS Loop guidance, configures the default ATLAS flow (`.ai/flows/atlas-flow.yaml`), sets up the context policy (`.ai/state/context-policy.json`), and copies the packaged ATLAS skills, including `atlas-auto-loop`, and contracts into `.claude/skills/atlas-*` and `.claude/skills/contracts`.
 
 ### 3. Create a Feature Flow
 Start a new feature flow with specifications, architectural plans, and checklists:
