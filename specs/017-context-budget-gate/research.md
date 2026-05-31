@@ -7,9 +7,10 @@ This document consolidates findings, decisions, and technical rationales for the
 ### 1. Budget Estimation Model (Local and Offline)
 
 - **Decision**: Estimate context pressure by measuring the byte size of relevant files on the local filesystem instead of querying live tokenization APIs or counting tokens dynamically.
-- **Rationale**: Keeps the execution environment offline, fast (<100ms), and runtime-neutral. Byte size acts as a reliable deterministic proxy for token size without incurring performance or network overhead.
+- **Rationale**: Keeps the execution environment offline, fast (<100ms), and runtime-neutral. Byte size acts as a reliable deterministic proxy for token size without incurring performance or network overhead. Any deviation or bias for non-English text (where UTF-8 encoding uses more bytes per character/token) is explicitly accepted as a conservative, fail-safe design choice. It errs on the side of caution, causing earlier session rotation rather than risking context overflow or performance degradation.
 - **Alternatives considered**:
   - *Dynamic Tokenization via LLM API*: Rejected due to network dependency, API costs, latency, and potential failure points.
+  - *Character/Word Counting Parser*: Rejected to keep the utility zero-dependency, extremely lightweight, and fast, avoiding the complexity of multi-language parsing rules.
   - *Rule-of-thumb line counting*: Rejected because file sizes in bytes represent the actual payload size more accurately (e.g. accounting for character encodings, comments, and spacing) than simple line counts.
 
 ### 2. Policy Outcomes & Threshold Boundaries
