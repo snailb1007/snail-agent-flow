@@ -8,6 +8,7 @@
     "lib/",
     "validators/scripts/validate-spec.js",
     "validators/scripts/test-package-inventory.js",
+    ".claude/skills/atlas-auto-loop/",
     ".claude/skills/atlas-routing/",
     ".claude/skills/atlas-gates/",
     ".claude/skills/atlas-settle/",

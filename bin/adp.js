@@ -29,61 +29,66 @@ Commands:
   signal <type> <val>   Log observability signal.
 `;
 
-if (!command || command === '--help' || command === '-h') {
-  console.log(USAGE.trim());
-  process.exit(command ? 0 : 1);
-}
-
 // Target project directory: env override or caller's working directory
 const repoRoot = process.env.PROJECT_ROOT || process.env.REPO_ROOT || process.cwd();
 // Package install directory: for resolving bundled validators, templates, scripts
 const packageRoot = path.resolve(__dirname, '..');
 
-// Router
-switch (command) {
-  case 'init':
-    handleInit();
-    break;
-  case 'feature':
-    handleFeature(args.slice(1), { validate: false });
-    break;
-  case 'run':
-    handleRun(args.slice(1));
-    break;
-  case 'new-session':
-    handleNewSession(args.slice(1));
-    break;
-  case 'status':
-    handleStatus();
-    break;
-  case 'doctor':
-    handleDoctor(args.slice(1));
-    break;
-  case 'validate-spec':
-    handleValidateSpec();
-    break;
-  case 'handoff':
-    handleHandoff();
-    break;
-  case 'score':
-    handleScore(args.slice(1));
-    break;
-  case 'claim':
-    handleClaim(args.slice(1));
-    break;
-  case 'lease':
-    handleLease(args.slice(1));
-    break;
-  case 'checkpoint':
-    handleCheckpoint(args.slice(1));
-    break;
-  case 'signal':
-    handleSignal(args.slice(1));
-    break;
-  default:
-    console.error(`Error: Unknown command "${command}"`);
+function runCli() {
+  if (!command || command === '--help' || command === '-h') {
     console.log(USAGE.trim());
-    process.exit(1);
+    process.exit(command ? 0 : 1);
+  }
+
+  switch (command) {
+    case 'init':
+      handleInit();
+      break;
+    case 'feature':
+      handleFeature(args.slice(1), { validate: false });
+      break;
+    case 'run':
+      handleRun(args.slice(1));
+      break;
+    case 'new-session':
+      handleNewSession(args.slice(1));
+      break;
+    case 'status':
+      handleStatus();
+      break;
+    case 'doctor':
+      handleDoctor(args.slice(1));
+      break;
+    case 'validate-spec':
+      handleValidateSpec();
+      break;
+    case 'handoff':
+      handleHandoff();
+      break;
+    case 'score':
+      handleScore(args.slice(1));
+      break;
+    case 'claim':
+      handleClaim(args.slice(1));
+      break;
+    case 'lease':
+      handleLease(args.slice(1));
+      break;
+    case 'checkpoint':
+      handleCheckpoint(args.slice(1));
+      break;
+    case 'signal':
+      handleSignal(args.slice(1));
+      break;
+    default:
+      console.error(`Error: Unknown command "${command}"`);
+      console.log(USAGE.trim());
+      process.exit(1);
+  }
+}
+
+if (require.main === module) {
+  runCli();
 }
 
 function handleInit() {
@@ -141,12 +146,6 @@ function handleInit() {
   if (!fs.existsSync(claudePath)) {
     const defaultClaude = `# CLAUDE.md
 
-## ATLAS Loop
-- Use the 5-stage ATLAS Loop: align -> trace -> lay -> act -> settle.
-- Read flow state from \`.ai/state/flow-state.json\`.
-- Use local ATLAS skills under \`.claude/skills/atlas-routing\`, \`.claude/skills/atlas-gates\`, \`.claude/skills/atlas-settle\`, and \`.claude/skills/atlas-review\`.
-- Do not use the deprecated \`.ai/state/flow-ledger.json\` ledger.
-
 ## Build & Test Commands
 - Build: \`npm run build\` (if applicable)
 - Test: \`npm test\`
@@ -163,12 +162,6 @@ function handleInit() {
   if (!fs.existsSync(geminiPath)) {
     const defaultGemini = `# GEMINI.md
 
-## ATLAS Loop
-- Use the 5-stage ATLAS Loop: align -> trace -> lay -> act -> settle.
-- Read flow state from \`.ai/state/flow-state.json\`.
-- Use local ATLAS skills under \`.claude/skills/atlas-routing\`, \`.claude/skills/atlas-gates\`, \`.claude/skills/atlas-settle\`, and \`.claude/skills/atlas-review\`.
-- Do not use the deprecated \`.ai/state/flow-ledger.json\` ledger.
-
 ## Execution guidelines
 - Respect environment constraints.
 - Run deterministic validators.
@@ -183,12 +176,6 @@ function handleInit() {
   const agentsPath = path.join(repoRoot, 'AGENTS.md');
   if (!fs.existsSync(agentsPath)) {
     const defaultAgents = `# AGENTS.md
-
-## ATLAS Loop
-- Use the 5-stage ATLAS Loop: align -> trace -> lay -> act -> settle.
-- Read flow state from \`.ai/state/flow-state.json\`.
-- Use local ATLAS skills under \`.claude/skills/atlas-routing\`, \`.claude/skills/atlas-gates\`, \`.claude/skills/atlas-settle\`, and \`.claude/skills/atlas-review\`.
-- Do not use the deprecated \`.ai/state/flow-ledger.json\` ledger.
 
 ## Agent Protocol Instructions
 - Read spec.md for feature requirements.
@@ -905,6 +892,7 @@ function copyDirectoryNoOverwrite(srcDir, destDir) {
 
 function initializePackagedAtlasAssets(repoRoot) {
   const assetDirs = [
+    '.claude/skills/atlas-auto-loop',
     '.claude/skills/atlas-routing',
     '.claude/skills/atlas-gates',
     '.claude/skills/atlas-settle',
@@ -1173,12 +1161,26 @@ function localizeGlobalSkills(repoRoot) {
   }
 }
 
-function upsertAtlasGuidelines(repoRoot) {
-  const newBlock = `\n## Autonomous ATLAS Loop\n\n1. **Read current state:** Load \`.ai/state/flow-state.json\` to determine current stage.\n2. **Execute stage action:** Read \`atlas-flow.yaml\` for the current stage's \`agent_action\`.\n3. **Run gate:** Execute the stage's \`gate\` script. If FAIL, fix and retry.\n4. **Transition:** On gate PASS, run the stage's \`post_gate\` script.\n5. **Loop:** Repeat from step 1 until stage = settle and status = done.\n6. **HIL stops:** validate-spec fail ×3, FULL profile at act needs sign-off.\n7. **Contracts:** Resolve artifacts via \`.claude/skills/contracts\`.\n8. **Avoid deprecated:** Do not read/create \`.ai/state/flow-ledger.json\`.\n`;
+function removeAtlasGuidelineSections(content) {
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  const kept = [];
 
-  // Pattern matches both old "## ATLAS Loop" and new "## Autonomous ATLAS Loop"
-  // Captures everything from the heading to the next ## heading or end of file
-  const sectionPattern = /\n## (?:Autonomous )?ATLAS Loop\n[\s\S]*?(?=\n## |\s*$)/;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^## (?:Autonomous )?ATLAS Loop\s*$/.test(lines[i])) {
+      while (i + 1 < lines.length && !/^## /.test(lines[i + 1])) {
+        i++;
+      }
+      continue;
+    }
+
+    kept.push(lines[i]);
+  }
+
+  return kept.join('\n');
+}
+
+function upsertAtlasGuidelines(repoRoot) {
+  const newBlock = `## Autonomous ATLAS Loop\n\nWhen asked to run the ATLAS auto loop, use the local \`atlas-auto-loop\` skill.\nRead \`.ai/state/flow-state.json\`, resolve \`.ai/flows/atlas-flow.yaml\`, and follow the skill instructions.\nDo not read or create \`.ai/state/flow-ledger.json\`.`;
 
   for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
     const p = path.join(repoRoot, f);
@@ -1186,16 +1188,10 @@ function upsertAtlasGuidelines(repoRoot) {
       if (!fs.existsSync(p)) continue;
       let content = fs.readFileSync(p, 'utf8');
 
-      if (sectionPattern.test(content)) {
-        content = content.replace(sectionPattern, newBlock);
-        fs.writeFileSync(p, content, 'utf8');
-        console.log(`[init] Replaced ATLAS Loop section in ${f}`);
-      } else {
-        if (!content.endsWith('\n')) content += '\n';
-        content += newBlock;
-        fs.writeFileSync(p, content, 'utf8');
-        console.log(`[init] Appended Autonomous ATLAS Loop to ${f}`);
-      }
+      const withoutAtlas = removeAtlasGuidelineSections(content).trimEnd();
+      const nextContent = withoutAtlas ? `${withoutAtlas}\n\n${newBlock}\n` : `${newBlock}\n`;
+      fs.writeFileSync(p, nextContent, 'utf8');
+      console.log(`[init] Upserted Autonomous ATLAS Loop pointer in ${f}`);
     } catch (e) {
       console.warn(`[init] WARNING: Failed to update ${f} with ATLAS Loop guidelines: ${e.message}`);
     }
@@ -1580,5 +1576,8 @@ function handleSignal(cmdArgs) {
   }
 }
 
-
+module.exports = {
+  removeAtlasGuidelineSections,
+  upsertAtlasGuidelines
+};
 

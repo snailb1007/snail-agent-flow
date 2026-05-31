@@ -5,9 +5,13 @@ All notable changes to this project are documented here.
 ## [Unreleased]
 
 ### Added
+- Added the packaged `atlas-auto-loop` skill as the entry point for autonomous ATLAS Loop guidance.
 - Added a package inventory regression test (`validators/scripts/test-package-inventory.js`) to assert required ATLAS assets are correctly packed and that forbidden workspace directories (like `.planning/`, `.ai/state/`, and `.git/`) are excluded.
 - Added a target project bootstrap smoke test (`validators/scripts/test-target-project-bootstrap.js`) to verify that the packaged tarball successfully initializes a fresh target project (scaffolds directories, creates config/flow files, copies ATLAS skills/contracts, and successfully passes `doctor` checks).
 - Documented the packaged ATLAS bootstrap path and added a release verification checklist to `docs/installation.md`.
+
+### Changed
+- Changed generated agent docs to use one `atlas-auto-loop` pointer section and deduplicate old ATLAS Loop sections during `saf init`.
 
 ## [0.4.0.0] - 2026-05-26
 

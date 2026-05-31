@@ -89,7 +89,7 @@ You are integrated with RTK (Rust Token Killer). When executing or reading outpu
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **snail-agent-flow** (3093 symbols, 3756 relationships, 26 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **snail-agent-flow** (3324 symbols, 4014 relationships, 26 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -144,21 +144,8 @@ This project is indexed by GitNexus as **snail-agent-flow** (3093 symbols, 3756 
 4. **Use Fresh Sessions:** When byte pressure exceeds limits, write a handoff artifact (`.ai/state/context-handoff.json`) and resume from a clean session.
 5. **Protect Ledger State:** Parallel subagents must run in isolated workspaces with disjoint write targets and must never modify the central ledger.
 
-## ATLAS Loop
-
-1. **Use the current flow:** Follow the 5-stage ATLAS Loop: align, trace, lay, act, settle.
-2. **Read current state:** Use `.ai/state/flow-state.json` as the execution state snapshot.
-3. **Use ATLAS skills:** Route stage work through `.claude/skills/atlas-routing`, `.claude/skills/atlas-gates`, `.claude/skills/atlas-settle`, and `.claude/skills/atlas-review`.
-4. **Use contracts:** Resolve canonical artifacts through `.claude/skills/contracts`.
-5. **Avoid deprecated ledger:** Do not read or create `.ai/state/flow-ledger.json`.
-
 ## Autonomous ATLAS Loop
 
-1. **Read current state:** Load `.ai/state/flow-state.json` to determine current stage.
-2. **Execute stage action:** Read `atlas-flow.yaml` for the current stage's `agent_action`.
-3. **Run gate:** Execute the stage's `gate` script. If FAIL, fix and retry.
-4. **Transition:** On gate PASS, run the stage's `post_gate` script.
-5. **Loop:** Repeat from step 1 until stage = settle and status = done.
-6. **HIL stops:** validate-spec fail ×3, FULL profile at act needs sign-off.
-7. **Contracts:** Resolve artifacts via `.claude/skills/contracts`.
-8. **Avoid deprecated:** Do not read/create `.ai/state/flow-ledger.json`.
+When asked to run the ATLAS auto loop, use the local `atlas-auto-loop` skill.
+Read `.ai/state/flow-state.json`, resolve `.ai/flows/atlas-flow.yaml`, and follow the skill instructions.
+Do not read or create `.ai/state/flow-ledger.json`.

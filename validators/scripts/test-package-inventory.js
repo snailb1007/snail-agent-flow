@@ -22,6 +22,7 @@ const required = [
   'lib/flow-state.js',
   'lib/validate-drift.js',
   '.specify/templates/atlas-flow.yaml',
+  '.claude/skills/atlas-auto-loop/SKILL.md',
   '.claude/skills/atlas-routing/SKILL.md',
   '.claude/skills/atlas-gates/SKILL.md',
   '.claude/skills/atlas-settle/SKILL.md',

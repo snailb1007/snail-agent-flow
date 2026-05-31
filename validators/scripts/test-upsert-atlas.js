@@ -3,8 +3,9 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
-const cp = require('child_process');
+const { upsertAtlasGuidelines } = require('../../bin/adp');
+
+const repoRoot = path.resolve(__dirname, '..', '..');
 
 const tests = [];
 function addTest(name, fn) {
@@ -31,6 +32,12 @@ const ATLAS_GUIDELINES_BLOCK = `
 4. **Use contracts:** Resolve canonical artifacts through \`.claude/skills/contracts\`.
 5. **Avoid deprecated ledger:** Do not read or create \`.ai/state/flow-ledger.json\`.
 `;
+
+const ATLAS_AUTO_LOOP_POINTER = `## Autonomous ATLAS Loop
+
+When asked to run the ATLAS auto loop, use the local \`atlas-auto-loop\` skill.
+Read \`.ai/state/flow-state.json\`, resolve \`.ai/flows/atlas-flow.yaml\`, and follow the skill instructions.
+Do not read or create \`.ai/state/flow-ledger.json\`.`;
 
 // Test 20: Detection of existing ## ATLAS Loop header
 addTest('regex detects existing ## ATLAS Loop header', () => {
@@ -147,38 +154,25 @@ addTest('Regex can replace old ATLAS Loop header with Autonomous ATLAS Loop', ()
   assert.ok(migrated.includes('5-stage ATLAS Loop'), 'Content after header should be preserved');
 });
 
-// Test 22c: Integration — adp init creates ATLAS Loop section in generated files
-addTest('adp init creates files with ATLAS Loop guidelines', () => {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-upsert-atlas-'));
+// Test 22c: Upsert creates atlas-auto-loop pointer in agent files
+addTest('upsertAtlasGuidelines creates atlas-auto-loop skill pointer', () => {
+  const tempDir = fs.mkdtempSync(path.join(repoRoot, '.tmp-test-upsert-atlas-'));
   const projectDir = path.join(tempDir, 'project');
 
   try {
-    // Bootstrap minimal project structure
-    fs.mkdirSync(path.join(projectDir, '.claude', 'skills', 'contracts'), { recursive: true });
-    const contractsSrc = path.resolve(__dirname, '..', '..', '.claude', 'skills', 'contracts');
-    for (const f of ['artifact-map.json', 'entities.schema.json', 'gate-result.schema.json']) {
-      const srcPath = path.join(contractsSrc, f);
-      if (fs.existsSync(srcPath)) {
-        fs.copyFileSync(srcPath, path.join(projectDir, '.claude', 'skills', 'contracts', f));
-      }
+    fs.mkdirSync(projectDir, { recursive: true });
+    for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
+      fs.writeFileSync(path.join(projectDir, f), `# ${f}\n\n## Existing Section\n- Keep this.\n`);
     }
-    fs.writeFileSync(path.join(projectDir, 'package.json'), '{}');
+    upsertAtlasGuidelines(projectDir);
 
-    // Run adp init
-    const adpPath = path.resolve(__dirname, '..', '..', 'bin', 'adp.js');
-    const res = cp.spawnSync(process.execPath, [adpPath, 'init'], {
-      encoding: 'utf8',
-      cwd: projectDir,
-      env: { ...process.env, ADP_NO_STRICT: '1' }
-    });
-
-    // Check that the generated CLAUDE.md contains ATLAS Loop
+    // Check that the generated CLAUDE.md contains the normalized skill pointer
     const claudePath = path.join(projectDir, 'CLAUDE.md');
     if (fs.existsSync(claudePath)) {
       const claudeContent = fs.readFileSync(claudePath, 'utf8');
       assert.ok(
-        claudeContent.includes('ATLAS Loop'),
-        'CLAUDE.md should contain ATLAS Loop section after init'
+        claudeContent.includes(ATLAS_AUTO_LOOP_POINTER),
+        'CLAUDE.md should contain atlas-auto-loop pointer after init'
       );
     }
 
@@ -187,9 +181,53 @@ addTest('adp init creates files with ATLAS Loop guidelines', () => {
     if (fs.existsSync(agentsPath)) {
       const agentsContent = fs.readFileSync(agentsPath, 'utf8');
       assert.ok(
-        agentsContent.includes('ATLAS Loop'),
-        'AGENTS.md should contain ATLAS Loop section after init'
+        agentsContent.includes(ATLAS_AUTO_LOOP_POINTER),
+        'AGENTS.md should contain atlas-auto-loop pointer after init'
       );
+    }
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+  }
+});
+
+addTest('adp init deduplicates old and autonomous ATLAS Loop sections at EOF', () => {
+  const tempDir = fs.mkdtempSync(path.join(repoRoot, '.tmp-test-upsert-atlas-dedupe-'));
+  const projectDir = path.join(tempDir, 'project');
+
+  try {
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(path.join(projectDir, 'package.json'), '{}');
+
+    const duplicateContent = `# AGENTS.md
+
+## Autonomous ATLAS Loop
+
+1. **Read current state:** Load \`.ai/state/flow-state.json\` to determine current stage.
+2. **Execute stage action:** Read \`atlas-flow.yaml\` for the current stage's \`agent_action\`.
+
+## ATLAS Loop
+
+1. **Use the current flow:** Follow the 5-stage ATLAS Loop.
+2. **Read current state:** Use flow-state.json.
+
+## Autonomous ATLAS Loop
+
+1. **Read current state:** Load \`.ai/state/flow-state.json\` to determine current stage.
+2. **Execute stage action:** Read \`atlas-flow.yaml\` for the current stage's \`agent_action\`.
+`;
+
+    for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
+      fs.writeFileSync(path.join(projectDir, f), duplicateContent.replace('# AGENTS.md', `# ${f}`));
+    }
+    upsertAtlasGuidelines(projectDir);
+
+    for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
+      const content = fs.readFileSync(path.join(projectDir, f), 'utf8');
+      const sectionCount = (content.match(/^## Autonomous ATLAS Loop$/gm) || []).length;
+      assert.strictEqual(sectionCount, 1, `${f} should contain exactly one Autonomous ATLAS Loop section`);
+      assert.ok(content.includes(ATLAS_AUTO_LOOP_POINTER), `${f} should contain normalized atlas-auto-loop pointer`);
+      assert.ok(!content.match(/^## ATLAS Loop$/m), `${f} should not retain old ATLAS Loop header`);
+      assert.ok(!content.includes('Execute stage action'), `${f} should not retain expanded algorithm text`);
     }
   } finally {
     try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
