@@ -260,6 +260,9 @@ function handleInit() {
 
   initializePackagedAtlasAssets(repoRoot);
 
+  // Update .gitignore in the target project
+  updateGitignore(repoRoot);
+
   // Localize GSD skills and append subagent guidelines
   localizeGlobalSkills(repoRoot);
   upsertAtlasGuidelines(repoRoot);
@@ -1264,6 +1267,48 @@ function appendContextPolicyGuidelines(repoRoot) {
         console.warn(`[init] WARNING: Failed to update ${f} with context policy guidelines: ${e.message}`);
       }
     }
+  }
+}
+
+function updateGitignore(repoRoot) {
+  const gitignorePath = path.join(repoRoot, '.gitignore');
+  const ignoreBlock = `
+# Snail Agent Flow / ATLAS Loop
+.ai/sessions/
+.ai/state/
+.ai/claims/
+.ai/locks/
+.ai/signals/
+.ai/context-packs/
+.ai/state/repair-guide.md
+.gsd/
+.gsd-id
+.mcp.json
+.bg-shell/
+.specify/**/*.local
+specs/**/*.local
+`;
+
+  try {
+    if (!fs.existsSync(gitignorePath)) {
+      fs.writeFileSync(gitignorePath, ignoreBlock.trim() + '\n', 'utf8');
+      console.log('[init] Created .gitignore with Snail Agent Flow rules.');
+      return;
+    }
+
+    let content = fs.readFileSync(gitignorePath, 'utf8');
+    if (!content.includes('# Snail Agent Flow / ATLAS Loop')) {
+      if (content && !content.endsWith('\n')) {
+        content += '\n';
+      }
+      content += ignoreBlock.trim() + '\n';
+      fs.writeFileSync(gitignorePath, content, 'utf8');
+      console.log('[init] Appended Snail Agent Flow rules to .gitignore.');
+    } else {
+      console.log('[init] Snail Agent Flow rules already present in .gitignore, skipping.');
+    }
+  } catch (e) {
+    console.warn(`[init] WARNING: Failed to update .gitignore: ${e.message}`);
   }
 }
 

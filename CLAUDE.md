@@ -151,3 +151,14 @@ This project is indexed by GitNexus as **snail-agent-flow** (3093 symbols, 3756 
 3. **Use ATLAS skills:** Route stage work through `.claude/skills/atlas-routing`, `.claude/skills/atlas-gates`, `.claude/skills/atlas-settle`, and `.claude/skills/atlas-review`.
 4. **Use contracts:** Resolve canonical artifacts through `.claude/skills/contracts`.
 5. **Avoid deprecated ledger:** Do not read or create `.ai/state/flow-ledger.json`.
+
+## Autonomous ATLAS Loop
+
+1. **Read current state:** Load `.ai/state/flow-state.json` to determine current stage.
+2. **Execute stage action:** Read `atlas-flow.yaml` for the current stage's `agent_action`.
+3. **Run gate:** Execute the stage's `gate` script. If FAIL, fix and retry.
+4. **Transition:** On gate PASS, run the stage's `post_gate` script.
+5. **Loop:** Repeat from step 1 until stage = settle and status = done.
+6. **HIL stops:** validate-spec fail ×3, FULL profile at act needs sign-off.
+7. **Contracts:** Resolve artifacts via `.claude/skills/contracts`.
+8. **Avoid deprecated:** Do not read/create `.ai/state/flow-ledger.json`.
