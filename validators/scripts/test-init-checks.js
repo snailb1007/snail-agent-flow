@@ -933,6 +933,71 @@ addTest('init-checks: instructions.contextPolicySection fails when heading is mi
   }
 });
 
+// 27. instructions.behavioralCoreSection check
+addTest('init-checks: instructions.behavioralCoreSection fails when heading is missing', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    fs.writeFileSync(path.join(tempdir, 'AGENTS.md'), '# AGENTS.md\nNo behavioral core heading here', 'utf8');
+
+    const report1 = runStrictChecks(tempdir);
+    const failSection = report1.failures.find(f => f.id === 'instructions.behavioralCoreSection');
+    if (!failSection || failSection.passed !== false) {
+      throw new Error('Expected instructions.behavioralCoreSection to fail when heading is absent');
+    }
+
+    fs.writeFileSync(
+      path.join(tempdir, 'AGENTS.md'),
+      '# AGENTS.md\n## Behavioral Core\n',
+      'utf8'
+    );
+    const report2 = runStrictChecks(tempdir);
+    const failSection2 = report2.failures.find(f => f.id === 'instructions.behavioralCoreSection');
+    if (failSection2) {
+      throw new Error('Expected instructions.behavioralCoreSection to pass when heading is present');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+addTest('init-checks: instructions.behavioralCoreSection passes from .ai/instructions/ATLAS.md', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    fs.mkdirSync(path.join(tempdir, '.ai/instructions'), { recursive: true });
+    fs.writeFileSync(path.join(tempdir, 'CLAUDE.md'), '# CLAUDE.md\nNo behavioral core heading here', 'utf8');
+    fs.writeFileSync(path.join(tempdir, '.ai/instructions/ATLAS.md'), '# ATLAS\n## Behavioral Core\n', 'utf8');
+
+    const report = runStrictChecks(tempdir);
+    const failSection = report.failures.find(f => f.id === 'instructions.behavioralCoreSection');
+    if (failSection) {
+      throw new Error('Expected instructions.behavioralCoreSection to pass from .ai/instructions/ATLAS.md');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+addTest('init-checks: repair guide includes Behavioral Core manual block', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    fs.writeFileSync(path.join(tempdir, 'AGENTS.md'), '# AGENTS.md\nNo behavioral core heading here', 'utf8');
+
+    const report = runStrictChecks(tempdir);
+    const guide = formatMarkdownGuide(report, { source: 'doctor' });
+    if (!guide.includes('## Behavioral Core')) {
+      throw new Error('Expected repair guide to include Behavioral Core block');
+    }
+    if (!guide.includes('State assumptions before implementation')) {
+      throw new Error('Expected repair guide to include Behavioral Core checklist text');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
 // Run all tests
 let failedCount = 0;
 console.log('Running init-checks unit tests...\n');

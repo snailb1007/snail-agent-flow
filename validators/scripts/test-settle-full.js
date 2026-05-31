@@ -311,6 +311,124 @@ addTest('settle-full fails and does not mark done when release-locks fails', () 
   }
 });
 
+addTest('settle-full runs diff hygiene before release-locks and avoids false no-scope warning', () => {
+  const tempDir = createTempProject();
+
+  try {
+    const flowState = require('../../lib/flow-state');
+    const { ClaimManager } = require('../../lib/claim-manager');
+
+    cp.spawnSync('git', ['init'], { cwd: tempDir, encoding: 'utf8' });
+    cp.spawnSync('git', ['config', 'user.email', 'test@example.com'], { cwd: tempDir, encoding: 'utf8' });
+    cp.spawnSync('git', ['config', 'user.name', 'Test User'], { cwd: tempDir, encoding: 'utf8' });
+    fs.writeFileSync(path.join(tempDir, 'README.md'), '# test\n', 'utf8');
+    cp.spawnSync('git', ['add', 'README.md'], { cwd: tempDir, encoding: 'utf8' });
+    cp.spawnSync('git', ['commit', '-m', 'init'], { cwd: tempDir, encoding: 'utf8' });
+
+    fs.mkdirSync(path.join(tempDir, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(tempDir, 'src', 'owned.js'), 'module.exports = 1;\n', 'utf8');
+    fs.writeFileSync(path.join(tempDir, 'verify-ok.js'), "'use strict';\nprocess.exit(0);\n", 'utf8');
+
+    const claimMgr = new ClaimManager(path.join(tempDir, '.ai', 'claims'));
+    claimMgr.claim('settle-full-test', { owner: 'agent', profile: 'STANDARD', scope: ['src/owned.js', 'verify-ok.js'] });
+    flowState.save(tempDir, createValidState());
+
+    const res = cp.spawnSync(process.execPath, [SETTLE_FULL_SCRIPT, '--cmd', 'node verify-ok.js', tempDir], {
+      encoding: 'utf8',
+      cwd: tempDir
+    });
+
+    assert.strictEqual(res.status, 0, `settle-full should pass, stderr: ${res.stderr}, stdout: ${res.stdout}`);
+    const output = JSON.parse(res.stdout);
+    assert.strictEqual(output.status, 'PASS');
+    assert.ok(
+      !output.warnings.some((entry) => entry.includes('no active claim scope')),
+      `diff hygiene should run before release-locks removes claims: ${JSON.stringify(output.warnings)}`
+    );
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+  }
+});
+
+addTest('settle-full with zero active claims emits one skip warning and still passes', () => {
+  const tempDir = createTempProject();
+
+  try {
+    const flowState = require('../../lib/flow-state');
+
+    cp.spawnSync('git', ['init'], { cwd: tempDir, encoding: 'utf8' });
+    cp.spawnSync('git', ['config', 'user.email', 'test@example.com'], { cwd: tempDir, encoding: 'utf8' });
+    cp.spawnSync('git', ['config', 'user.name', 'Test User'], { cwd: tempDir, encoding: 'utf8' });
+    fs.writeFileSync(path.join(tempDir, 'README.md'), '# test\n', 'utf8');
+    cp.spawnSync('git', ['add', 'README.md'], { cwd: tempDir, encoding: 'utf8' });
+    cp.spawnSync('git', ['commit', '-m', 'init'], { cwd: tempDir, encoding: 'utf8' });
+
+    fs.writeFileSync(path.join(tempDir, 'fast.js'), 'module.exports = 1;\n', 'utf8');
+    fs.writeFileSync(path.join(tempDir, 'verify-ok.js'), "'use strict';\nprocess.exit(0);\n", 'utf8');
+    flowState.save(tempDir, createValidState({ risk_profile: 'FAST' }));
+
+    const res = cp.spawnSync(process.execPath, [SETTLE_FULL_SCRIPT, '--cmd', 'node verify-ok.js', tempDir], {
+      encoding: 'utf8',
+      cwd: tempDir
+    });
+
+    assert.strictEqual(res.status, 0, `settle-full should pass, stderr: ${res.stderr}, stdout: ${res.stdout}`);
+    const output = JSON.parse(res.stdout);
+    assert.strictEqual(output.status, 'PASS');
+    const skipWarnings = output.warnings.filter((entry) => entry.includes('diff-hygiene: skipped, no active claim scope'));
+    assert.strictEqual(skipWarnings.length, 1, `expected one no-scope warning, got: ${JSON.stringify(output.warnings)}`);
+    assert.ok(
+      !output.warnings.some((entry) => entry.includes('changed files outside active claim scope')),
+      `zero active claims should not emit per-file warnings: ${JSON.stringify(output.warnings)}`
+    );
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+  }
+});
+
+addTest('settle-full warns for out-of-scope changes but still passes', () => {
+  const tempDir = createTempProject();
+
+  try {
+    const flowState = require('../../lib/flow-state');
+    const { ClaimManager } = require('../../lib/claim-manager');
+
+    cp.spawnSync('git', ['init'], { cwd: tempDir, encoding: 'utf8' });
+    cp.spawnSync('git', ['config', 'user.email', 'test@example.com'], { cwd: tempDir, encoding: 'utf8' });
+    cp.spawnSync('git', ['config', 'user.name', 'Test User'], { cwd: tempDir, encoding: 'utf8' });
+    fs.writeFileSync(path.join(tempDir, 'README.md'), '# test\n', 'utf8');
+    cp.spawnSync('git', ['add', 'README.md'], { cwd: tempDir, encoding: 'utf8' });
+    cp.spawnSync('git', ['commit', '-m', 'init'], { cwd: tempDir, encoding: 'utf8' });
+
+    fs.mkdirSync(path.join(tempDir, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(tempDir, 'src', 'unexpected.js'), 'module.exports = 1;\n', 'utf8');
+    fs.writeFileSync(path.join(tempDir, 'verify-ok.js'), "'use strict';\nprocess.exit(0);\n", 'utf8');
+
+    const claimMgr = new ClaimManager(path.join(tempDir, '.ai', 'claims'));
+    claimMgr.claim('settle-full-test', { owner: 'agent', profile: 'STANDARD', scope: ['README.md', 'verify-ok.js'] });
+    flowState.save(tempDir, createValidState());
+
+    const res = cp.spawnSync(process.execPath, [SETTLE_FULL_SCRIPT, '--cmd', 'node verify-ok.js', tempDir], {
+      encoding: 'utf8',
+      cwd: tempDir
+    });
+
+    assert.strictEqual(res.status, 0, `settle-full should pass, stderr: ${res.stderr}, stdout: ${res.stdout}`);
+    const output = JSON.parse(res.stdout);
+    assert.strictEqual(output.status, 'PASS');
+    assert.ok(
+      output.warnings.some((entry) => entry.includes('changed files outside active claim scope: src/unexpected.js')),
+      `expected out-of-scope warning, got: ${JSON.stringify(output.warnings)}`
+    );
+    assert.ok(
+      !output.warnings.some((entry) => entry.includes('.ai/signals/current-period.jsonl')),
+      `signal-log output should not be included in diff hygiene: ${JSON.stringify(output.warnings)}`
+    );
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+  }
+});
+
 // Run tests
 let failed = false;
 for (const test of tests) {

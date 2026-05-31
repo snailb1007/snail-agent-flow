@@ -168,6 +168,59 @@ try {
 
   console.log('[test-bootstrap] Expected files verified successfully.');
 
+  // 5c. Brownfield non-intrusive smart-default:
+  //     A pre-existing team CLAUDE.md must NOT be mutated; SAF guidance goes to
+  //     .ai/instructions/ATLAS.md instead, and init logs a clear notice. A sibling
+  //     instruction file SAF creates this run (AGENTS.md) is still filled normally.
+  console.log('[test-bootstrap] Verifying non-intrusive init on a brownfield project...');
+  const brownfieldRoot = path.join(tempRoot, 'brownfield');
+  fs.mkdirSync(brownfieldRoot, { recursive: true });
+  fs.writeFileSync(path.join(brownfieldRoot, 'package.json'), JSON.stringify({ name: 'legacy-app', version: '2.0.0', private: true }), 'utf8');
+  const sacredClaude = `# CLAUDE.md\n\n## Team Conventions\n- Magic numbers are documented in docs/constants.md\n- Do not autoformat legacy modules.\n`;
+  fs.writeFileSync(path.join(brownfieldRoot, 'CLAUDE.md'), sacredClaude, 'utf8');
+
+  const bfInit = spawnSync('node', [cliBin, 'init'], {
+    cwd: brownfieldRoot,
+    env: { ...process.env, PROJECT_ROOT: brownfieldRoot, REPO_ROOT: brownfieldRoot },
+    encoding: 'utf8'
+  });
+  if (bfInit.status !== 0) {
+    throw new Error(`brownfield saf init failed: ${bfInit.stderr || bfInit.stdout}`);
+  }
+
+  const claudeAfter = fs.readFileSync(path.join(brownfieldRoot, 'CLAUDE.md'), 'utf8');
+  if (claudeAfter !== sacredClaude) {
+    throw new Error('Brownfield CLAUDE.md was mutated by init — it must be left byte-identical');
+  }
+  if (claudeAfter.includes('Autonomous ATLAS Loop')) {
+    throw new Error('Brownfield CLAUDE.md gained an ATLAS section — must stay untouched');
+  }
+
+  const atlasInstrPath = path.join(brownfieldRoot, '.ai/instructions/ATLAS.md');
+  if (!fs.existsSync(atlasInstrPath)) {
+    throw new Error('Expected .ai/instructions/ATLAS.md to be created for brownfield project');
+  }
+  const atlasInstrContent = fs.readFileSync(atlasInstrPath, 'utf8');
+  for (const section of ['## Autonomous ATLAS Loop', '## Subagent & Parallel Execution Guidelines', '## Context Budget and Subagent Orchestration Policy', '## Behavioral Core']) {
+    if (!atlasInstrContent.includes(section)) {
+      throw new Error(`Expected .ai/instructions/ATLAS.md to contain "${section}"`);
+    }
+  }
+
+  // Sibling file SAF created this run must still be filled (mixed scenario).
+  const bfAgents = fs.readFileSync(path.join(brownfieldRoot, 'AGENTS.md'), 'utf8');
+  if (!bfAgents.includes('## Autonomous ATLAS Loop')) {
+    throw new Error('SAF-created AGENTS.md should still receive ATLAS guidance in brownfield');
+  }
+  if (!bfAgents.includes('## Behavioral Core')) {
+    throw new Error('SAF-created AGENTS.md should receive Behavioral Core guidance in brownfield');
+  }
+
+  if (!(bfInit.stdout || '').includes('written to .ai/instructions/ATLAS.md')) {
+    throw new Error('Expected init to log the non-intrusive notice for brownfield project');
+  }
+  console.log('[test-bootstrap] Non-intrusive brownfield init verified.');
+
   // 6. Setup dummy spec so saf doctor can pass spec validation
   const specDir = path.join(tempRoot, 'specs/test-feature');
   fs.mkdirSync(specDir, { recursive: true });

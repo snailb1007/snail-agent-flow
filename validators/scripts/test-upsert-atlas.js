@@ -3,7 +3,13 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const { upsertAtlasGuidelines } = require('../../bin/adp');
+const {
+  upsertAtlasGuidelines,
+  appendSubagentGuidelines,
+  appendContextPolicyGuidelines,
+  appendBehavioralCoreGuidelines,
+  writeSeparateAtlasInstructions
+} = require('../../bin/adp');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 
@@ -229,6 +235,114 @@ addTest('adp init deduplicates old and autonomous ATLAS Loop sections at EOF', (
       assert.ok(!content.match(/^## ATLAS Loop$/m), `${f} should not retain old ATLAS Loop header`);
       assert.ok(!content.includes('Execute stage action'), `${f} should not retain expanded algorithm text`);
     }
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+  }
+});
+
+// --- Non-intrusive smart-default: skipExisting gating ---
+
+addTest('upsertAtlasGuidelines skips files flagged in opts.skipExisting', () => {
+  const tempDir = fs.mkdtempSync(path.join(repoRoot, '.tmp-test-noninstrusive-upsert-'));
+  const projectDir = path.join(tempDir, 'project');
+  try {
+    fs.mkdirSync(projectDir, { recursive: true });
+    const teamClaude = `# CLAUDE.md\n\n## Team Rules\n- Sacred. Do not touch.\n`;
+    fs.writeFileSync(path.join(projectDir, 'CLAUDE.md'), teamClaude);
+    fs.writeFileSync(path.join(projectDir, 'AGENTS.md'), `# AGENTS.md\n\n## Agent Notes\n- keep\n`);
+
+    // CLAUDE.md is team-owned (skip); AGENTS.md is SAF-created this run (mutate).
+    upsertAtlasGuidelines(projectDir, { skipExisting: { 'CLAUDE.md': true } });
+
+    const claudeAfter = fs.readFileSync(path.join(projectDir, 'CLAUDE.md'), 'utf8');
+    assert.strictEqual(claudeAfter, teamClaude, 'CLAUDE.md must be byte-identical when skipped');
+    assert.ok(!claudeAfter.includes('Autonomous ATLAS Loop'), 'skipped file must not gain ATLAS section');
+
+    const agentsAfter = fs.readFileSync(path.join(projectDir, 'AGENTS.md'), 'utf8');
+    assert.ok(agentsAfter.includes('## Autonomous ATLAS Loop'), 'non-skipped file must be upserted');
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+  }
+});
+
+addTest('append guideline fns respect opts.skipExisting', () => {
+  const tempDir = fs.mkdtempSync(path.join(repoRoot, '.tmp-test-noninstrusive-append-'));
+  const projectDir = path.join(tempDir, 'project');
+  try {
+    fs.mkdirSync(projectDir, { recursive: true });
+    const teamClaude = `# CLAUDE.md\n\n## Team Rules\n- Sacred.\n`;
+    fs.writeFileSync(path.join(projectDir, 'CLAUDE.md'), teamClaude);
+
+    appendSubagentGuidelines(projectDir, { skipExisting: { 'CLAUDE.md': true } });
+    appendContextPolicyGuidelines(projectDir, { skipExisting: { 'CLAUDE.md': true } });
+    appendBehavioralCoreGuidelines(projectDir, { skipExisting: { 'CLAUDE.md': true } });
+
+    const after = fs.readFileSync(path.join(projectDir, 'CLAUDE.md'), 'utf8');
+    assert.strictEqual(after, teamClaude, 'skipped CLAUDE.md must be untouched by append fns');
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+  }
+});
+
+addTest('append guideline fns still mutate non-skipped files (backward-compatible)', () => {
+  const tempDir = fs.mkdtempSync(path.join(repoRoot, '.tmp-test-noninstrusive-compat-'));
+  const projectDir = path.join(tempDir, 'project');
+  try {
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(path.join(projectDir, 'CLAUDE.md'), `# CLAUDE.md\n\n## Build\n- npm test\n`);
+
+    // No opts → legacy behavior: mutate.
+    appendSubagentGuidelines(projectDir);
+    appendContextPolicyGuidelines(projectDir);
+    appendBehavioralCoreGuidelines(projectDir);
+
+    const after = fs.readFileSync(path.join(projectDir, 'CLAUDE.md'), 'utf8');
+    assert.ok(after.includes('## Subagent & Parallel Execution Guidelines'), 'legacy append still works');
+    assert.ok(after.includes('## Context Budget and Subagent Orchestration Policy'), 'legacy append still works');
+    assert.ok(after.includes('## Behavioral Core'), 'legacy append still works');
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+  }
+});
+
+addTest('appendBehavioralCoreGuidelines is idempotent', () => {
+  const tempDir = fs.mkdtempSync(path.join(repoRoot, '.tmp-test-behavioral-core-'));
+  const projectDir = path.join(tempDir, 'project');
+  try {
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.writeFileSync(path.join(projectDir, 'AGENTS.md'), '# AGENTS.md\n', 'utf8');
+
+    appendBehavioralCoreGuidelines(projectDir);
+    appendBehavioralCoreGuidelines(projectDir);
+
+    const content = fs.readFileSync(path.join(projectDir, 'AGENTS.md'), 'utf8');
+    const count = (content.match(/^## Behavioral Core$/gm) || []).length;
+    assert.strictEqual(count, 1, 'Behavioral Core block should be appended once');
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+  }
+});
+
+addTest('writeSeparateAtlasInstructions creates .ai/instructions/ATLAS.md with all 4 blocks (idempotent)', () => {
+  const tempDir = fs.mkdtempSync(path.join(repoRoot, '.tmp-test-noninstrusive-separate-'));
+  const projectDir = path.join(tempDir, 'project');
+  try {
+    fs.mkdirSync(projectDir, { recursive: true });
+
+    writeSeparateAtlasInstructions(projectDir);
+
+    const dest = path.join(projectDir, '.ai/instructions/ATLAS.md');
+    assert.ok(fs.existsSync(dest), 'ATLAS.md should be created');
+    const content = fs.readFileSync(dest, 'utf8');
+    assert.ok(content.includes('## Autonomous ATLAS Loop'), 'has ATLAS Loop block');
+    assert.ok(content.includes('## Subagent & Parallel Execution Guidelines'), 'has subagent block');
+    assert.ok(content.includes('## Context Budget and Subagent Orchestration Policy'), 'has context policy block');
+    assert.ok(content.includes('## Behavioral Core'), 'has behavioral core block');
+
+    // Idempotent: a second call must not duplicate or throw.
+    writeSeparateAtlasInstructions(projectDir);
+    const content2 = fs.readFileSync(dest, 'utf8');
+    assert.strictEqual(content2, content, 'second call must leave the file unchanged');
   } finally {
     try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
   }

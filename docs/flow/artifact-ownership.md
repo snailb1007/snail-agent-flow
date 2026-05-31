@@ -1,6 +1,8 @@
 # Resource & Artifact Ownership Policy
 
-To prevent race conditions, duplicate effort, and write conflicts in parallel agent environments, the system defines task claims and file leases.
+To prevent race conditions, duplicate effort, and write conflicts between parallel agents on a single machine, the system defines task claims and file leases.
+
+> **Scope — local advisory coordination only.** Claims and leases are *single-machine, single-session* advisory locks: liveness is detected via the local process id (`process.kill(pid, 0)`). They coordinate parallel subagents within one machine and one session. They do **not** coordinate across different developers, machines, or branches — a remote developer's PID is meaningless locally, so their lock is treated as stale and may be stolen. Do **not** commit `.ai/locks` / `.ai/claims` to share locks (it creates merge noise and still is not atomic); use git branches/PRs for cross-developer coordination.
 
 ## 1. Claims (Work Unit Ownership)
 
@@ -25,4 +27,4 @@ To prevent race conditions, duplicate effort, and write conflicts in parallel ag
 - The writing process PID is no longer running (dead PID).
 - The lock elapsed duration exceeds its TTL (`stale_lock_cap_seconds`).
 
-Stale locks are automatically stolen or overwritten by cooperative processes on subsequent acquire attempts, preventing deadlock.
+Stale locks are automatically stolen or overwritten on subsequent acquire attempts within the same machine, using PID-based liveness detection so a dead process cannot block later work. This is best-effort local cleanup, not a distributed deadlock guarantee.

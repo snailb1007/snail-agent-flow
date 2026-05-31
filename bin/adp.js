@@ -92,12 +92,22 @@ if (require.main === module) {
 }
 
 function handleInit() {
+  // Non-intrusive smart-default: capture which team instruction files already exist
+  // BEFORE we write anything. Pre-existing files are team-owned and must never be mutated;
+  // SAF guidance for them is written to .ai/instructions/ATLAS.md instead.
+  const instructionFiles = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
+  const preExisting = {};
+  for (const f of instructionFiles) {
+    preExisting[f] = fs.existsSync(path.join(repoRoot, f));
+  }
+
   const dirs = [
     '.ai/sessions',
     '.ai/memory',
     '.ai/reviews',
     '.ai/state',
     '.ai/flows',
+    '.ai/instructions',
     '.specify/templates',
     'specs',
     '.ai/context-packs',
@@ -247,14 +257,28 @@ function handleInit() {
 
   initializePackagedAtlasAssets(repoRoot);
 
-  // Update .gitignore in the target project
+  // Update .gitignore (idempotent, additive). Intentionally NOT subject to non-intrusive
+  // gating: it protects the team from committing SAF runtime state (.ai/state, .ai/locks,
+  // sessions, context packs) and is preventive plumbing, not workflow instruction.
   updateGitignore(repoRoot);
 
-  // Localize GSD skills and append subagent guidelines
+  // Localize GSD skills (additive, no-overwrite).
   localizeGlobalSkills(repoRoot);
-  upsertAtlasGuidelines(repoRoot);
-  appendSubagentGuidelines(repoRoot);
-  appendContextPolicyGuidelines(repoRoot);
+
+  // Non-intrusive smart-default: skip instruction files the team already had; their
+  // guidance goes to .ai/instructions/ATLAS.md. Files SAF created this run get filled normally.
+  const guidelineOpts = { skipExisting: preExisting };
+  upsertAtlasGuidelines(repoRoot, guidelineOpts);
+  appendSubagentGuidelines(repoRoot, guidelineOpts);
+  appendContextPolicyGuidelines(repoRoot, guidelineOpts);
+  appendBehavioralCoreGuidelines(repoRoot, guidelineOpts);
+
+  const skippedInstructionFiles = instructionFiles.filter((f) => preExisting[f]);
+  if (skippedInstructionFiles.length > 0) {
+    writeSeparateAtlasInstructions(repoRoot);
+    console.log(`[init] Team instruction files already exist (${skippedInstructionFiles.join(', ')}).`);
+    console.log('[init] SAF guidance written to .ai/instructions/ATLAS.md — your files were left untouched.');
+  }
 
   // Write default context-policy.json config if absent
   const policyPath = path.join(repoRoot, '.ai/state/context-policy.json');
@@ -1179,10 +1203,12 @@ function removeAtlasGuidelineSections(content) {
   return kept.join('\n');
 }
 
-function upsertAtlasGuidelines(repoRoot) {
+function upsertAtlasGuidelines(repoRoot, opts = {}) {
+  const skipExisting = (opts && opts.skipExisting) || {};
   const newBlock = `## Autonomous ATLAS Loop\n\nWhen asked to run the ATLAS auto loop, use the local \`atlas-auto-loop\` skill.\nRead \`.ai/state/flow-state.json\`, resolve \`.ai/flows/atlas-flow.yaml\`, and follow the skill instructions.\nDo not read or create \`.ai/state/flow-ledger.json\`.`;
 
   for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
+    if (skipExisting[f]) continue;
     const p = path.join(repoRoot, f);
     try {
       if (!fs.existsSync(p)) continue;
@@ -1198,7 +1224,8 @@ function upsertAtlasGuidelines(repoRoot) {
   }
 }
 
-function appendSubagentGuidelines(repoRoot) {
+function appendSubagentGuidelines(repoRoot, opts = {}) {
+  const skipExisting = (opts && opts.skipExisting) || {};
   const guidelinesBlock = `
 ## Subagent & Parallel Execution Guidelines
 
@@ -1211,6 +1238,7 @@ function appendSubagentGuidelines(repoRoot) {
 
   const files = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
   for (const f of files) {
+    if (skipExisting[f]) continue;
     const filePath = path.join(repoRoot, f);
     if (fs.existsSync(filePath)) {
       try {
@@ -1232,7 +1260,8 @@ function appendSubagentGuidelines(repoRoot) {
   }
 }
 
-function appendContextPolicyGuidelines(repoRoot) {
+function appendContextPolicyGuidelines(repoRoot, opts = {}) {
+  const skipExisting = (opts && opts.skipExisting) || {};
   const guidelinesBlock = `
 ## Context Budget and Subagent Orchestration Policy
 
@@ -1245,6 +1274,7 @@ function appendContextPolicyGuidelines(repoRoot) {
 
   const files = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
   for (const f of files) {
+    if (skipExisting[f]) continue;
     const filePath = path.join(repoRoot, f);
     if (fs.existsSync(filePath)) {
       try {
@@ -1263,6 +1293,128 @@ function appendContextPolicyGuidelines(repoRoot) {
         console.warn(`[init] WARNING: Failed to update ${f} with context policy guidelines: ${e.message}`);
       }
     }
+  }
+}
+
+function appendBehavioralCoreGuidelines(repoRoot, opts = {}) {
+  const skipExisting = (opts && opts.skipExisting) || {};
+  const guidelinesBlock = `
+## Behavioral Core
+
+1. **State Assumptions:** Before implementation, name any assumptions that affect scope, behavior, data, or verification.
+2. **Prefer Simplicity:** Choose the smallest sufficient implementation path and avoid speculative abstractions.
+3. **Respect Boundaries:** Touch only files and symbols that are in scope for the accepted task, claim, or plan.
+4. **Define Verification:** Know the command, test, or observable check that proves completion before claiming success.
+`;
+
+  const files = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
+  for (const f of files) {
+    if (skipExisting[f]) continue;
+    const filePath = path.join(repoRoot, f);
+    if (fs.existsSync(filePath)) {
+      try {
+        let content = fs.readFileSync(filePath, 'utf8');
+        if (!content.match(/##\s+Behavioral\s+Core/i)) {
+          if (content && !content.endsWith('\n')) {
+            content += '\n';
+          }
+          content += guidelinesBlock.trim() + '\n';
+          fs.writeFileSync(filePath, content, 'utf8');
+          console.log(`[init] Appended behavioral core guidelines to ${f}`);
+        } else {
+          console.log(`[init] Behavioral core guidelines already present in ${f}, skipping.`);
+        }
+      } catch (e) {
+        console.warn(`[init] WARNING: Failed to update ${f} with behavioral core guidelines: ${e.message}`);
+      }
+    }
+  }
+}
+
+// Non-intrusive output. Mirrors the four guideline blocks that upsertAtlasGuidelines /
+// appendSubagentGuidelines / appendContextPolicyGuidelines / appendBehavioralCoreGuidelines
+// would otherwise inject into the team's CLAUDE.md/GEMINI.md/AGENTS.md. Written only when
+// those files pre-existed.
+function writeSeparateAtlasInstructions(repoRoot) {
+  const dir = path.join(repoRoot, '.ai/instructions');
+  const dest = path.join(dir, 'ATLAS.md');
+
+  const header = `# SAF / ATLAS Instructions
+
+> Your project already had instruction files (CLAUDE.md / GEMINI.md / AGENTS.md), so Snail
+> Agent Flow did not modify them. The guidance SAF would normally add lives here instead.
+> To follow SAF, read this file alongside your existing instruction files.
+`;
+
+  // Each section is keyed by a regex matching its \`##\` heading so re-runs append only
+  // the blocks that are missing (idempotent upgrades), instead of skipping the whole file.
+  const sections = [
+    {
+      match: /##\s+Autonomous\s+ATLAS\s+Loop/i,
+      body: `## Autonomous ATLAS Loop
+
+When asked to run the ATLAS auto loop, use the local \`atlas-auto-loop\` skill.
+Read \`.ai/state/flow-state.json\`, resolve \`.ai/flows/atlas-flow.yaml\`, and follow the skill instructions.
+Do not read or create \`.ai/state/flow-ledger.json\`.`,
+    },
+    {
+      match: /##\s+Subagent\s+&\s+Parallel\s+Execution\s+Guidelines/i,
+      body: `## Subagent & Parallel Execution Guidelines
+
+1. **Detect Independent Tasks:** Before starting execution, review the task list (e.g., \`tasks.md\`) to identify independent, non-sequential tasks.
+2. **Define Specialized Subagents:** For each independent task or sub-project, define a specialized subagent using the \`define_subagent\` tool.
+3. **Spawn in Parallel:** Invoke the defined subagents in parallel using the \`invoke_subagent\` tool to execute tasks concurrently.
+4. **Limit Context Size:** Do not pass large session logs or redundant context files to subagents. Keep their context focused and lightweight.
+5. **Coordinate & Wait:** Wait for all parallel subagents to complete before advancing to downstream tasks that depend on their outputs.`,
+    },
+    {
+      match: /##\s+Context\s+Budget\s+and\s+Subagent\s+Orchestration\s+Policy/i,
+      body: `## Context Budget and Subagent Orchestration Policy
+
+1. **Estimate Byte Pressure:** Before starting any flow stage, estimate the byte pressure locally to decide the execution path (inline, context pack, or fresh session).
+2. **Configure Thresholds:** Set conservative size thresholds (e.g. 50KB inline, 200KB context pack) in \`.ai/state/context-policy.json\` to prevent context bloat.
+3. **Generate Context Packs:** When context packs are required, generate a structured pack containing only essential files and omit all others.
+4. **Use Fresh Sessions:** When byte pressure exceeds limits, write a handoff artifact (\`.ai/state/context-handoff.json\`) and resume from a clean session.
+5. **Protect Ledger State:** Parallel subagents must run in isolated workspaces with disjoint write targets and must never modify the central ledger.`,
+    },
+    {
+      match: /##\s+Behavioral\s+Core/i,
+      body: `## Behavioral Core
+
+1. **State Assumptions:** Before implementation, name any assumptions that affect scope, behavior, data, or verification.
+2. **Prefer Simplicity:** Choose the smallest sufficient implementation path and avoid speculative abstractions.
+3. **Respect Boundaries:** Touch only files and symbols that are in scope for the accepted task, claim, or plan.
+4. **Define Verification:** Know the command, test, or observable check that proves completion before claiming success.`,
+    },
+  ];
+
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+
+    if (!fs.existsSync(dest)) {
+      const content = header + '\n' + sections.map((s) => s.body).join('\n\n') + '\n';
+      fs.writeFileSync(dest, content, 'utf8');
+      console.log('[init] Created .ai/instructions/ATLAS.md');
+      return;
+    }
+
+    // File exists: append only the sections it is missing so older onboarded projects
+    // pick up guidance added after they were first initialized.
+    let content = fs.readFileSync(dest, 'utf8');
+    const missing = sections.filter((s) => !s.match.test(content));
+    if (missing.length === 0) {
+      console.log('[init] .ai/instructions/ATLAS.md already up to date, skipping.');
+      return;
+    }
+
+    if (content && !content.endsWith('\n')) {
+      content += '\n';
+    }
+    content += '\n' + missing.map((s) => s.body).join('\n\n') + '\n';
+    fs.writeFileSync(dest, content, 'utf8');
+    console.log(`[init] Updated .ai/instructions/ATLAS.md (added ${missing.length} missing section(s)).`);
+  } catch (e) {
+    console.warn(`[init] WARNING: Failed to write .ai/instructions/ATLAS.md: ${e.message}`);
   }
 }
 
@@ -1578,6 +1730,10 @@ function handleSignal(cmdArgs) {
 
 module.exports = {
   removeAtlasGuidelineSections,
-  upsertAtlasGuidelines
+  upsertAtlasGuidelines,
+  appendSubagentGuidelines,
+  appendContextPolicyGuidelines,
+  appendBehavioralCoreGuidelines,
+  writeSeparateAtlasInstructions
 };
 

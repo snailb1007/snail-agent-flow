@@ -4,6 +4,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { spawnSync } = require('child_process');
 const { validateDrift } = require('../../lib/validate-drift');
 const { resolveTemplatePath } = require('../../lib/flow-engine');
 
@@ -90,6 +91,51 @@ addTest('drift validator flags path outside contract with prefix-colliding sibli
   const pathCheck = results.find(r => r.check === 'path_outside_contract');
   assert.strictEqual(pathCheck.status, 'WARN');
   assert.ok(pathCheck.message.includes('state-backup'));
+});
+
+addTest('drift validator passes lock-tracking check when .ai/locks is not in git', () => {
+  // The shared tempDir is not a git working tree, so lock files cannot be tracked → PASS.
+  const results = validateDrift(tempDir);
+  const check = results.find(r => r.check === 'locks_tracked_in_git');
+  assert.ok(check, 'locks_tracked_in_git check should be present');
+  assert.strictEqual(check.status, 'PASS');
+});
+
+addTest('drift validator WARNS when lock/claim files are tracked by git', () => {
+  const gitDir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-drift-git-'));
+  try {
+    const git = (args) => spawnSync('git', args, { cwd: gitDir, encoding: 'utf8' });
+    if (git(['init']).status !== 0) {
+      console.log('[SKIP] git not available; skipping lock-tracking WARN test');
+      return;
+    }
+    git(['config', 'user.email', 'test@example.com']);
+    git(['config', 'user.name', 'Test']);
+
+    // Minimal structure validateDrift needs.
+    fs.mkdirSync(path.join(gitDir, '.claude', 'skills', 'contracts'), { recursive: true });
+    fs.copyFileSync(
+      path.join(__dirname, '..', '..', '.claude', 'skills', 'contracts', 'artifact-map.json'),
+      path.join(gitDir, '.claude', 'skills', 'contracts', 'artifact-map.json')
+    );
+    fs.mkdirSync(path.join(gitDir, '.ai', 'locks'), { recursive: true });
+    fs.writeFileSync(
+      path.join(gitDir, '.ai', 'locks', 'demo.json'),
+      '{"owner":"x","pid":1,"acquired_at":"2026-01-01T00:00:00.000Z"}',
+      'utf8'
+    );
+
+    // Staging alone makes `git ls-files` report the file as tracked.
+    git(['add', '.ai/locks/demo.json']);
+
+    const results = validateDrift(gitDir);
+    const check = results.find(r => r.check === 'locks_tracked_in_git');
+    assert.ok(check, 'locks_tracked_in_git check should be present');
+    assert.strictEqual(check.status, 'WARN');
+    assert.ok(check.message.includes('.ai/locks/demo.json'), 'message should name the tracked lock file');
+  } finally {
+    fs.rmSync(gitDir, { recursive: true, force: true });
+  }
 });
 
 // Run tests

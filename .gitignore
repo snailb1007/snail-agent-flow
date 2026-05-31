@@ -60,6 +60,10 @@ logs/
 tmp/
 temp/
 
+# Local-only scratch experiments (may contain nested git repos / unrelated trees).
+# Never commit these — a nested .git would otherwise be embedded as a gitlink by `git add -A`.
+scratch/harness-experimental/
+
 # AI Pipeline Temporary / Local State (Optional)
 # Uncomment the following lines if you want to keep transient AI session logs/states out of git:
 # .ai/sessions/

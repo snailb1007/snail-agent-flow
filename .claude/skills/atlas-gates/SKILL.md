@@ -29,6 +29,7 @@ The **align-gate** runs at the end of the Recon phase and the start of the Spec 
   - [ ] Risk profile has been estimated and documented.
 - [ ] **Scoring Rubric Check**: Task risk has been scored across the 5 dimensions (Novelty, Blast Radius, Ambiguity, Reversibility, User/Biz Risk).
 - [ ] **Ambiguity Resolution**: Open questions with the user or product are resolved. No placeholder terms like `TBD` or `NEEDS CLARIFICATION` remain in the core scope.
+- [ ] **Behavioral Core Preflight**: Assumptions are explicit or resolved, the smallest sufficient implementation path is identified, write boundaries are documented, and the verification command or observable check is known.
 
 ---
 
@@ -49,3 +50,4 @@ The **trace-review** runs at the end of the Spec/Plan phase before implementatio
   - [ ] Verification commands are defined for every task.
   - [ ] A failing test case or reproduction script is planned to be written first (TDD).
 - [ ] **Impact Analysis**: Upstream/downstream blast radius has been assessed and verified (using GitNexus impact tools where possible).
+- [ ] **Behavioral Core Review**: The plan does not introduce speculative abstractions, keeps changes inside the accepted scope, and ties each task to a verification command or observable check.

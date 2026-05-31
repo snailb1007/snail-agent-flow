@@ -42,6 +42,7 @@ function requireLib(moduleName) {
 }
 
 const flowState = requireLib('flow-state');
+const { checkDiffHygiene } = requireLib('diff-hygiene');
 
 /**
  * Resolve the verify command through a priority chain:
@@ -136,7 +137,17 @@ function main() {
     blocking.push('Verify command failed (' + verifyCmd + '): ' + output.substring(0, 500));
   }
 
-  // Step 2: Signal log (run as child process)
+  // Step 2: Diff hygiene before settle cleanup mutates claims, locks, signals, or state.
+  try {
+    const hygiene = checkDiffHygiene(repoRoot);
+    for (const warning of hygiene.warnings || []) {
+      warnings.push(warning);
+    }
+  } catch (e) {
+    warnings.push('diff-hygiene: skipped, check failed: ' + e.message);
+  }
+
+  // Step 3: Signal log (run as child process)
   const signalLogScript = path.resolve(__dirname, 'signal-log.js');
   if (fs.existsSync(signalLogScript)) {
     try {
@@ -157,7 +168,7 @@ function main() {
     warnings.push('signal-log.js not found at ' + signalLogScript);
   }
 
-  // Step 3: Release locks (run as child process)
+  // Step 4: Release locks (run as child process)
   const releaseLocksScript = path.resolve(__dirname, 'release-locks.js');
   if (fs.existsSync(releaseLocksScript)) {
     try {
@@ -180,7 +191,7 @@ function main() {
     warnings.push('release-locks.js not found at ' + releaseLocksScript);
   }
 
-  // Step 4: Mark done
+  // Step 5: Mark done
   if (verifySuccess && blocking.length === 0) {
     // Reload state since release-locks.js may have modified it
     try {

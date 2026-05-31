@@ -13,10 +13,11 @@ Deterministic tasks (like S1 Verify and S3 Validate) are automated via utility s
 
 ## 1. Stage S4: Close (Mandatory Cleanup)
 
-The purpose of **S4 Close** is to ensure that the working workspace is returned to a clean, shared state, releasing all reservation tokens to prevent deadlock or path collisions for subsequent tasks.
+The purpose of **S4 Close** is to ensure that the local workspace is returned to a clean state, releasing all advisory locks to prevent path collisions with later work in the same session. (These locks are single-machine advisory only — see `docs/flow/artifact-ownership.md`.)
 
 ### 1.1. Lock & Claim Release Judgment
 As a developer or agent finishing a feature branch, you must verify that no residual resource blocks remain:
+* **Diff Hygiene**: Before releasing claims or leases, compare changed files with the active claim scope. Warn about out-of-scope changes, but do not block Settle in this lightweight gate.
 * **Work Claims**: Verify that the advisory claim lock created during **Stage A: Align** is removed from `.ai/claims/`.
 * **File Leases**: Verify that all advisory leases acquired during **Stage L: Lay** on specific files are removed from `.ai/locks/`.
 * **State Cleanliness**: Inspect the `flow-state.json` file. The `locks` array must be empty `[]` and `status` should be transitioned to a completed/settling state.

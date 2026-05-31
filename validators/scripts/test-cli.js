@@ -1008,7 +1008,7 @@ stages:
 });
 
 // 18. Dynamic skill localization and subagent guidelines appending
-addTest('CLI Init Localizes Skills and Appends Guidelines', () => {
+addTest('CLI Init Localizes Skills and Writes Separate Guidelines (non-intrusive)', () => {
   setupSandbox();
 
   const mockHome = path.join(testSandboxRoot, 'mock-home');
@@ -1085,15 +1085,24 @@ description: "Test description"
     throw new Error(`Path not rewritten in .claude SKILL.md: ${localClaudeSkillContent}`);
   }
 
-  // Assert guidelines are appended to instruction files
+  // Non-intrusive smart-default: the instruction files pre-existed (team-owned), so init must
+  // NOT mutate them. SAF guidance is written to .ai/instructions/ATLAS.md instead.
   for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
     const content = readFile(f);
-    if (!content.includes('Subagent & Parallel Execution Guidelines')) {
-      throw new Error(`Guidelines not appended to ${f}: ${content}`);
+    if (content.includes('Subagent & Parallel Execution Guidelines')) {
+      throw new Error(`Pre-existing ${f} must NOT be mutated, but it gained guidelines: ${content}`);
     }
   }
 
-  // Running init again (brownfield) should not append duplicate guidelines
+  if (!fileExists('.ai/instructions/ATLAS.md')) {
+    throw new Error('Expected SAF guidance written to .ai/instructions/ATLAS.md for a brownfield project');
+  }
+  const atlasInstr = readFile('.ai/instructions/ATLAS.md');
+  if (!atlasInstr.includes('Subagent & Parallel Execution Guidelines')) {
+    throw new Error(`Expected subagent guidelines in .ai/instructions/ATLAS.md: ${atlasInstr}`);
+  }
+
+  // Running init again (brownfield) is idempotent: files stay untouched, ATLAS.md not duplicated.
   const result2 = spawnSync('node', [cliScriptPath, 'init'], {
     env: {
       ...process.env,
@@ -1108,11 +1117,62 @@ description: "Test description"
     throw new Error(`Second init command failed: ${result2.stderr}`);
   }
 
-  // Check instruction files content to verify no duplicate guidelines
   const claudeContent = readFile('CLAUDE.md');
-  const occurrences = (claudeContent.match(/Subagent & Parallel Execution Guidelines/g) || []).length;
+  if (claudeContent.includes('Subagent & Parallel Execution Guidelines')) {
+    throw new Error('Pre-existing CLAUDE.md must remain untouched after a second init');
+  }
+  const atlasInstr2 = readFile('.ai/instructions/ATLAS.md');
+  const occurrences = (atlasInstr2.match(/## Subagent & Parallel Execution Guidelines/g) || []).length;
   if (occurrences !== 1) {
-    throw new Error(`Expected guidelines to appear exactly once in CLAUDE.md, got ${occurrences}`);
+    throw new Error(`Expected guidelines to appear exactly once in .ai/instructions/ATLAS.md, got ${occurrences}`);
+  }
+});
+
+addTest('writeSeparateAtlasInstructions upgrades an older ATLAS.md missing newer sections', () => {
+  setupSandbox();
+
+  const { writeSeparateAtlasInstructions } = require(cliScriptPath);
+
+  // Simulate a project onboarded before "Behavioral Core" existed: ATLAS.md is present
+  // but only has the older sections.
+  const atlasDir = path.join(testSandboxRoot, '.ai/instructions');
+  fs.mkdirSync(atlasDir, { recursive: true });
+  const legacy = `# SAF / ATLAS Instructions
+
+## Autonomous ATLAS Loop
+
+When asked to run the ATLAS auto loop, use the local \`atlas-auto-loop\` skill.
+
+## Subagent & Parallel Execution Guidelines
+
+1. **Detect Independent Tasks:** review the task list.
+`;
+  fs.writeFileSync(path.join(atlasDir, 'ATLAS.md'), legacy, 'utf8');
+
+  writeSeparateAtlasInstructions(testSandboxRoot);
+
+  const upgraded = readFile('.ai/instructions/ATLAS.md');
+
+  // The missing newer sections must be appended.
+  if (!/##\s+Behavioral\s+Core/i.test(upgraded)) {
+    throw new Error('Expected Behavioral Core section to be appended to a legacy ATLAS.md');
+  }
+  if (!/##\s+Context\s+Budget\s+and\s+Subagent\s+Orchestration\s+Policy/i.test(upgraded)) {
+    throw new Error('Expected Context Budget section to be appended to a legacy ATLAS.md');
+  }
+
+  // Pre-existing sections must not be duplicated.
+  const loopOccurrences = (upgraded.match(/## Autonomous ATLAS Loop/g) || []).length;
+  if (loopOccurrences !== 1) {
+    throw new Error(`Expected Autonomous ATLAS Loop to appear exactly once, got ${loopOccurrences}`);
+  }
+
+  // A second run is a no-op (fully up to date) and still appends nothing.
+  writeSeparateAtlasInstructions(testSandboxRoot);
+  const afterSecond = readFile('.ai/instructions/ATLAS.md');
+  const coreOccurrences = (afterSecond.match(/## Behavioral Core/g) || []).length;
+  if (coreOccurrences !== 1) {
+    throw new Error(`Expected Behavioral Core to appear exactly once after re-run, got ${coreOccurrences}`);
   }
 });
 
@@ -1305,15 +1365,19 @@ addTest('CLI Init Strict Gate Fails on Broken Localized SKILL.md', () => {
   cleanupSandbox();
 });
 
-// 25. Strict Gate Reports Instruction Section Missing
-addTest('CLI Init Strict Gate Reports Instruction Section Missing', () => {
+// 25. Non-intrusive: a pre-existing team instruction file (even with an idiosyncratic heading)
+//     is preserved verbatim; the canonical guidance lands in .ai/instructions/ATLAS.md and the
+//     strict gate passes (exit 0). Coverage for the strict gate REPORTING a missing instruction
+//     section lives in validators/scripts/test-init-checks.js.
+addTest('CLI Init leaves pre-existing instruction files untouched (non-intrusive)', () => {
   setupSandbox();
 
   const mockHome = path.join(testSandboxRoot, 'mock-home');
   fs.mkdirSync(mockHome, { recursive: true });
 
-  // Pre-create CLAUDE.md with a custom lowercase heading so appendSubagentGuidelines is skipped
-  writeFile('CLAUDE.md', '# Custom\n## subagent & parallel execution guidelines\n');
+  // A team file with an idiosyncratic (lowercase) heading must be preserved byte-for-byte.
+  const teamClaude = '# Custom\n## subagent & parallel execution guidelines\n';
+  writeFile('CLAUDE.md', teamClaude);
 
   const originalHome = process.env.HOME;
   let res;
@@ -1324,31 +1388,27 @@ addTest('CLI Init Strict Gate Reports Instruction Section Missing', () => {
     process.env.HOME = originalHome;
   }
 
-  if (res.code !== 1) {
+  if (res.code !== 0) {
     cleanupSandbox();
-    throw new Error(`Expected exit code 1 when instruction section is missing/incorrectly cased, got ${res.code}. Stderr: ${res.stderr}`);
+    throw new Error(`Expected exit code 0 for non-intrusive init, got ${res.code}. Stderr: ${res.stderr}`);
   }
 
-  if (!fileExists('.ai/state/repair-guide.md')) {
-    cleanupSandbox();
-    throw new Error('Expected repair guide to be written');
-  }
-
-  const guide = readFile('.ai/state/repair-guide.md');
-  if (!guide.includes('Local workflow files incomplete')) {
-    cleanupSandbox();
-    throw new Error(`Expected repair guide to include the literal "Local workflow files incomplete", got: ${guide}`);
-  }
-  if (!guide.includes('category: instruction')) {
-    cleanupSandbox();
-    throw new Error(`Expected repair guide to specify category: instruction, got: ${guide}`);
-  }
-
-  // Re-read CLAUDE.md and assert that the correct heading is still absent
+  // Team CLAUDE.md must be byte-identical — SAF must not touch it.
   const claudeContent = readFile('CLAUDE.md');
-  if (claudeContent.includes('## Subagent & Parallel Execution Guidelines')) {
+  if (claudeContent !== teamClaude) {
     cleanupSandbox();
-    throw new Error('Expected correct heading to be absent in CLAUDE.md');
+    throw new Error(`Pre-existing CLAUDE.md was mutated: ${claudeContent}`);
+  }
+
+  // The canonical guidance must instead be present in .ai/instructions/ATLAS.md.
+  if (!fileExists('.ai/instructions/ATLAS.md')) {
+    cleanupSandbox();
+    throw new Error('Expected .ai/instructions/ATLAS.md to be created');
+  }
+  const atlasInstr = readFile('.ai/instructions/ATLAS.md');
+  if (!atlasInstr.includes('## Subagent & Parallel Execution Guidelines')) {
+    cleanupSandbox();
+    throw new Error(`Expected canonical heading in .ai/instructions/ATLAS.md: ${atlasInstr}`);
   }
 
   cleanupSandbox();

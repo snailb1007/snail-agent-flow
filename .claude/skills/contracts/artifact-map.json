@@ -9,6 +9,7 @@
     "reviews_dir": ".ai/reviews",
     "sessions_dir": ".ai/sessions",
     "memory_dir": ".ai/memory",
+    "instructions_dir": ".ai/instructions",
     "context_file": "CONTEXT.md",
     "adr_dir": "docs/adr",
     "feature_root": "specs"
