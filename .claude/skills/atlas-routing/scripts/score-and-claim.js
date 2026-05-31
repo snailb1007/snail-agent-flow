@@ -46,42 +46,78 @@ const { resolvePath } = requireLib('artifact-paths');
 
 function main() {
   const args = process.argv.slice(2);
-  if (args.length < 1) {
-    const gateResult = {
-      stage_id: 'align',
-      status: 'FAIL',
-      blocking: ['Usage: node score-and-claim.js <task_json_or_file> [repoRoot]'],
-      warnings: [],
-      artifacts_produced: []
-    };
-    console.log(JSON.stringify(gateResult, null, 2));
-    process.exit(1);
+
+  // Parse --auto, --description, --slug flags
+  let autoMode = false;
+  let descArg = '';
+  let slugArg = '';
+  let positionalArgs = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--auto') {
+      autoMode = true;
+    } else if (args[i] === '--description' && i + 1 < args.length) {
+      descArg = args[++i];
+    } else if (args[i] === '--slug' && i + 1 < args.length) {
+      slugArg = args[++i];
+    } else {
+      positionalArgs.push(args[i]);
+    }
   }
 
-  const repoRoot = args[1] || process.cwd();
-
   let task;
-  try {
-    if (fs.existsSync(args[0])) {
-      task = JSON.parse(fs.readFileSync(args[0], 'utf8'));
-    } else {
-      task = JSON.parse(args[0]);
-    }
-  } catch (err) {
-    const gateResult = {
-      stage_id: 'align',
-      status: 'FAIL',
-      blocking: ['Failed to parse task JSON: ' + err.message],
-      warnings: [],
-      artifacts_produced: []
+  let repoRoot;
+
+  if (autoMode) {
+    // Auto mode: generate minimal task JSON, skip file/string parsing
+    repoRoot = positionalArgs[0] || process.cwd();
+    task = {
+      novelty: 1,
+      blast_radius: 1,
+      ambiguity: 1,
+      reversibility: 1,
+      user_biz_risk: 1,
+      slug: slugArg || 'task-' + Date.now(),
+      description: descArg
     };
-    console.log(JSON.stringify(gateResult, null, 2));
-    process.exit(1);
+  } else {
+    // Original path: require positional JSON arg
+    if (positionalArgs.length < 1) {
+      const gateResult = {
+        stage_id: 'align',
+        status: 'FAIL',
+        blocking: ['Usage: node score-and-claim.js <task_json_or_file> [repoRoot]'],
+        warnings: [],
+        artifacts_produced: []
+      };
+      console.log(JSON.stringify(gateResult, null, 2));
+      process.exit(1);
+    }
+
+    repoRoot = positionalArgs[1] || process.cwd();
+
+    try {
+      if (fs.existsSync(positionalArgs[0])) {
+        task = JSON.parse(fs.readFileSync(positionalArgs[0], 'utf8'));
+      } else {
+        task = JSON.parse(positionalArgs[0]);
+      }
+    } catch (err) {
+      const gateResult = {
+        stage_id: 'align',
+        status: 'FAIL',
+        blocking: ['Failed to parse task JSON: ' + err.message],
+        warnings: [],
+        artifacts_produced: []
+      };
+      console.log(JSON.stringify(gateResult, null, 2));
+      process.exit(1);
+    }
   }
 
   try {
     // 1. Score task risk and select profile
     const scoreResult = scorer.score(task);
+    const isOverride = ['BUGFIX', 'PROTOTYPE'].includes(scoreResult.profile);
 
     // Determine work mode (default FEATURE, can be overridden)
     const workMode = task.workMode || task.override || 'FEATURE';
@@ -185,8 +221,8 @@ function main() {
         schema_version: '2.0',
         run_id: 'run_' + Math.random().toString(36).substring(2, 11),
         feature_slug: slug,
-        risk_profile: scoreResult.profile,
-        work_mode: workMode,
+        risk_profile: isOverride ? 'STANDARD' : scoreResult.profile,
+        work_mode: isOverride ? scoreResult.profile : workMode,
         stage: 'align',
         status: 'running',
         attempt: 1,
@@ -200,8 +236,8 @@ function main() {
         verified_artifacts: []
       };
     } else {
-      state.risk_profile = scoreResult.profile;
-      state.work_mode = workMode;
+      state.risk_profile = isOverride ? 'STANDARD' : scoreResult.profile;
+      state.work_mode = isOverride ? scoreResult.profile : workMode;
       state.feature_slug = slug;
       state.last_verified_commit = commit || state.last_verified_commit || 'unknown';
       state.locks = acquiredLocks;
@@ -218,6 +254,12 @@ function main() {
     }
 
     flowState.save(repoRoot, state);
+
+    // Sync .specify/feature.json pointer
+    const featurePointer = { feature_directory: 'specs/' + slug };
+    const featureJsonPath = path.join(repoRoot, '.specify', 'feature.json');
+    fs.mkdirSync(path.dirname(featureJsonPath), { recursive: true });
+    fs.writeFileSync(featureJsonPath, JSON.stringify(featurePointer, null, 2), 'utf8');
 
     const gateResult = {
       stage_id: 'align',

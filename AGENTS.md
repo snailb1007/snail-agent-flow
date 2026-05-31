@@ -64,7 +64,7 @@ You are integrated with RTK (Rust Token Killer). When executing or reading outpu
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **snail-agent-flow** (2199 symbols, 2467 relationships, 11 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **snail-agent-flow** (3093 symbols, 3756 relationships, 26 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -104,6 +104,7 @@ This project is indexed by GitNexus as **snail-agent-flow** (2199 symbols, 2467 
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
 ## Subagent & Parallel Execution Guidelines
 
 1. **Detect Independent Tasks:** Before starting execution, review the task list (e.g., `tasks.md`) to identify independent, non-sequential tasks.
@@ -111,6 +112,7 @@ This project is indexed by GitNexus as **snail-agent-flow** (2199 symbols, 2467 
 3. **Spawn in Parallel:** Invoke the defined subagents in parallel using the `invoke_subagent` tool to execute tasks concurrently.
 4. **Limit Context Size:** Do not pass large session logs or redundant context files to subagents. Keep their context focused and lightweight.
 5. **Coordinate & Wait:** Wait for all parallel subagents to complete before advancing to downstream tasks that depend on their outputs.
+
 ## Context Budget and Subagent Orchestration Policy
 
 1. **Estimate Byte Pressure:** Before starting any flow stage, estimate the byte pressure locally to decide the execution path (inline, context pack, or fresh session).
@@ -119,10 +121,24 @@ This project is indexed by GitNexus as **snail-agent-flow** (2199 symbols, 2467 
 4. **Use Fresh Sessions:** When byte pressure exceeds limits, write a handoff artifact (`.ai/state/context-handoff.json`) and resume from a clean session.
 5. **Protect Ledger State:** Parallel subagents must run in isolated workspaces with disjoint write targets and must never modify the central ledger.
 
-## ATLAS Loop
+## Autonomous ATLAS Loop
 
-1. **Use the current flow:** Follow the 5-stage ATLAS Loop: align, trace, lay, act, settle.
-2. **Read current state:** Use `.ai/state/flow-state.json` as the execution state snapshot.
-3. **Use ATLAS skills:** Route stage work through `.claude/skills/atlas-routing`, `.claude/skills/atlas-gates`, `.claude/skills/atlas-settle`, and `.claude/skills/atlas-review`.
-4. **Use contracts:** Resolve canonical artifacts through `.claude/skills/contracts`.
-5. **Avoid deprecated ledger:** Do not read or create `.ai/state/flow-ledger.json`.
+1. **Read current state:** Load `.ai/state/flow-state.json` to determine current stage.
+2. **Execute stage action:** Read `atlas-flow.yaml` for the current stage's `agent_action`.
+3. **Run gate:** Execute the stage's `gate` script. If FAIL, fix and retry.
+4. **Transition:** On gate PASS, run the stage's `post_gate` script.
+5. **Loop:** Repeat from step 1 until stage = settle and status = done.
+6. **HIL stops:** validate-spec fail ×3, FULL profile at act needs sign-off.
+7. **Contracts:** Resolve artifacts via `.claude/skills/contracts`.
+8. **Avoid deprecated:** Do not read/create `.ai/state/flow-ledger.json`.
+
+## Autonomous ATLAS Loop
+
+1. **Read current state:** Load `.ai/state/flow-state.json` to determine current stage.
+2. **Execute stage action:** Read `atlas-flow.yaml` for the current stage's `agent_action`.
+3. **Run gate:** Execute the stage's `gate` script. If FAIL, fix and retry.
+4. **Transition:** On gate PASS, run the stage's `post_gate` script.
+5. **Loop:** Repeat from step 1 until stage = settle and status = done.
+6. **HIL stops:** validate-spec fail ×3, FULL profile at act needs sign-off.
+7. **Contracts:** Resolve artifacts via `.claude/skills/contracts`.
+8. **Avoid deprecated:** Do not read/create `.ai/state/flow-ledger.json`.

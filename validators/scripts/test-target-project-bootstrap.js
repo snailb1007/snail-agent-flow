@@ -123,6 +123,47 @@ try {
     throw new Error('Expected init to not create deprecated flow-ledger.json');
   }
 
+  // 4b. Verify gitignore is created and correct
+  const gitignorePath = path.join(tempRoot, '.gitignore');
+  if (!fs.existsSync(gitignorePath)) {
+    throw new Error('Expected .gitignore to be created');
+  }
+  let gitignoreContent = fs.readFileSync(gitignorePath, 'utf8');
+  if (!gitignoreContent.includes('# Snail Agent Flow / ATLAS Loop')) {
+    throw new Error('Expected .gitignore to contain Snail Agent Flow header');
+  }
+  if (!gitignoreContent.includes('.ai/locks/')) {
+    throw new Error('Expected .gitignore to contain .ai/locks/ rule');
+  }
+
+  // Write some custom rules to .gitignore to make sure they are preserved on re-run
+  fs.writeFileSync(gitignorePath, 'node_modules/\n' + gitignoreContent, 'utf8');
+
+  // Run saf init again to test idempotency
+  console.log('[test-bootstrap] Running saf init a second time...');
+  const initResult2 = spawnSync('node', [cliBin, 'init'], {
+    cwd: tempRoot,
+    env: {
+      ...process.env,
+      PROJECT_ROOT: tempRoot,
+      REPO_ROOT: tempRoot
+    },
+    encoding: 'utf8'
+  });
+  if (initResult2.status !== 0) {
+    throw new Error(`saf init second run failed: ${initResult2.stderr || initResult2.stdout}`);
+  }
+
+  // Assert .gitignore content still preserves custom rules and is not duplicated
+  const gitignoreContent2 = fs.readFileSync(gitignorePath, 'utf8');
+  if (!gitignoreContent2.startsWith('node_modules/')) {
+    throw new Error('Expected custom rule in .gitignore to be preserved');
+  }
+  const occurances = (gitignoreContent2.match(/# Snail Agent Flow \/ ATLAS Loop/g) || []).length;
+  if (occurances !== 1) {
+    throw new Error(`Expected exactly 1 Snail Agent Flow header in .gitignore, found: ${occurances}`);
+  }
+
   console.log('[test-bootstrap] Expected files verified successfully.');
 
   // 6. Setup dummy spec so saf doctor can pass spec validation

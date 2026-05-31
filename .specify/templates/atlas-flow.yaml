@@ -1,9 +1,10 @@
 name: atlas-flow
-version: 2.0.0
+version: 3.0.0
 description: |
   The 5-stage ATLAS Loop for risk-adaptive AI delivery.
   Align scores and claims work, Trace establishes scope, Lay prepares verification,
   Act executes changes, and Settle verifies, cleans up, and records signals.
+  Extended with agent_action, gate, and post_gate fields for autonomous loop operation.
 
 prerequisites:
   - name: Atlas Routing
@@ -19,18 +20,31 @@ stages:
   - id: align
     name: Align
     description: Score task risk, choose the profile and work mode, and acquire work-unit claims.
+    agent_action: |
+      Assess feature/bug description. Run score-and-claim.js with --auto --description
+      or provide a full JSON payload with 5 risk dimensions. Script syncs .specify/feature.json
+      pointer automatically.
     skill: atlas-routing
     command: node .claude/skills/atlas-routing/scripts/score-and-claim.js
+    gate: null
+    post_gate: node .claude/skills/atlas-routing/scripts/transition.js
     required_artifacts:
       - path: .ai/state/flow-state.json
       - path: .ai/claims
+      - path: .specify/feature.json
     revision_routing: []
 
   - id: trace
     name: Trace
     description: Establish scope, impacted artifacts, acceptance criteria, and implementation plan.
+    agent_action: |
+      Create/update specs/{slug}/spec.md, plan.md, tasks.md using speckit-specify,
+      speckit-plan, speckit-tasks skills or manual authoring. Run validate-spec.js gate
+      to verify spec completeness before transitioning.
     skill: atlas-routing
     command: node .claude/skills/atlas-routing/scripts/transition.js
+    gate: node validators/scripts/validate-spec.js
+    post_gate: node .claude/skills/atlas-routing/scripts/transition.js
     required_artifacts:
       - path: specs/{feature_slug}/spec.md
       - path: specs/{feature_slug}/plan.md
@@ -42,8 +56,13 @@ stages:
   - id: lay
     name: Lay
     description: Prepare verification, write failing tests or checks, and acquire file leases.
+    agent_action: |
+      Write failing test files under validators/scripts/ or tests/. Acquire advisory
+      file leases via saf lease <file> for each write-scope file.
     skill: atlas-gates
     command: node .claude/skills/atlas-gates/scripts/lay-preflight.js
+    gate: node .claude/skills/atlas-gates/scripts/lay-preflight.js
+    post_gate: node .claude/skills/atlas-routing/scripts/transition.js
     required_artifacts:
       - path: .ai/locks
       - path: .ai/state/flow-state.json
@@ -54,8 +73,13 @@ stages:
   - id: act
     name: Act
     description: Execute implementation work under the selected risk profile and satisfy local checks.
+    agent_action: |
+      Implement code changes per tasks.md. Run tests to verify acceptance criteria.
+      Increment attempt count on each execution cycle. Commit atomically.
     skill: atlas-gates
     command: node .claude/skills/atlas-gates/scripts/act-evaluator.js
+    gate: node .claude/skills/atlas-gates/scripts/act-evaluator.js
+    post_gate: node .claude/skills/atlas-routing/scripts/transition.js
     required_artifacts:
       - path: .ai/state/flow-state.json
     revision_routing:
@@ -65,8 +89,14 @@ stages:
   - id: settle
     name: Settle
     description: Verify results, run review policy, release claims and leases, and log observability signals.
+    agent_action: |
+      Review code changes. Update .ai/memory/ if needed. Run settle-full.js which
+      orchestrates verify, signal-log, release-locks, and marks flow as done.
     skill: atlas-settle
-    command: node .claude/skills/atlas-settle/scripts/settle.js
+    command: node .claude/skills/atlas-settle/scripts/settle-full.js
+    gate: node .claude/skills/atlas-settle/scripts/settle-full.js
+    post_gate: null
+    verify_command: npm test
     required_artifacts:
       - path: .ai/signals
       - path: .ai/state/flow-state.json
