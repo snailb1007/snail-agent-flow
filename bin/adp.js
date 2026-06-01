@@ -27,6 +27,7 @@ Commands:
   lease <file>          Acquire advisory file lease lock.
   checkpoint            Write profile-switch checkpoint.
   signal <type> <val>   Log observability signal.
+  onboard-memory          Promote ONBOARDING.md content into .ai/memory/ files.
 `;
 
 // Target project directory: env override or caller's working directory
@@ -80,6 +81,9 @@ function runCli() {
     case 'signal':
       handleSignal(args.slice(1));
       break;
+    case 'onboard-memory':
+      handleOnboardMemory();
+      break;
     default:
       console.error(`Error: Unknown command "${command}"`);
       console.log(USAGE.trim());
@@ -126,6 +130,9 @@ function handleInit() {
       console.log(`[init] Directory already exists: ${d}`);
     }
   }
+
+  // Seed .ai/memory/ files from templates
+  seedMemoryFiles(repoRoot);
 
   // Copy constitution template or write default
   const constitutionPath = path.join(repoRoot, '.ai/constitution.md');
@@ -306,6 +313,35 @@ function handleInit() {
   runAndReport(repoRoot, 'init');
 
   console.log('[init] Initialization complete.');
+}
+
+function seedMemoryFiles(root) {
+  const memoryFiles = [
+    { target: '.ai/memory/project-summary.md', template: 'memory-project-summary-template.md' },
+    { target: '.ai/memory/current-architecture.md', template: 'memory-current-architecture-template.md' },
+    { target: '.ai/memory/known-risks.md', template: 'memory-known-risks-template.md' },
+    { target: '.ai/memory/decisions.md', template: 'memory-decisions-template.md' },
+    { target: '.ai/memory/verification-history.md', template: 'memory-verification-history-template.md' }
+  ];
+
+  for (const { target, template } of memoryFiles) {
+    const targetPath = path.join(root, target);
+    const templatePath = path.join(packageRoot, '.specify/templates', template);
+
+    if (!fs.existsSync(targetPath)) {
+      if (fs.existsSync(templatePath)) {
+        fs.copyFileSync(templatePath, targetPath);
+        console.log(`[init] Created ${target} (copied from template)`);
+      } else {
+        // Fallback: create minimal placeholder
+        const name = path.basename(target, '.md').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        fs.writeFileSync(targetPath, `<!-- Seeded by saf init. Update during Memory Handoff. -->\n# ${name}\n\n_No content yet. Update during Memory Handoff (Step 5.5)._\n`, 'utf8');
+        console.log(`[init] Created ${target} (default written)`);
+      }
+    } else {
+      console.log(`[init] ${target} already exists, skipping.`);
+    }
+  }
 }
 
 function handleFeature(cmdArgs, options = {}) {
@@ -1726,6 +1762,125 @@ function handleSignal(cmdArgs) {
     console.error(`Error logging signal: ${e.message}`);
     process.exit(1);
   }
+}
+
+function handleOnboardMemory() {
+  const onboardingPath = path.join(repoRoot, 'ONBOARDING.md');
+  if (!fs.existsSync(onboardingPath)) {
+    console.error('[onboard-memory] No ONBOARDING.md found at project root.');
+    console.error('[onboard-memory] Run project-onboarding skill first to generate it.');
+    process.exit(1);
+  }
+
+  const archPath = path.join(repoRoot, '.ai/memory/current-architecture.md');
+  const summaryPath = path.join(repoRoot, '.ai/memory/project-summary.md');
+
+  if (!fs.existsSync(archPath)) {
+    console.error('[onboard-memory] .ai/memory/current-architecture.md not found.');
+    console.error('[onboard-memory] Run `saf init` first.');
+    process.exit(1);
+  }
+
+  const onboardingContent = fs.readFileSync(onboardingPath, 'utf8');
+  const SEED_MARKER = 'Seeded by saf init';
+
+  // Extract architecture from ONBOARDING.md
+  const sections = extractOnboardingSections(onboardingContent);
+
+  // Update current-architecture.md if still seeded
+  const archContent = fs.readFileSync(archPath, 'utf8');
+  if (archContent.includes(SEED_MARKER)) {
+    const newArch = buildArchitectureMemory(sections);
+    fs.writeFileSync(archPath, newArch, 'utf8');
+    console.log('[onboard-memory] Updated .ai/memory/current-architecture.md from ONBOARDING.md');
+  } else {
+    console.log('[onboard-memory] current-architecture.md has been manually updated. Skipping.');
+  }
+
+  // Update project-summary.md if still seeded
+  if (fs.existsSync(summaryPath)) {
+    const summaryContent = fs.readFileSync(summaryPath, 'utf8');
+    if (summaryContent.includes(SEED_MARKER)) {
+      const newSummary = buildProjectSummary(sections);
+      fs.writeFileSync(summaryPath, newSummary, 'utf8');
+      console.log('[onboard-memory] Updated .ai/memory/project-summary.md from ONBOARDING.md');
+    } else {
+      console.log('[onboard-memory] project-summary.md has been manually updated. Skipping.');
+    }
+  }
+
+  console.log('[onboard-memory] Memory promotion complete.');
+  process.exit(0);
+}
+
+function extractOnboardingSections(content) {
+  const sections = {};
+  const headingRegex = /^## (.+)$/gm;
+  let match;
+  const headings = [];
+
+  while ((match = headingRegex.exec(content)) !== null) {
+    headings.push({ title: match[1].trim(), index: match.index });
+  }
+
+  for (let i = 0; i < headings.length; i++) {
+    const start = headings[i].index;
+    const end = i + 1 < headings.length ? headings[i + 1].index : content.length;
+    const sectionContent = content.slice(start, end).trim();
+    sections[headings[i].title.toLowerCase()] = sectionContent;
+  }
+
+  // Extract purpose line (first blockquote or first paragraph after # heading)
+  const purposeMatch = content.match(/^>\s*(.+)$/m);
+  if (purposeMatch) {
+    sections['_purpose'] = purposeMatch[1].trim();
+  }
+
+  return sections;
+}
+
+function buildArchitectureMemory(sections) {
+  let result = '<!-- Promoted from ONBOARDING.md by saf onboard-memory -->\n';
+  result += '# Current Architecture\n\n';
+
+  if (sections['architecture']) {
+    result += sections['architecture'] + '\n\n';
+  }
+
+  if (sections['stack & entrypoints']) {
+    result += sections['stack & entrypoints'] + '\n\n';
+  }
+
+  if (sections['conventions & constraints']) {
+    result += sections['conventions & constraints'] + '\n\n';
+  }
+
+  result += '## Architecture Decisions\n\n';
+  result += '_No decisions recorded yet. Update during Memory Handoff (Step 5.5)._\n';
+
+  return result;
+}
+
+function buildProjectSummary(sections) {
+  let result = '<!-- Promoted from ONBOARDING.md by saf onboard-memory -->\n';
+  result += '# Project Summary\n\n';
+
+  if (sections['_purpose']) {
+    result += '## Purpose\n\n' + sections['_purpose'] + '\n\n';
+  }
+
+  if (sections['stack & entrypoints']) {
+    result += sections['stack & entrypoints'] + '\n\n';
+  }
+
+  if (sections['commands']) {
+    result += sections['commands'] + '\n\n';
+  }
+
+  result += '## Current State\n\n';
+  result += '_Update during Memory Handoff (Step 5.5)._\n';
+
+  return result;
 }
 
 module.exports = {
