@@ -55,6 +55,20 @@ npx saf status     # current feature / ATLAS stage
 ```
 `doctor` exit 0 = valid scaffold. Exit 1 → read `.ai/state/repair-guide.md`, fix, re-run.
 
+## C.5. Seed Agent Memory (optional but recommended)
+
+After `project-onboarding` generates `ONBOARDING.md` for your target project, promote
+architecture info into agent-readable memory files:
+```bash
+npx saf onboard-memory
+```
+This extracts architecture, stack, and convention info from `ONBOARDING.md` into
+`.ai/memory/current-architecture.md` and `.ai/memory/project-summary.md`.
+
+The command is **non-destructive**: it only writes to memory files that still contain
+the init seed marker. If you've already manually updated your memory files, this command
+skips them.
+
 ## D. Decide what to commit (this is what makes team onboarding solid)
 
 One person runs `init`, commits the **static scaffold**, and everyone else just

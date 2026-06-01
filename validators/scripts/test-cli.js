@@ -1498,6 +1498,117 @@ addTest('CLI Doctor fails when context-policy.json is malformed', () => {
   cleanupSandbox();
 });
 
+// 28. onboard-memory: missing ONBOARDING.md
+addTest('CLI onboard-memory exits 1 when ONBOARDING.md is missing', () => {
+  setupSandbox();
+  runCLI(['init']);
+
+  const res = runCLI(['onboard-memory']);
+  if (res.code !== 1) {
+    throw new Error(`Expected exit code 1 when ONBOARDING.md is missing, got ${res.code}`);
+  }
+  const output = (res.stdout || '') + (res.stderr || '');
+  if (!output.includes('No ONBOARDING.md found')) {
+    throw new Error(`Expected error about missing ONBOARDING.md, got: ${output}`);
+  }
+});
+
+// 29. onboard-memory: successful promotion
+addTest('CLI onboard-memory promotes ONBOARDING.md content into memory files', () => {
+  setupSandbox();
+  runCLI(['init']);
+
+  // Write an ONBOARDING.md with architecture sections
+  const onboardingContent = `# Project Onboarding
+
+> A test project for validating memory promotion.
+
+## Architecture
+
+The project uses a modular monolith pattern.
+
+## Stack & Entrypoints
+
+- **Language(s):** Node.js 20
+- **Framework(s):** Express
+- **Entry:** bin/server.js
+
+## Conventions & Constraints
+
+- Use ESLint for linting
+- No default exports
+
+## Commands
+
+- \`npm test\` runs the suite
+`;
+  writeFile('ONBOARDING.md', onboardingContent);
+
+  const res = runCLI(['onboard-memory']);
+  if (res.code !== 0) {
+    throw new Error(`Expected exit code 0, got ${res.code}. Stderr: ${res.stderr}. Stdout: ${res.stdout}`);
+  }
+
+  // Verify current-architecture.md was updated
+  const archContent = readFile('.ai/memory/current-architecture.md');
+  if (archContent.includes('Seeded by saf init')) {
+    throw new Error('Expected seed marker to be removed from current-architecture.md after promotion');
+  }
+  if (!archContent.includes('Promoted from ONBOARDING.md')) {
+    throw new Error('Expected promotion marker in current-architecture.md');
+  }
+
+  // Verify project-summary.md was updated
+  const summaryContent = readFile('.ai/memory/project-summary.md');
+  if (summaryContent.includes('Seeded by saf init')) {
+    throw new Error('Expected seed marker to be removed from project-summary.md after promotion');
+  }
+  if (!summaryContent.includes('Promoted from ONBOARDING.md')) {
+    throw new Error('Expected promotion marker in project-summary.md');
+  }
+
+  const output = (res.stdout || '') + (res.stderr || '');
+  if (!output.includes('Memory promotion complete')) {
+    throw new Error(`Expected completion message, got: ${output}`);
+  }
+});
+
+// 30. onboard-memory: skip when no seed marker (manually edited)
+addTest('CLI onboard-memory skips memory files that have been manually edited', () => {
+  setupSandbox();
+  runCLI(['init']);
+
+  // Manually edit memory files (remove seed marker)
+  const manualArch = '# Current Architecture\n\nManually documented architecture.\n';
+  const manualSummary = '# Project Summary\n\nManually documented summary.\n';
+  writeFile('.ai/memory/current-architecture.md', manualArch);
+  writeFile('.ai/memory/project-summary.md', manualSummary);
+
+  // Write ONBOARDING.md
+  writeFile('ONBOARDING.md', '# Onboarding\n\n> Test project.\n\n## Architecture\n\nNew arch.\n');
+
+  const res = runCLI(['onboard-memory']);
+  if (res.code !== 0) {
+    throw new Error(`Expected exit code 0, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+
+  // Verify files were NOT overwritten
+  const archContent = readFile('.ai/memory/current-architecture.md');
+  if (archContent !== manualArch) {
+    throw new Error('Manually edited current-architecture.md was overwritten by onboard-memory');
+  }
+
+  const summaryContent = readFile('.ai/memory/project-summary.md');
+  if (summaryContent !== manualSummary) {
+    throw new Error('Manually edited project-summary.md was overwritten by onboard-memory');
+  }
+
+  const output = (res.stdout || '') + (res.stderr || '');
+  if (!output.includes('has been manually updated')) {
+    throw new Error(`Expected skip message for manually edited files, got: ${output}`);
+  }
+});
+
 // Run all tests
 let failedCount = 0;
 console.log('Running CLI tests...\n');

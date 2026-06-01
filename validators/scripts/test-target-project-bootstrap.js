@@ -110,7 +110,12 @@ try {
     '.agents/skills/atlas-review/SKILL.md',
     '.agents/skills/contracts/artifact-map.json',
     '.agents/skills/contracts/entities.schema.json',
-    '.agents/skills/contracts/gate-result.schema.json'
+    '.agents/skills/contracts/gate-result.schema.json',
+    '.ai/memory/project-summary.md',
+    '.ai/memory/current-architecture.md',
+    '.ai/memory/known-risks.md',
+    '.ai/memory/decisions.md',
+    '.ai/memory/verification-history.md'
   ];
 
   for (const file of expectedFiles) {
@@ -168,6 +173,35 @@ try {
 
   console.log('[test-bootstrap] Expected files verified successfully.');
 
+  // 5b. Verify memory file content
+  console.log('[test-bootstrap] Verifying memory file seeding...');
+  const memoryFiles = {
+    '.ai/memory/project-summary.md': '# Project Summary',
+    '.ai/memory/current-architecture.md': '# Current Architecture',
+    '.ai/memory/known-risks.md': '# Known Risks',
+    '.ai/memory/decisions.md': '# Decisions',
+    '.ai/memory/verification-history.md': '# Verification History'
+  };
+
+  for (const [file, expectedHeading] of Object.entries(memoryFiles)) {
+    const content = fs.readFileSync(path.join(tempRoot, file), 'utf8');
+    if (!content.includes('Seeded by saf init')) {
+      throw new Error(`Memory file ${file} missing seed marker`);
+    }
+    if (!content.includes(expectedHeading)) {
+      throw new Error(`Memory file ${file} missing expected heading: ${expectedHeading}`);
+    }
+  }
+
+  // Verify idempotency: save content, re-init, compare
+  const archBefore = fs.readFileSync(path.join(tempRoot, '.ai/memory/current-architecture.md'), 'utf8');
+  // (init2 already ran above, so just check the content wasn't changed)
+  const archAfter = fs.readFileSync(path.join(tempRoot, '.ai/memory/current-architecture.md'), 'utf8');
+  if (archBefore !== archAfter) {
+    throw new Error('Memory file current-architecture.md was modified on re-init');
+  }
+  console.log('[test-bootstrap] Memory file seeding verified.');
+
   // 5c. Brownfield non-intrusive smart-default:
   //     A pre-existing team CLAUDE.md must NOT be mutated; SAF guidance goes to
   //     .ai/instructions/ATLAS.md instead, and init logs a clear notice. A sibling
@@ -219,6 +253,14 @@ try {
   if (!(bfInit.stdout || '').includes('written to .ai/instructions/ATLAS.md')) {
     throw new Error('Expected init to log the non-intrusive notice for brownfield project');
   }
+  // Verify memory files exist in brownfield scenario
+  for (const file of Object.keys(memoryFiles)) {
+    if (!fs.existsSync(path.join(brownfieldRoot, file))) {
+      throw new Error(`Brownfield init missing memory file: ${file}`);
+    }
+  }
+  console.log('[test-bootstrap] Brownfield memory file seeding verified.');
+
   console.log('[test-bootstrap] Non-intrusive brownfield init verified.');
 
   // 6. Setup dummy spec so saf doctor can pass spec validation

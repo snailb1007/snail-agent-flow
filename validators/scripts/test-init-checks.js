@@ -998,6 +998,82 @@ addTest('init-checks: repair guide includes Behavioral Core manual block', () =>
   }
 });
 
+// 30. Memory file checks pass when memory files exist (greenfield)
+addTest('init-checks: memory file checks pass when memory files exist', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    // Create memory files
+    const memoryDir = path.join(tempdir, '.ai/memory');
+    fs.mkdirSync(memoryDir, { recursive: true });
+    const memoryFiles = [
+      'project-summary.md',
+      'current-architecture.md',
+      'known-risks.md',
+      'decisions.md',
+      'verification-history.md'
+    ];
+    for (const mf of memoryFiles) {
+      fs.writeFileSync(path.join(memoryDir, mf), `# ${mf}\n<!-- Seeded by saf init -->\n`, 'utf8');
+    }
+
+    const report = runStrictChecks(tempdir);
+    const memResults = report.results.filter(r => r.id.startsWith('memory.'));
+    if (memResults.length !== 5) {
+      throw new Error(`Expected 5 memory check results, got ${memResults.length}`);
+    }
+    for (const r of memResults) {
+      if (!r.passed) {
+        throw new Error(`Expected memory check ${r.id} to pass, but it failed`);
+      }
+      if (r.required !== false) {
+        throw new Error(`Expected memory check ${r.id} to be required=false`);
+      }
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// 31. Memory file checks fail as warnings when files are missing
+addTest('init-checks: memory file checks fail as non-blocking warnings when files are missing', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    // Do NOT create memory files — they should appear as warnings
+
+    const report = runStrictChecks(tempdir);
+    // Report should still be ok=true since memory checks are non-blocking
+    if (!report.ok) {
+      throw new Error(`Expected report.ok to be true even without memory files. Failures: ${JSON.stringify(report.failures)}`);
+    }
+    const memWarnings = report.warnings.filter(w => w.id.startsWith('memory.'));
+    if (memWarnings.length !== 5) {
+      throw new Error(`Expected 5 memory warnings, got ${memWarnings.length}`);
+    }
+
+    // Check IDs match expected format
+    const expectedIds = [
+      'memory.project_summary',
+      'memory.current_architecture',
+      'memory.known_risks',
+      'memory.decisions',
+      'memory.verification_history'
+    ];
+    for (const expectedId of expectedIds) {
+      const found = memWarnings.find(w => w.id === expectedId);
+      if (!found) {
+        throw new Error(`Expected warning with id "${expectedId}", not found`);
+      }
+      if (found.required !== false) {
+        throw new Error(`Expected ${expectedId} to be required=false`);
+      }
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
 // Run all tests
 let failedCount = 0;
 console.log('Running init-checks unit tests...\n');
