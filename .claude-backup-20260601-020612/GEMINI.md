@@ -19,28 +19,15 @@ npm run test:cli        # CLI command integration coverage
 npm test                # full validation suite
 ```
 
-## Local CLI Commands
-
-Use `node bin/adp.js <command>` from the repository checkout, or `adp <command>` / `saf <command>` when the package binary is installed.
-
-```bash
-node bin/adp.js init
-node bin/adp.js new-session <name>
-node bin/adp.js status
-node bin/adp.js doctor
-node bin/adp.js validate-spec
-node bin/adp.js handoff
-```
-
 ## Path Ownership & Folder Boundaries
 
-- **`.specify/`**: Owns presets, templates, validation scripts, and the active feature pointer (`.specify/feature.json`).
+- **`.specify/`**: Owns presets, fixtures, templates, validation scripts, optional evaluation rubric, and the active feature pointer (`.specify/feature.json`).
 - **`specs/<feature-slug>/`**: Owns canonical Spec-Kit files: `spec.md` (requirements), `plan.md` (architecture & changes), and `tasks.md` (checklist).
 - **`.ai/`**: Owns mutable orchestration state (`run-state.json`), review logs, QA results, sessions, and durable project memory.
+- **`.github/workflows/`**: Owns release packaging and CI verification workflows.
 
 ## Project Documentation
 
-- `README.md` documents CLI usage, verification commands, and project structure.
 - `CONTEXT.md` defines pipeline vocabulary and current orchestration terms.
 - `docs/prd.md` describes the full AI delivery pipeline blueprint.
 - `docs/artifact-registry.md` owns path and artifact ownership rules.
@@ -60,51 +47,6 @@ You are integrated with RTK (Rust Token Killer). When executing or reading outpu
 - Test Runners: Expect failed assertions only. Ignore truncated lines for passing suites.
 - File Tree/Operations: Recognize that boilerplate directories (node_modules, .git, target, target/debug) are hidden by default; do not re-run commands to find them unless explicitly requested.
 - Error logs: Focus strictly on the core stack trace signals; summary formats contain the complete execution diagnostic.
-
-<!-- gitnexus:start -->
-# GitNexus — Code Intelligence
-
-This project is indexed by GitNexus as **snail-agent-flow** (2641 symbols, 2977 relationships, 17 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
-
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
-
-## Always Do
-
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
-- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
-
-## Never Do
-
-- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
-- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
-- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
-
-## Resources
-
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/snail-agent-flow/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/snail-agent-flow/clusters` | All functional areas |
-| `gitnexus://repo/snail-agent-flow/processes` | All execution flows |
-| `gitnexus://repo/snail-agent-flow/process/{name}` | Step-by-step execution trace |
-
-## CLI
-
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-
-<!-- gitnexus:end -->
-
 ## Subagent & Parallel Execution Guidelines
 
 1. **Detect Independent Tasks:** Before starting execution, review the task list (e.g., `tasks.md`) to identify independent, non-sequential tasks.
@@ -112,7 +54,6 @@ This project is indexed by GitNexus as **snail-agent-flow** (2641 symbols, 2977 
 3. **Spawn in Parallel:** Invoke the defined subagents in parallel using the `invoke_subagent` tool to execute tasks concurrently.
 4. **Limit Context Size:** Do not pass large session logs or redundant context files to subagents. Keep their context focused and lightweight.
 5. **Coordinate & Wait:** Wait for all parallel subagents to complete before advancing to downstream tasks that depend on their outputs.
-
 ## Context Budget and Subagent Orchestration Policy
 
 1. **Estimate Byte Pressure:** Before starting any flow stage, estimate the byte pressure locally to decide the execution path (inline, context pack, or fresh session).
@@ -126,27 +67,3 @@ This project is indexed by GitNexus as **snail-agent-flow** (2641 symbols, 2977 
 When asked to run the ATLAS auto loop, use the local `atlas-auto-loop` skill.
 Read `.ai/state/flow-state.json`, resolve `.ai/flows/atlas-flow.yaml`, and follow the skill instructions.
 Do not read or create `.ai/state/flow-ledger.json`.
-
-<!-- snailb-skills:start -->
-# Target Agent Bootstrap Policy
-
-Auto-route by default. Users should not manually tag skills during normal work.
-Agents infer intent and mode from the request, active artifact, repo state, and risk.
-Broad actions like analysis, find, search, and research are operations, not manual skill triggers.
-
-Route every non-trivial turn:
-1. Detect mode/intent.
-2. Choose the minimal correct tool or skill path.
-3. Gather evidence.
-4. Act or propose a plan according to the current agent mode.
-5. Settle with verification and results.
-
-Tool rules:
-- Use Context7 MCP for current library, framework, SDK, API, CLI, and cloud-service docs.
-- Use project-onboarding for first-time repo setup, architecture maps, commands, and constraints.
-- Prefer `rg` and code-search for local repo discovery.
-- Use context-mode for large outputs and derived analysis.
-- Use scoped/tagged memory recall for cross-session continuity.
-
-Skills are internal execution modules selected by the router, not user commands.
-<!-- snailb-skills:end -->

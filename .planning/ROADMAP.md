@@ -40,6 +40,24 @@ Plans:
 - [x] 20-03-PLAN.md — Target Project Bootstrap Smoke Test
 - [x] 20-04-PLAN.md — Documentation and Release Checklist
 
+### Phase 21: Memory Seeding and Architecture Awareness at Init
+
+**Goal:** Close the gap where `saf init` creates `.ai/memory/` directory but seeds no files — leaving agents without architecture context until first Memory Handoff. Seed placeholder memory files at init, connect project-onboarding output to durable memory, and add standardized templates for memory handoff.
+**Requirements:** TBD
+**Depends on:** Phase 20
+**Plans:** 3/3 plans complete
+
+Plans:
+
+**Wave 1**
+
+- [x] 21-01-PLAN.md — Memory Templates + Init Seeding
+- [x] 21-02-PLAN.md — Onboarding → Memory Bridge (onboard-memory CLI)
+
+**Wave 2**
+
+- [x] 21-03-PLAN.md — Test Coverage, Doctor Validation + Documentation
+
 ---
 
 ## Next Milestone: Proposed v5.0 (Multi-Flow & Observability Dashboard)

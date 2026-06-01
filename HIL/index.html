@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Snail Agent Flow HIL Review</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --panel-2: #eef3f8;
+      --text: #182026;
+      --muted: #5f6b76;
+      --line: #d7dde4;
+      --strong: #0f766e;
+      --accent: #2563eb;
+      --warn: #b45309;
+      --danger: #b91c1c;
+      --ok: #15803d;
+      --shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+    }
+
+    .sidebar {
+      background: #111827;
+      color: #f9fafb;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #22c55e, #38bdf8);
+      display: grid;
+      place-items: center;
+      color: #07111c;
+      font-weight: 800;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .brand-subtitle {
+      color: #9ca3af;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .nav-group {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 38px;
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: transparent;
+      color: #d1d5db;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .nav-button[aria-current="true"],
+    .nav-button:hover {
+      background: #1f2937;
+      color: #ffffff;
+    }
+
+    .nav-icon {
+      width: 18px;
+      text-align: center;
+      color: #93c5fd;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 22px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .file-button,
+    .action-button {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    .file-button input {
+      display: none;
+    }
+
+    .action-button.primary {
+      border-color: #0f766e;
+      background: #0f766e;
+      color: white;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric,
+    .panel,
+    .decision {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric {
+      padding: 14px;
+      min-height: 86px;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .metric-value {
+      margin-top: 8px;
+      font-size: 22px;
+      font-weight: 750;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .panel {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .status-ok {
+      color: #14532d;
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+
+    .status-warn {
+      color: #78350f;
+      background: #fef3c7;
+      border-color: #fcd34d;
+    }
+
+    .status-danger {
+      color: #7f1d1d;
+      background: #fee2e2;
+      border-color: #fecaca;
+    }
+
+    .status-neutral {
+      color: #374151;
+      background: #f3f4f6;
+      border-color: #e5e7eb;
+    }
+
+    .stage-track {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stage {
+      min-height: 86px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fafafa;
+      padding: 10px;
+      display: grid;
+      align-content: space-between;
+      gap: 8px;
+    }
+
+    .stage.done {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+
+    .stage.current {
+      border-color: #93c5fd;
+      background: #eff6ff;
+    }
+
+    .stage.blocked {
+      border-color: #fca5a5;
+      background: #fef2f2;
+    }
+
+    .stage-name {
+      font-weight: 750;
+      font-size: 13px;
+    }
+
+    .stage-description {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .progress-wrap {
+      display: grid;
+      gap: 6px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .progress {
+      height: 9px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .progress > div {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #0f766e, #2563eb);
+      transition: width .2s ease;
+    }
+
+    .decision {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 16px;
+      border-left: 5px solid var(--accent);
+    }
+
+    .decision.blocked {
+      border-left-color: var(--danger);
+    }
+
+    .decision.warn {
+      border-left-color: var(--warn);
+    }
+
+    .decision-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .decision-copy {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .kv-list,
+    .artifact-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 10px;
+      font-size: 13px;
+      border-bottom: 1px solid #eef0f3;
+      padding-bottom: 8px;
+    }
+
+    .kv:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .kv-key {
+      color: var(--muted);
+    }
+
+    .kv-value {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .task-tools {
+      display: grid;
+      gap: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 132px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      background: #fbfdff;
+      color: var(--text);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 9px 8px;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      background: #f8fafc;
+    }
+
+    .chart {
+      display: grid;
+      grid-template-columns: 72px 1fr 48px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .bar {
+      height: 12px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .bar > div {
+      height: 100%;
+      background: #2563eb;
+    }
+
+    .bar.done > div {
+      background: #16a34a;
+    }
+
+    .bar.blocked > div {
+      background: #dc2626;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 8px;
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 82px 1fr;
+      gap: 10px;
+      font-size: 13px;
+      padding: 8px;
+      border: 1px solid #edf0f3;
+      border-radius: 6px;
+      background: #fbfcfe;
+    }
+
+    .timeline-time {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 10px;
+      background: #f8fafc;
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+    }
+
+    @media (max-width: 960px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+
+      .metrics,
+      .grid-2,
+      .stage-track {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar,
+      .decision {
+        display: grid;
+      }
+
+      .toolbar {
+        justify-content: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">HIL</div>
+        <div>
+          <div class="brand-title">Review Surface</div>
+          <div class="brand-subtitle">Human-in-the-loop</div>
+        </div>
+      </div>
+
+      <nav class="nav-group" aria-label="Review sections">
+        <button class="nav-button" aria-current="true" data-scroll="#overview"><span class="nav-icon">01</span>Overview</button>
+        <button class="nav-button" data-scroll="#stage"><span class="nav-icon">02</span>ATLAS stage</button>
+        <button class="nav-button" data-scroll="#tasks"><span class="nav-icon">03</span>Tasks</button>
+        <button class="nav-button" data-scroll="#milestone"><span class="nav-icon">04</span>Milestone</button>
+        <button class="nav-button" data-scroll="#evidence"><span class="nav-icon">05</span>Evidence</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section class="topbar" id="overview">
+        <div>
+          <h1 id="featureTitle">HIL review</h1>
+          <div class="subtle" id="featureSubtitle">Static HTML projection of canonical flow artifacts</div>
+        </div>
+        <div class="toolbar">
+          <label class="file-button">
+            Flow state
+            <input type="file" id="flowFile" accept=".json,application/json">
+          </label>
+          <label class="file-button">
+            Run state
+            <input type="file" id="runFile" accept=".json,application/json">
+          </label>
+          <label class="file-button">
+            Tasks
+            <input type="file" id="tasksFile" accept=".md,text/markdown,text/plain">
+          </label>
+          <button class="action-button primary" id="resetButton">Reset sample</button>
+        </div>
+      </section>
+
+      <section class="decision" id="decisionPanel">
+        <div>
+          <div class="decision-title" id="decisionTitle">Review state</div>
+          <div class="decision-copy" id="decisionCopy"></div>
+        </div>
+        <span class="status-pill status-neutral" id="decisionStatus">N/A</span>
+      </section>
+
+      <section class="metrics" aria-label="Run metrics">
+        <div class="metric">
+          <div class="metric-label">Stage</div>
+          <div class="metric-value" id="metricStage">N/A</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Gate</div>
+          <div class="metric-value" id="metricGate">N/A</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Attempts</div>
+          <div class="metric-value" id="metricAttempts">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Locks</div>
+          <div class="metric-value" id="metricLocks">0</div>
+        </div>
+      </section>
+
+      <section class="panel" id="stage">
+        <div class="panel-header">
+          <h2>ATLAS stage progress</h2>
+          <span class="status-pill status-neutral" id="stageStatus">N/A</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span id="progressText">0 of 5 stages</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress" aria-hidden="true"><div id="stageProgress"></div></div>
+        </div>
+        <div class="stage-track" id="stageTrack"></div>
+      </section>
+
+      <section class="grid-2">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Gate and retry state</h2>
+          </div>
+          <div class="kv-list" id="gateList"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Active locks</h2>
+          </div>
+          <div class="artifact-list" id="locksList"></div>
+        </div>
+      </section>
+
+      <section class="panel" id="tasks">
+        <div class="panel-header">
+          <h2>Tasks review</h2>
+          <span class="status-pill status-neutral" id="taskCount">0 tasks</span>
+        </div>
+        <div class="task-tools">
+          <textarea id="tasksText" spellcheck="false" aria-label="Tasks Markdown"></textarea>
+          <div>
+            <button class="action-button primary" id="parseTasks">Render tasks</button>
+          </div>
+        </div>
+        <div id="taskTable"></div>
+      </section>
+
+      <section class="panel" id="milestone">
+        <div class="panel-header">
+          <h2>Milestone health</h2>
+          <span class="status-pill status-neutral" id="milestoneStatus">Derived</span>
+        </div>
+        <div id="milestoneChart"></div>
+      </section>
+
+      <section class="panel" id="evidence">
+        <div class="panel-header">
+          <h2>Evidence timeline</h2>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const SAMPLE_FLOW_STATE = {
+      schema_version: "2.0",
+      run_id: "run_kx1ket6wu",
+      feature_slug: "019-optimize-saf-init-prevent",
+      risk_profile: "STANDARD",
+      work_mode: "FEATURE",
+      stage: "settle",
+      status: "done",
+      attempt: 1,
+      last_verified_commit: "31e5ce2f8fd028ec333cc0e49f8096ebb494a974",
+      completed_steps: ["align.score", "align.claim"],
+      pending_step: "",
+      locks: [
+        {
+          file: "specs\\\\019-optimize-saf-init-prevent\\\\spec.md",
+          acquired_at: "2026-05-30T18:15:39.179Z"
+        }
+      ],
+      signals: [],
+      consecutive_failures: 0,
+      retry_count: 0,
+      verified_artifacts: [],
+      revision_history: [
+        { task: "019-optimize-saf-init-prevent", from: "align", to: "trace", at: "2026-05-30T18:15:51.128Z" },
+        { task: "019-optimize-saf-init-prevent", from: "trace", to: "lay", at: "2026-05-30T18:16:49.605Z" },
+        { task: "019-optimize-saf-init-prevent", from: "lay", to: "act", at: "2026-05-30T18:19:26.957Z" },
+        { task: "019-optimize-saf-init-prevent", from: "act", to: "settle", at: "2026-05-30T18:24:03.517Z" }
+      ]
+    };
+
+    const SAMPLE_RUN_STATE = {
+      feature_slug: "019-optimize-saf-init-prevent",
+      spec_path: "specs/019-optimize-saf-init-prevent/",
+      current_phase: "Recon",
+      last_gate: "Spec-Validation",
+      consecutive_failures: 0,
+      retry_count: 0,
+      last_failed_step: null,
+      last_failed_rule: null,
+      last_validator_output: null,
+      updated_at: "2026-05-31T18:47:11.183Z",
+      last_gate_status: "PASS",
+      verified_artifacts: [],
+      blocked_reason: "none",
+      retry_scope: "none"
+    };
+
+    const SAMPLE_TASKS = `# Tasks: HIL review surface
+
+- [x] T001 Capture canonical state files for review
+- [x] T002 Render ATLAS stage progress
+- [ ] T003 Convert human-review.md into a decision card
+- [ ] T004 Generate .ai/reviews/<feature>/index.html from saf hil
+- [ ] T005 Add burnup data from task history`;
+
+    const STAGES = [
+      { id: "align", name: "Align", description: "Risk profile, work mode, and claim" },
+      { id: "trace", name: "Trace", description: "Scope, spec, plan, and tasks" },
+      { id: "lay", name: "Lay", description: "Verification setup and file leases" },
+      { id: "act", name: "Act", description: "Implementation and local checks" },
+      { id: "settle", name: "Settle", description: "Review, release, memory, signals" }
+    ];
+
+    const state = {
+      flow: structuredClone(SAMPLE_FLOW_STATE),
+      run: structuredClone(SAMPLE_RUN_STATE),
+      tasks: SAMPLE_TASKS
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function statusClass(value) {
+      const normalized = String(value || "").toLowerCase();
+      if (["pass", "done", "completed", "complete"].includes(normalized)) return "status-ok";
+      if (["blocked", "needs_human_review", "fail", "failed"].includes(normalized)) return "status-danger";
+      if (["warn", "warning", "resumed", "running", "in_progress"].includes(normalized)) return "status-warn";
+      return "status-neutral";
+    }
+
+    function pill(text) {
+      const span = document.createElement("span");
+      span.className = `status-pill ${statusClass(text)}`;
+      span.textContent = text || "N/A";
+      return span;
+    }
+
+    function setPill(id, value) {
+      const el = $(id);
+      el.className = `status-pill ${statusClass(value)}`;
+      el.textContent = value || "N/A";
+    }
+
+    function stageIndex(stageId) {
+      return Math.max(0, STAGES.findIndex((stage) => stage.id === stageId));
+    }
+
+    function completedStageCount(flow) {
+      const currentIndex = stageIndex(flow.stage);
+      if (flow.status === "done") return STAGES.length;
+      return currentIndex;
+    }
+
+    function renderOverview() {
+      const flow = state.flow || {};
+      const run = state.run || {};
+      const feature = flow.feature_slug || run.feature_slug || "unknown-feature";
+      const gateStatus = run.last_gate_status || flow.last_gate_status || flow.status || "N/A";
+      const status = flow.status || gateStatus;
+      const lockCount = Array.isArray(flow.locks) ? flow.locks.length : 0;
+
+      $("featureTitle").textContent = feature;
+      $("featureSubtitle").textContent = `${run.spec_path || "spec path unavailable"} | ${flow.risk_profile || "risk N/A"} | ${flow.work_mode || "mode N/A"}`;
+      $("metricStage").textContent = flow.stage || "N/A";
+      $("metricGate").textContent = gateStatus;
+      $("metricAttempts").textContent = String(flow.attempt || 0);
+      $("metricLocks").textContent = String(lockCount);
+      setPill("decisionStatus", status);
+
+      const panel = $("decisionPanel");
+      panel.classList.toggle("blocked", ["BLOCKED", "NEEDS_HUMAN_REVIEW", "FAIL"].includes(String(gateStatus).toUpperCase()));
+      panel.classList.toggle("warn", String(status).toLowerCase() === "running");
+
+      if (String(gateStatus).toUpperCase() === "NEEDS_HUMAN_REVIEW") {
+        $("decisionTitle").textContent = "Human decision required";
+        $("decisionCopy").textContent = run.last_failed_rule
+          ? `Review the failed rule: ${run.last_failed_rule}. Use the validator output and affected artifacts before resuming.`
+          : "The run reached the review circuit breaker. Review the packet, choose an option, then resume the validator.";
+      } else if (String(gateStatus).toUpperCase() === "BLOCKED") {
+        $("decisionTitle").textContent = "Blocked";
+        $("decisionCopy").textContent = run.blocked_reason && run.blocked_reason !== "none"
+          ? run.blocked_reason
+          : "A gate is blocked. Review the gate state and failed artifact before continuing.";
+      } else if (String(flow.status).toLowerCase() === "done") {
+        $("decisionTitle").textContent = "Ready for review";
+        $("decisionCopy").textContent = "The flow is settled. Check locks, evidence, and task completion before shipping or archiving.";
+      } else {
+        $("decisionTitle").textContent = "In progress";
+        $("decisionCopy").textContent = "The flow is active. Use the stage tracker and gate state to decide the next human action.";
+      }
+    }
+
+    function renderStages() {
+      const flow = state.flow || {};
+      const count = completedStageCount(flow);
+      const percent = Math.round((count / STAGES.length) * 100);
+      $("progressText").textContent = `${count} of ${STAGES.length} stages`;
+      $("progressPercent").textContent = `${percent}%`;
+      $("stageProgress").style.width = `${percent}%`;
+      setPill("stageStatus", flow.status || "N/A");
+
+      const current = flow.stage || "";
+      const currentIndex = stageIndex(current);
+      $("stageTrack").replaceChildren(...STAGES.map((stage, index) => {
+        const node = document.createElement("div");
+        const isDone = flow.status === "done" || index < currentIndex;
+        const isCurrent = stage.id === current && flow.status !== "done";
+        const isBlocked = isCurrent && ["blocked", "fail", "needs_human_review"].includes(String(flow.status || "").toLowerCase());
+        node.className = `stage ${isDone ? "done" : ""} ${isCurrent ? "current" : ""} ${isBlocked ? "blocked" : ""}`;
+        const status = isDone ? "Done" : isCurrent ? "Current" : "Pending";
+        node.innerHTML = `
+          <div>
+            <div class="stage-name">${stage.name}</div>
+            <div class="stage-description">${stage.description}</div>
+          </div>
+        `;
+        node.appendChild(pill(status));
+        return node;
+      }));
+    }
+
+    function renderGateState() {
+      const flow = state.flow || {};
+      const run = state.run || {};
+      const rows = [
+        ["Last gate", run.last_gate || flow.last_gate || "N/A"],
+        ["Gate status", run.last_gate_status || flow.last_gate_status || "N/A"],
+        ["Consecutive failures", run.consecutive_failures ?? flow.consecutive_failures ?? 0],
+        ["Retry count", run.retry_count ?? flow.retry_count ?? 0],
+        ["Retry scope", run.retry_scope || "none"],
+        ["Blocked reason", run.blocked_reason || "none"],
+        ["Updated", run.updated_at || "N/A"]
+      ];
+
+      $("gateList").replaceChildren(...rows.map(([key, value]) => {
+        const row = document.createElement("div");
+        row.className = "kv";
+        row.innerHTML = `<div class="kv-key">${key}</div><div class="kv-value"></div>`;
+        row.querySelector(".kv-value").textContent = String(value);
+        return row;
+      }));
+    }
+
+    function renderLocks() {
+      const locks = Array.isArray(state.flow?.locks) ? state.flow.locks : [];
+      if (!locks.length) {
+        $("locksList").innerHTML = `<div class="empty">No active locks recorded.</div>`;
+        return;
+      }
+
+      $("locksList").replaceChildren(...locks.map((lock) => {
+        const row = document.createElement("div");
+        row.className = "kv";
+        row.innerHTML = `<div class="kv-key">Locked file</div><div class="kv-value"></div>`;
+        row.querySelector(".kv-value").textContent = `${lock.file || "unknown"}${lock.acquired_at ? " | " + lock.acquired_at : ""}`;
+        return row;
+      }));
+    }
+
+    function parseTasks(markdown) {
+      return markdown
+        .split(/\r?\n/)
+        .map((line) => {
+          const match = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.+)$/);
+          if (!match) return null;
+          const done = match[1].toLowerCase() === "x";
+          const text = match[2].trim();
+          const id = (text.match(/^([A-Z]+\d+)/) || [null, "Task"])[1];
+          return { id, text, status: done ? "Completed" : "Incomplete" };
+        })
+        .filter(Boolean);
+    }
+
+    function renderTasks() {
+      const tasks = parseTasks(state.tasks || "");
+      $("tasksText").value = state.tasks || "";
+      $("taskCount").textContent = `${tasks.length} tasks`;
+
+      if (!tasks.length) {
+        $("taskTable").innerHTML = `<div class="empty">No Markdown checklist rows found.</div>`;
+        return;
+      }
+
+      const table = document.createElement("table");
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th style="width: 110px;">ID</th>
+            <th>Task</th>
+            <th style="width: 140px;">Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+
+      const body = table.querySelector("tbody");
+      for (const task of tasks) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td></td><td></td><td></td>`;
+        row.children[0].textContent = task.id;
+        row.children[1].textContent = task.text;
+        row.children[2].appendChild(pill(task.status));
+        body.appendChild(row);
+      }
+
+      $("taskTable").replaceChildren(table);
+    }
+
+    function renderMilestone() {
+      const tasks = parseTasks(state.tasks || "");
+      const total = tasks.length;
+      const complete = tasks.filter((task) => task.status === "Completed").length;
+      const incomplete = Math.max(0, total - complete);
+      const locks = Array.isArray(state.flow?.locks) ? state.flow.locks.length : 0;
+      const completePercent = total ? Math.round((complete / total) * 100) : 0;
+      const incompletePercent = total ? Math.round((incomplete / total) * 100) : 0;
+      const lockPercent = Math.min(100, locks * 20);
+      const rows = [
+        ["Complete", completePercent, `${complete}/${total}`, "done"],
+        ["Open", incompletePercent, `${incomplete}/${total}`, ""],
+        ["Locks", lockPercent, String(locks), locks ? "blocked" : ""]
+      ];
+
+      $("milestoneChart").replaceChildren(...rows.map(([label, width, value, tone]) => {
+        const row = document.createElement("div");
+        row.className = "chart";
+        row.innerHTML = `
+          <div class="kv-key">${label}</div>
+          <div class="bar ${tone}"><div style="width: ${width}%"></div></div>
+          <div class="kv-value">${value}</div>
+        `;
+        return row;
+      }));
+    }
+
+    function renderTimeline() {
+      const history = Array.isArray(state.flow?.revision_history) ? state.flow.revision_history : [];
+      if (!history.length) {
+        $("timeline").innerHTML = `<div class="empty">No stage transitions recorded.</div>`;
+        return;
+      }
+
+      $("timeline").replaceChildren(...history.map((item) => {
+        const row = document.createElement("div");
+        row.className = "timeline-item";
+        const when = item.at ? new Date(item.at).toLocaleString() : "N/A";
+        row.innerHTML = `<div class="timeline-time"></div><div></div>`;
+        row.children[0].textContent = when;
+        row.children[1].textContent = `${item.from || "unknown"} -> ${item.to || "unknown"} (${item.task || "task"})`;
+        return row;
+      }));
+    }
+
+    function renderAll() {
+      renderOverview();
+      renderStages();
+      renderGateState();
+      renderLocks();
+      renderTasks();
+      renderMilestone();
+      renderTimeline();
+    }
+
+    async function readFile(file, mode) {
+      const text = await file.text();
+      if (mode === "flow") {
+        state.flow = JSON.parse(text);
+      } else if (mode === "run") {
+        state.run = JSON.parse(text);
+      } else if (mode === "tasks") {
+        state.tasks = text;
+      }
+      renderAll();
+    }
+
+    $("flowFile").addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      if (file) readFile(file, "flow").catch((error) => alert(error.message));
+    });
+
+    $("runFile").addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      if (file) readFile(file, "run").catch((error) => alert(error.message));
+    });
+
+    $("tasksFile").addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      if (file) readFile(file, "tasks").catch((error) => alert(error.message));
+    });
+
+    $("parseTasks").addEventListener("click", () => {
+      state.tasks = $("tasksText").value;
+      renderTasks();
+      renderMilestone();
+    });
+
+    $("resetButton").addEventListener("click", () => {
+      state.flow = structuredClone(SAMPLE_FLOW_STATE);
+      state.run = structuredClone(SAMPLE_RUN_STATE);
+      state.tasks = SAMPLE_TASKS;
+      renderAll();
+    });
+
+    document.querySelectorAll("[data-scroll]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".nav-button").forEach((node) => node.setAttribute("aria-current", "false"));
+        button.setAttribute("aria-current", "true");
+        document.querySelector(button.dataset.scroll).scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
