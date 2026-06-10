@@ -41,6 +41,13 @@ npx saf init        # idempotent: only fills gaps, never overwrites
 npx saf doctor      # read the report — warnings list every migration needed
 ```
 
+**AI-assisted path:** if your project was initialized by a SAF version that
+ships the `saf-upgrade` skill, you can ask your AI coding agent to "upgrade
+SAF" after the `npm install` step. The skill runs the same commands above,
+then interprets each doctor warning against your project's customizations
+and asks for confirmation before any destructive step. The skill is
+version-agnostic — it always defers to the freshly installed CLI's output.
+
 `saf init` on an already-initialized project:
 - creates only missing directories/files,
 - skips (and reports) every pre-existing file,
@@ -72,6 +79,7 @@ violation — file an issue; do not rewrite your spec to appease the gate.
 | `.specify/current` exists | Replace with `.specify/feature.json` (doctor prints the JSON shape). |
 | Node version < 20 | Upgrade Node; SAF declares `engines: node >=20` (advisory, but new releases are only tested on 20+). |
 | state file has older `schema_version` | No action required — runtime reads old schemas. It will be upgraded (with a `.pre-<version>.bak` backup) the next time SAF writes it. |
+| `skills.version.current` warning (localized skills stale or version unknown) | `saf init` never overwrites, so skill copies in `.claude/skills/` / `.agents/skills/` do not refresh on upgrade. Remove the SAF-owned skill folders (`.claude/skills/atlas-*`, `.claude/skills/saf-upgrade`, `.claude/skills/contracts` and their `.agents/skills` twins), then re-run `saf init`. Fresh copies are written and `.ai/state/skills-version.json` is re-stamped. Folders SAF does not own are never part of this step. |
 
 ## 5. Adopting New (Opt-In) Capabilities
 

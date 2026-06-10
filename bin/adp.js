@@ -967,24 +967,32 @@ function initializePackagedAtlasAssets(repoRoot) {
     '.claude/skills/atlas-gates',
     '.claude/skills/atlas-settle',
     '.claude/skills/atlas-review',
+    '.claude/skills/saf-upgrade',
     '.claude/skills/contracts'
   ];
 
+  let totalCopied = 0;
+  let totalSkipped = 0;
+  let anyMissing = false;
+
   for (const relDir of assetDirs) {
     const srcDir = path.join(packageRoot, relDir);
-    
+
     // Copy to .claude/skills/...
     const destDir = path.join(repoRoot, relDir);
     const result = copyDirectoryNoOverwrite(srcDir, destDir);
 
     if (result.missing) {
       console.warn(`[init] WARNING: Packaged ATLAS asset missing: ${relDir}`);
+      anyMissing = true;
       continue;
     } else if (result.copied > 0) {
       console.log(`[init] Created ${relDir} (${result.copied} files copied, ${result.skipped} existing skipped)`);
     } else {
       console.log(`[init] ${relDir} already exists, skipping.`);
     }
+    totalCopied += result.copied;
+    totalSkipped += result.skipped;
 
     // Also copy to .agents/skills/... to support Gemini/Antigravity and other agents that look there
     const agentsRelDir = relDir.replace('.claude/skills', '.agents/skills');
@@ -993,6 +1001,36 @@ function initializePackagedAtlasAssets(repoRoot) {
     if (agentsResult.copied > 0) {
       console.log(`[init] Created ${agentsRelDir} (${agentsResult.copied} files copied, ${agentsResult.skipped} existing skipped)`);
     }
+    totalCopied += agentsResult.copied;
+    totalSkipped += agentsResult.skipped;
+  }
+
+  recordSkillsVersionStamp(repoRoot, { copied: totalCopied, skipped: totalSkipped, anyMissing });
+}
+
+// Records which SAF version localized the packaged skills, so `saf doctor` can
+// flag stale copies (init is no-overwrite, so skills never refresh in place).
+// The stamp is written ONLY after a full fresh localization: any skipped file
+// means pre-existing skills of unknown vintage are still on disk, and the
+// stamp must keep reflecting them (or stay absent) for the doctor warning to fire.
+function recordSkillsVersionStamp(repoRoot, totals) {
+  if (totals.anyMissing || totals.skipped > 0) {
+    return;
+  }
+
+  const stampPath = path.join(repoRoot, '.ai/state/skills-version.json');
+  try {
+    const pkg = require(path.join(packageRoot, 'package.json'));
+    const stamp = {
+      schema_version: '1.0',
+      saf_version: pkg.version,
+      localized_at: new Date().toISOString()
+    };
+    fs.mkdirSync(path.dirname(stampPath), { recursive: true });
+    fs.writeFileSync(stampPath, JSON.stringify(stamp, null, 2) + '\n', 'utf8');
+    console.log(`[init] Recorded localized skills version ${pkg.version} (.ai/state/skills-version.json)`);
+  } catch (e) {
+    console.warn(`[init] WARNING: Could not record skills version stamp: ${e.message}`);
   }
 }
 

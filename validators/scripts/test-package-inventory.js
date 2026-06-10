@@ -27,6 +27,7 @@ const required = [
   '.claude/skills/atlas-gates/SKILL.md',
   '.claude/skills/atlas-settle/SKILL.md',
   '.claude/skills/atlas-review/SKILL.md',
+  '.claude/skills/saf-upgrade/SKILL.md',
   '.claude/skills/contracts/artifact-map.json',
   '.claude/skills/contracts/entities.schema.json',
   '.claude/skills/contracts/gate-result.schema.json'

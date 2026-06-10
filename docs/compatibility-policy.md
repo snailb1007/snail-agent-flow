@@ -95,6 +95,7 @@ existing target project if shipped naively.
 | P2: `saf upgrade` command | High | Must implement Sections 2–4 of this policy: dry-run by default (`--apply` to execute), per-file backup, refuses to touch user-modified files, prints a migration report. |
 | P2: worktree parallelism + wave scheduler | Medium | Worktrees opt-in per claim (`saf claim --worktree`). Default claim behavior unchanged. Ledger protection rules unchanged. |
 | P2: `saf stats` / observability | Low | Reads existing `.ai/signals/*.jsonl`; old (sparse) signal data must render without errors. Signal record format is additive-only. |
+| `saf-upgrade` skill + skills version stamp | Low | New skill dir ships like ATLAS skills (copied no-overwrite by `init`). Stamp (`.ai/state/skills-version.json`) is a new artifact written only on full fresh localization; `skills.version.current` is a **non-blocking** doctor warning with printed refresh steps — never auto-migrates. Old projects without a stamp get a warning, not an error. |
 
 ## 6. Release Gate Checklist (per release)
 

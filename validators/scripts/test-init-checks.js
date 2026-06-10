@@ -89,6 +89,14 @@ stages:
 
   // constitution
   fs.writeFileSync(path.join(tempdir, '.ai/constitution.md'), '# Constitution', 'utf8');
+
+  // skills version stamp — matches the installed package so skills.version.current passes
+  const pkgVersion = require('../../package.json').version;
+  fs.writeFileSync(
+    path.join(tempdir, '.ai/state/skills-version.json'),
+    JSON.stringify({ schema_version: '1.0', saf_version: pkgVersion, localized_at: new Date().toISOString() }, null, 2),
+    'utf8'
+  );
 }
 
 // 1. Greenfield ok=true
@@ -1068,6 +1076,76 @@ addTest('init-checks: memory file checks fail as non-blocking warnings when file
       if (found.required !== false) {
         throw new Error(`Expected ${expectedId} to be required=false`);
       }
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// skills.version.current: matching stamp passes
+addTest('init-checks: skills version stamp matching package version passes', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    const report = runStrictChecks(tempdir);
+    const check = report.results.find(r => r.id === 'skills.version.current');
+    if (!check) {
+      throw new Error('Expected skills.version.current check in results');
+    }
+    if (!check.passed) {
+      throw new Error(`Expected skills.version.current to pass with a matching stamp: ${JSON.stringify(check.evidence)}`);
+    }
+    if (check.required !== false) {
+      throw new Error('Expected skills.version.current to be required=false (non-blocking)');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// skills.version.current: missing stamp warns but does not block
+addTest('init-checks: missing skills version stamp produces non-blocking warning', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    fs.rmSync(path.join(tempdir, '.ai/state/skills-version.json'));
+    const report = runStrictChecks(tempdir);
+    if (!report.ok) {
+      throw new Error(`Expected report.ok=true with stamp missing. Failures: ${JSON.stringify(report.failures)}`);
+    }
+    const warning = report.warnings.find(w => w.id === 'skills.version.current');
+    if (!warning) {
+      throw new Error('Expected skills.version.current warning when stamp is missing');
+    }
+    if (!/missing/.test(warning.evidence.parseError) || !/saf init/.test(warning.evidence.parseError)) {
+      throw new Error(`Expected warning to mention missing stamp and saf init refresh: ${warning.evidence.parseError}`);
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// skills.version.current: stale stamp warns with both versions
+addTest('init-checks: stale skills version stamp warns with deployed and installed versions', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    fs.writeFileSync(
+      path.join(tempdir, '.ai/state/skills-version.json'),
+      JSON.stringify({ schema_version: '1.0', saf_version: '0.0.1-stale' }, null, 2),
+      'utf8'
+    );
+    const report = runStrictChecks(tempdir);
+    if (!report.ok) {
+      throw new Error(`Expected report.ok=true with stale stamp. Failures: ${JSON.stringify(report.failures)}`);
+    }
+    const warning = report.warnings.find(w => w.id === 'skills.version.current');
+    if (!warning) {
+      throw new Error('Expected skills.version.current warning when stamp is stale');
+    }
+    const pkgVersion = require('../../package.json').version;
+    if (!warning.evidence.parseError.includes('0.0.1-stale') || !warning.evidence.parseError.includes(pkgVersion)) {
+      throw new Error(`Expected warning to name both versions: ${warning.evidence.parseError}`);
     }
   } finally {
     fs.rmSync(tempdir, { recursive: true, force: true });

@@ -5,6 +5,8 @@ All notable changes to this project are documented here.
 ## [Unreleased]
 
 ### Added
+- Added the packaged `saf-upgrade` skill: a thin, version-agnostic upgrade conductor for target projects (AI interprets `saf doctor` output and resolves project-specific conflicts; all mechanics run through the idempotent CLI). Copied into `.claude/skills/` and `.agents/skills/` by `saf init` like the ATLAS skills.
+- Added a localized-skills version stamp (`.ai/state/skills-version.json`), written by `saf init` only after a full fresh skill localization, and a new non-blocking `skills.version.current` doctor check that warns when the installed package version differs from the version that localized the on-disk skills (init is no-overwrite, so skills never refresh silently).
 - Added `saf budget`: on-demand context byte-pressure report with `--stage`, `--json`, and opt-in `--enforce` gating (feature `020-budget-pack-cli-commands`).
 - Added `saf pack`: fail-closed context-pack manifest generator writing schema-valid packs to `.ai/context-packs/` (`lib/context-pack-generator.js`).
 - Added `docs/compatibility-policy.md` (binding backward-compatibility contract with a per-improvement matrix) and `docs/migration.md` (upgrade guide for target projects on older SAF versions).
@@ -15,9 +17,12 @@ All notable changes to this project are documented here.
 
 ### Upgrade notes
 - No action required for existing target projects. `budget` and `pack` are new, report-only commands; nothing changes until you call them, and `--enforce` is strictly opt-in. Existing commands, exit codes, schemas, and artifact paths are unchanged.
+- Existing target projects will see a new non-blocking `skills.version.current` doctor warning until they refresh their localized skills (remove the SAF-owned skill folders and re-run `saf init`); the warning text contains the exact steps. Doctor exit codes are unchanged.
+- `saf doctor` and `saf init` now print non-blocking warnings even when all required checks pass (previously warnings were hidden on success). The leading `Static sanity checks PASSED.` line is unchanged, so existing log parsers keep working.
 
 ### Changed
 - Changed generated agent docs to use one `atlas-auto-loop` pointer section and deduplicate old ATLAS Loop sections during `saf init`.
+- Changed `formatTerminal` to list warnings after a passing report instead of suppressing them, aligning doctor output with the migration guide's promise that warnings list every pending migration.
 
 ## [0.4.0.0] - 2026-05-26
 

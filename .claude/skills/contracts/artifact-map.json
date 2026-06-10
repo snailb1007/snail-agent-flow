@@ -2,6 +2,7 @@
   "version": "1.0",
   "canonical": {
     "flow_state": ".ai/state/flow-state.json",
+    "skills_version": ".ai/state/skills-version.json",
     "claims_dir": ".ai/claims",
     "locks_dir": ".ai/locks",
     "signals_file": ".ai/signals/current-period.jsonl",
