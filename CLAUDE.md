@@ -71,11 +71,13 @@ node bin/adp.js handoff
 - `docs/artifact-registry.md` owns path and artifact ownership rules.
 - `docs/tool-routing.md` maps pipeline phases to tools, validators, and stop conditions.
 - `docs/memory-versus-sessions.md` defines durable memory versus temporary session logs.
+- `docs/compatibility-policy.md` is the binding backward-compatibility contract; every improvement MUST comply before shipping.
+- `docs/migration.md` is the upgrade guide for target projects running older SAF versions.
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///Volumes/D/snail-agent-flow/specs/017-context-budget-gate/plan.md)
+[plan.md](specs/017-context-budget-gate/plan.md)
 <!-- SPECKIT END -->
 
 # RTK Token Optimization Rules
