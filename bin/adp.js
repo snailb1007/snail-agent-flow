@@ -28,6 +28,10 @@ Commands:
   checkpoint            Write profile-switch checkpoint.
   signal <type> <val>   Log observability signal.
   onboard-memory          Promote ONBOARDING.md content into .ai/memory/ files.
+  budget                Report estimated context byte pressure and policy outcome.
+                        Options: --stage <id>, --json, --enforce (exit 1 unless inline).
+  pack                  Generate a context pack manifest under .ai/context-packs/.
+                        Options: --objective <text>, --stage <id>, --out <path>.
 `;
 
 // Target project directory: env override or caller's working directory
@@ -83,6 +87,12 @@ function runCli() {
       break;
     case 'onboard-memory':
       handleOnboardMemory();
+      break;
+    case 'budget':
+      handleBudget(args.slice(1));
+      break;
+    case 'pack':
+      handlePack(args.slice(1));
       break;
     default:
       console.error(`Error: Unknown command "${command}"`);
@@ -1762,6 +1772,184 @@ function handleSignal(cmdArgs) {
     console.error(`Error logging signal: ${e.message}`);
     process.exit(1);
   }
+}
+
+/**
+ * Resolves the stage id for budget/pack commands:
+ * explicit --stage flag, else .ai/state/flow-state.json, else ad-hoc.
+ */
+function resolveStageForBudget(stageFlag) {
+  if (stageFlag) {
+    return { stageId: stageFlag, stageSource: '--stage flag' };
+  }
+  try {
+    const flowState = require('../lib/flow-state').load(repoRoot);
+    if (flowState && flowState.stage) {
+      return { stageId: flowState.stage, stageSource: '.ai/state/flow-state.json' };
+    }
+  } catch (e) {
+    // Unreadable or invalid flow state: fall through to ad-hoc mode
+  }
+  return { stageId: 'adhoc', stageSource: 'ad-hoc (no flow state found)' };
+}
+
+/**
+ * Looks up the stage definition in .ai/flows/atlas-flow.yaml so the budget
+ * walk includes the stage's required artifacts. Falls back to a stub stage
+ * (sessions, packs, and handoff inputs are still counted).
+ */
+function findFlowStage(stageId) {
+  try {
+    const flowPath = path.join(repoRoot, '.ai/flows/atlas-flow.yaml');
+    if (fs.existsSync(flowPath)) {
+      const { parseYaml } = require('../lib/yaml-parser');
+      const flowDef = parseYaml(fs.readFileSync(flowPath, 'utf8'));
+      if (flowDef && Array.isArray(flowDef.stages)) {
+        const found = flowDef.stages.find(s => s && s.id === stageId);
+        if (found) {
+          return { flowStage: found, fromDefinition: true };
+        }
+      }
+    }
+  } catch (e) {
+    // Unparsable flow definition: fall back to stub stage
+  }
+  return { flowStage: { id: stageId, required_artifacts: [] }, fromDefinition: false };
+}
+
+function readFeatureVariables() {
+  const variables = {};
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(repoRoot, '.specify/feature.json'), 'utf8'));
+    if (raw && typeof raw.feature_directory === 'string' && raw.feature_directory.trim()) {
+      variables.feature_dir = raw.feature_directory.replace(/[\/\\]+$/, '');
+    }
+  } catch (e) {
+    // No active feature pointer: budget walk simply skips feature artifacts
+  }
+  return variables;
+}
+
+function handleBudget(cmdArgs) {
+  let stageFlag = null;
+  let asJson = false;
+  let enforce = false;
+
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--stage') {
+      stageFlag = cmdArgs[++i];
+      if (!stageFlag) {
+        console.error('Error: --stage requires a stage id.');
+        process.exit(1);
+      }
+    } else if (arg === '--json') {
+      asJson = true;
+    } else if (arg === '--enforce') {
+      enforce = true;
+    } else {
+      console.error(`Error: Unknown flag/argument "${arg}"`);
+      process.exit(1);
+    }
+  }
+
+  const { loadPolicyConfig, estimateBudget, computeOutcome } = require('../lib/context-budget');
+  const { stageId, stageSource } = resolveStageForBudget(stageFlag);
+  const { flowStage, fromDefinition } = findFlowStage(stageId);
+  const variables = readFeatureVariables();
+
+  const policyConfig = loadPolicyConfig(repoRoot);
+  const estimate = estimateBudget(flowStage, repoRoot, variables);
+  const totalBytes = estimate.totalBytes;
+  const inputs = estimate.inputs.map(input => ({
+    path: String(input.path).split(path.sep).join('/'),
+    bytes: input.bytes
+  }));
+  const outcome = computeOutcome(totalBytes, flowStage.id, policyConfig);
+
+  if (asJson) {
+    console.log(JSON.stringify({
+      stage_id: stageId,
+      stage_source: stageSource,
+      stage_in_flow_definition: fromDefinition,
+      estimated_bytes: totalBytes,
+      thresholds: {
+        inline_threshold_bytes: policyConfig.inline_threshold_bytes,
+        pack_threshold_bytes: policyConfig.pack_threshold_bytes
+      },
+      inputs,
+      outcome
+    }, null, 2));
+  } else {
+    console.log(`[budget] Stage: ${stageId} (${stageSource})`);
+    if (!fromDefinition) {
+      console.log('[budget] Stage not found in flow definition; stage-specific artifacts skipped.');
+    }
+    console.log(`[budget] Estimated byte pressure: ${totalBytes} bytes (heuristic, not tokens)`);
+    console.log(`[budget] Thresholds: inline <= ${policyConfig.inline_threshold_bytes}, context pack <= ${policyConfig.pack_threshold_bytes}, above => fresh session`);
+    const topInputs = inputs.slice().sort((a, b) => b.bytes - a.bytes).slice(0, 10);
+    if (topInputs.length > 0) {
+      console.log(`[budget] Largest inputs (${inputs.length} total):`);
+      for (const input of topInputs) {
+        console.log(`  - ${input.path} (${input.bytes} bytes)`);
+      }
+    }
+    console.log(`[budget] Outcome: ${outcome}`);
+    if (outcome === 'inline') {
+      console.log('[budget] Action: proceed inline.');
+    } else if (outcome === 'context_pack_required') {
+      console.log('[budget] Action: run `saf pack` and hand the pack to a subagent or fresh session.');
+    } else {
+      console.log('[budget] Action: write a handoff (.ai/state/context-handoff.json) and resume in a fresh session.');
+    }
+  }
+
+  if (enforce && outcome !== 'inline') {
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
+function handlePack(cmdArgs) {
+  let stageFlag = null;
+  let objective = null;
+  let outPath = null;
+
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--stage') {
+      stageFlag = cmdArgs[++i];
+    } else if (arg === '--objective') {
+      objective = cmdArgs[++i];
+    } else if (arg === '--out') {
+      outPath = cmdArgs[++i];
+    } else {
+      console.error(`Error: Unknown flag/argument "${arg}"`);
+      process.exit(1);
+    }
+  }
+  if ((stageFlag !== null && !stageFlag) || (objective !== null && !objective) || (outPath !== null && !outPath)) {
+    console.error('Error: --stage, --objective, and --out each require a value.');
+    process.exit(1);
+  }
+
+  const { generatePack } = require('../lib/context-pack-generator');
+  const { stageId, stageSource } = resolveStageForBudget(stageFlag);
+
+  const result = generatePack(repoRoot, { stageId, objective, outPath });
+  if (!result.ok) {
+    console.error('[pack] Context pack generation failed:');
+    for (const err of result.errors) {
+      console.error(`  - ${err}`);
+    }
+    process.exit(1);
+  }
+
+  console.log(`[pack] Stage: ${stageId} (${stageSource})`);
+  console.log(`[pack] Context pack written: ${path.relative(repoRoot, result.path)}`);
+  console.log(`[pack] Required files: ${result.manifest.required_files.length}, omissions: ${result.manifest.omissions.length}`);
+  console.log('[pack] Hand this pack to a subagent or fresh session; it should read only the listed files.');
+  process.exit(0);
 }
 
 function handleOnboardMemory() {

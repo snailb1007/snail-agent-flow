@@ -5,10 +5,16 @@ All notable changes to this project are documented here.
 ## [Unreleased]
 
 ### Added
+- Added `saf budget`: on-demand context byte-pressure report with `--stage`, `--json`, and opt-in `--enforce` gating (feature `020-budget-pack-cli-commands`).
+- Added `saf pack`: fail-closed context-pack manifest generator writing schema-valid packs to `.ai/context-packs/` (`lib/context-pack-generator.js`).
+- Added `docs/compatibility-policy.md` (binding backward-compatibility contract with a per-improvement matrix) and `docs/migration.md` (upgrade guide for target projects on older SAF versions).
 - Added the packaged `atlas-auto-loop` skill as the entry point for autonomous ATLAS Loop guidance.
 - Added a package inventory regression test (`validators/scripts/test-package-inventory.js`) to assert required ATLAS assets are correctly packed and that forbidden workspace directories (like `.planning/`, `.ai/state/`, and `.git/`) are excluded.
 - Added a target project bootstrap smoke test (`validators/scripts/test-target-project-bootstrap.js`) to verify that the packaged tarball successfully initializes a fresh target project (scaffolds directories, creates config/flow files, copies ATLAS skills/contracts, and successfully passes `doctor` checks).
 - Documented the packaged ATLAS bootstrap path and added a release verification checklist to `docs/installation.md`.
+
+### Upgrade notes
+- No action required for existing target projects. `budget` and `pack` are new, report-only commands; nothing changes until you call them, and `--enforce` is strictly opt-in. Existing commands, exit codes, schemas, and artifact paths are unchanged.
 
 ### Changed
 - Changed generated agent docs to use one `atlas-auto-loop` pointer section and deduplicate old ATLAS Loop sections during `saf init`.

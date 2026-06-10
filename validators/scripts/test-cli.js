@@ -1609,6 +1609,107 @@ addTest('CLI onboard-memory skips memory files that have been manually edited', 
   }
 });
 
+// Budget command: ad-hoc report mode
+addTest('CLI Budget Command Reports Outcome In Ad-Hoc Mode', () => {
+  setupSandbox();
+  const res = runCLI(['budget']);
+  if (res.code !== 0) {
+    throw new Error(`Expected exit code 0 in report mode, got ${res.code}: ${res.stderr}`);
+  }
+  if (!res.stdout.includes('ad-hoc (no flow state found)')) {
+    throw new Error(`Expected ad-hoc stage source notice, got: ${res.stdout}`);
+  }
+  if (!res.stdout.includes('Outcome: inline')) {
+    throw new Error(`Expected inline outcome on empty sandbox, got: ${res.stdout}`);
+  }
+});
+
+// Budget command: JSON output and stage flag
+addTest('CLI Budget Command JSON Output', () => {
+  setupSandbox();
+  writeFile('.ai/sessions/big-session.md', 'x'.repeat(60000));
+  const res = runCLI(['budget', '--json', '--stage', 'act']);
+  if (res.code !== 0) {
+    throw new Error(`Expected exit code 0, got ${res.code}: ${res.stderr}`);
+  }
+  const parsed = JSON.parse(res.stdout);
+  if (parsed.stage_id !== 'act' || parsed.stage_source !== '--stage flag') {
+    throw new Error(`Expected stage act from flag, got: ${JSON.stringify(parsed)}`);
+  }
+  if (parsed.outcome !== 'context_pack_required') {
+    throw new Error(`Expected context_pack_required at 60KB, got ${parsed.outcome}`);
+  }
+  if (!Array.isArray(parsed.inputs) || !parsed.inputs.some(i => i.path === '.ai/sessions/big-session.md')) {
+    throw new Error('Expected session log in inputs with forward-slash path');
+  }
+  if (typeof parsed.thresholds.inline_threshold_bytes !== 'number') {
+    throw new Error('Expected thresholds in JSON output');
+  }
+});
+
+// Budget command: --enforce opt-in gate
+addTest('CLI Budget Command Enforce Flag Exits 1 When Not Inline', () => {
+  setupSandbox();
+  writeFile('.ai/sessions/huge-session.md', 'x'.repeat(250000));
+  const resReport = runCLI(['budget']);
+  if (resReport.code !== 0) {
+    throw new Error(`Report mode must stay exit 0 even at fresh_session_required, got ${resReport.code}`);
+  }
+  if (!resReport.stdout.includes('fresh_session_required')) {
+    throw new Error(`Expected fresh_session_required at 250KB, got: ${resReport.stdout}`);
+  }
+  const resEnforce = runCLI(['budget', '--enforce']);
+  if (resEnforce.code !== 1) {
+    throw new Error(`Expected exit code 1 with --enforce on non-inline outcome, got ${resEnforce.code}`);
+  }
+});
+
+// Pack command: creates a schema-valid manifest
+addTest('CLI Pack Command Creates Valid Context Pack', () => {
+  setupSandbox();
+  writeJson('.specify/feature.json', { feature_directory: 'specs/001-demo-feature' });
+  writeFile('specs/001-demo-feature/spec.md', '# Spec\n');
+  writeFile('specs/001-demo-feature/plan.md', '# Plan\n');
+  writeFile('specs/001-demo-feature/tasks.md', '# Tasks\n');
+
+  const res = runCLI(['pack', '--objective', 'Implement demo stage', '--stage', 'act']);
+  if (res.code !== 0) {
+    throw new Error(`Expected exit code 0, got ${res.code}: ${res.stderr}`);
+  }
+
+  const packsDir = path.join(testSandboxRoot, '.ai', 'context-packs');
+  const packFiles = fs.readdirSync(packsDir).filter(f => f.endsWith('.json'));
+  if (packFiles.length !== 1) {
+    throw new Error(`Expected exactly one generated pack, found ${packFiles.length}`);
+  }
+
+  const { validateContextPack } = require('../../lib/context-policy-validator');
+  const validation = validateContextPack(path.join(packsDir, packFiles[0]));
+  if (!validation.valid) {
+    throw new Error(`Generated pack failed validation: ${validation.errors.join('; ')}`);
+  }
+
+  const manifest = readJson(path.join('.ai/context-packs', packFiles[0]));
+  if (manifest.objective !== 'Implement demo stage' || manifest.stage_id !== 'act') {
+    throw new Error('Manifest does not carry the provided objective and stage');
+  }
+  if (!manifest.required_files.some(e => e.path === 'specs/001-demo-feature/spec.md')) {
+    throw new Error('Manifest required_files missing active feature spec');
+  }
+});
+
+// Pack command: rejects --out escaping .ai/context-packs
+addTest('CLI Pack Command Rejects Out Path Outside Context Packs', () => {
+  setupSandbox();
+  const res = runCLI(['pack', '--out', 'specs/evil-pack.json']);
+  if (res.code !== 1) {
+    throw new Error(`Expected exit code 1 for escaping --out, got ${res.code}`);
+  }
+  if (fileExists('specs/evil-pack.json')) {
+    throw new Error('Pack must not be written outside .ai/context-packs');
+  }
+});
+
 // Run all tests
 let failedCount = 0;
 console.log('Running CLI tests...\n');

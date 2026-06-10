@@ -164,7 +164,16 @@ Commands:
   lease <file>          Acquire advisory file lease lock.
   checkpoint            Write profile-switch checkpoint.
   signal <type> <val>   Log observability signal.
+  onboard-memory        Promote ONBOARDING.md content into .ai/memory/ files.
+  budget                Report estimated context byte pressure and policy outcome.
+                        Options: --stage <id>, --json, --enforce (exit 1 unless inline).
+  pack                  Generate a context pack manifest under .ai/context-packs/.
+                        Options: --objective <text>, --stage <id>, --out <path>.
 ```
+
+`budget` is report-only by default; gating is opt-in via `--enforce`
+(see [docs/compatibility-policy.md](docs/compatibility-policy.md)).
+`pack` fails closed: an invalid manifest is never left on disk.
 
 ---
 
@@ -177,5 +186,7 @@ Commands:
 - [Artifact registry](docs/artifact-registry.md)
 - [Tool routing matrix](docs/tool-routing.md)
 - [Memory versus sessions](docs/memory-versus-sessions.md)
+- [Backward compatibility policy](docs/compatibility-policy.md)
+- [Migration guide for target projects](docs/migration.md)
 - [Failure modes runbook](docs/runbooks/failure-modes.md)
 
