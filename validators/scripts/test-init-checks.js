@@ -1026,7 +1026,16 @@ addTest('init-checks: memory file checks pass when memory files exist', () => {
     }
 
     const report = runStrictChecks(tempdir);
-    const memResults = report.results.filter(r => r.id.startsWith('memory.'));
+    // Memory FILE-existence checks only (not the budget/archival advisories,
+    // which also use a memory.* id but carry a second dotted segment).
+    const memoryFileCheckIds = [
+      'memory.project_summary',
+      'memory.current_architecture',
+      'memory.known_risks',
+      'memory.decisions',
+      'memory.verification_history'
+    ];
+    const memResults = report.results.filter(r => memoryFileCheckIds.includes(r.id));
     if (memResults.length !== 5) {
       throw new Error(`Expected 5 memory check results, got ${memResults.length}`);
     }
@@ -1076,6 +1085,103 @@ addTest('init-checks: memory file checks fail as non-blocking warnings when file
       if (found.required !== false) {
         throw new Error(`Expected ${expectedId} to be required=false`);
       }
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// 022: memory.budgetScope.recommended — warns on missing/partial scope config, passes when fully scoped.
+addTest('init-checks: memory.budgetScope.recommended warns until both budget scopes are configured', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    const legacyPolicy = {
+      schema_version: '1.0.0',
+      inline_threshold_bytes: 50000,
+      pack_threshold_bytes: 200000,
+      max_parallelism: 3,
+      stage_overrides: {},
+      budget_inputs: {
+        include_required_artifacts: true,
+        include_session_logs: true,
+        include_planning_artifacts: true,
+        include_context_packs: true,
+        include_handoff_files: true
+      }
+    };
+    fs.writeFileSync(path.join(tempdir, '.ai/state/context-policy.json'), JSON.stringify(legacyPolicy), 'utf8');
+    let report = runStrictChecks(tempdir);
+    let check = report.results.find(r => r.id === 'memory.budgetScope.recommended');
+    if (!check || check.required !== false) {
+      throw new Error('Expected non-blocking memory.budgetScope.recommended check');
+    }
+    if (check.passed) {
+      throw new Error('Expected warning when both budget scope keys are absent');
+    }
+    if (!/session_scope/.test(check.evidence.parseError) || !/context_pack_scope/.test(check.evidence.parseError)) {
+      throw new Error(`Expected warning to name both missing keys: ${check.evidence.parseError}`);
+    }
+
+    // Partial configuration must still warn because one scan remains unbounded.
+    legacyPolicy.budget_inputs.context_pack_scope = 'active_feature';
+    fs.writeFileSync(path.join(tempdir, '.ai/state/context-policy.json'), JSON.stringify(legacyPolicy), 'utf8');
+    report = runStrictChecks(tempdir);
+    check = report.results.find(r => r.id === 'memory.budgetScope.recommended');
+    if (check.passed || !/session_scope/.test(check.evidence.parseError)) {
+      throw new Error(`Expected warning when only context_pack_scope is set: ${check && check.evidence && check.evidence.parseError}`);
+    }
+
+    delete legacyPolicy.budget_inputs.context_pack_scope;
+    legacyPolicy.budget_inputs.session_scope = 'active_feature';
+    fs.writeFileSync(path.join(tempdir, '.ai/state/context-policy.json'), JSON.stringify(legacyPolicy), 'utf8');
+    report = runStrictChecks(tempdir);
+    check = report.results.find(r => r.id === 'memory.budgetScope.recommended');
+    if (check.passed || !/context_pack_scope/.test(check.evidence.parseError)) {
+      throw new Error(`Expected warning when only session_scope is set: ${check && check.evidence && check.evidence.parseError}`);
+    }
+
+    // With scoping configured, the advisory passes.
+    legacyPolicy.budget_inputs.context_pack_scope = 'active_feature';
+    fs.writeFileSync(path.join(tempdir, '.ai/state/context-policy.json'), JSON.stringify(legacyPolicy), 'utf8');
+    report = runStrictChecks(tempdir);
+    check = report.results.find(r => r.id === 'memory.budgetScope.recommended');
+    if (!check.passed) {
+      throw new Error('Expected memory.budgetScope.recommended to pass when both scope keys are set');
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+// 022: memory.sessions.archivable — warns when a compacted feature's log lingers.
+addTest('init-checks: memory.sessions.archivable warns on logs of compacted features', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+    // A compaction pack marks feature "old-feat" as already compacted ...
+    fs.writeFileSync(path.join(tempdir, '.ai/context-packs/compact-old-feat.json'), '{}', 'utf8');
+    // ... and its raw log still sits in the active sessions directory.
+    fs.writeFileSync(path.join(tempdir, '.ai/sessions/log.md'), '# Session\n\n**Feature:** old-feat\nwork', 'utf8');
+
+    let report = runStrictChecks(tempdir);
+    let check = report.results.find(r => r.id === 'memory.sessions.archivable');
+    if (!check || check.required !== false) {
+      throw new Error('Expected non-blocking memory.sessions.archivable check');
+    }
+    if (check.passed) {
+      throw new Error('Expected warning when a compacted feature log lingers in .ai/sessions/');
+    }
+    if (!/old-feat/.test(check.evidence.parseError) || !/--archive/.test(check.evidence.parseError)) {
+      throw new Error(`Expected advisory to name the feature and the archive command: ${check.evidence.parseError}`);
+    }
+
+    // Removing the lingering log clears the advisory.
+    fs.rmSync(path.join(tempdir, '.ai/sessions/log.md'));
+    report = runStrictChecks(tempdir);
+    check = report.results.find(r => r.id === 'memory.sessions.archivable');
+    if (!check.passed) {
+      throw new Error('Expected memory.sessions.archivable to pass once no compacted logs linger');
     }
   } finally {
     fs.rmSync(tempdir, { recursive: true, force: true });
@@ -1146,6 +1252,92 @@ addTest('init-checks: stale skills version stamp warns with deployed and install
     const pkgVersion = require('../../package.json').version;
     if (!warning.evidence.parseError.includes('0.0.1-stale') || !warning.evidence.parseError.includes(pkgVersion)) {
       throw new Error(`Expected warning to name both versions: ${warning.evidence.parseError}`);
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+addTest('init-checks: instructions.subagentGuidelines.current warns on legacy tool names', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+
+    // Clean workspace: the check passes (no warning).
+    const clean = runStrictChecks(tempdir);
+    const cleanResult = clean.results.find(r => r.id === 'instructions.subagentGuidelines.current');
+    if (!cleanResult || cleanResult.passed !== true) {
+      throw new Error('Expected instructions.subagentGuidelines.current to pass on a clean workspace');
+    }
+
+    // Legacy tool names in an instruction file: non-blocking warning, ok stays true.
+    fs.writeFileSync(
+      path.join(tempdir, 'CLAUDE.md'),
+      '# Project\n\n## Subagent & Parallel Execution Guidelines\n\nUse the `define_subagent` tool.\n\n## Context Budget and Subagent Orchestration Policy\n\nEstimate byte pressure.\n\n## Behavioral Core\n\nState assumptions.\n',
+      'utf8'
+    );
+    const report = runStrictChecks(tempdir);
+    if (!report.ok) {
+      throw new Error(`Expected report.ok=true (warning is non-blocking). Failures: ${JSON.stringify(report.failures)}`);
+    }
+    const warning = report.warnings.find(w => w.id === 'instructions.subagentGuidelines.current');
+    if (!warning) {
+      throw new Error('Expected instructions.subagentGuidelines.current warning on legacy content');
+    }
+    if (warning.required !== false) {
+      throw new Error('Expected required=false (non-blocking warning)');
+    }
+    if (!warning.evidence.parseError.includes('CLAUDE.md') || !warning.evidence.parseError.includes('define_subagent')) {
+      throw new Error(`Expected remediation evidence naming the file and legacy tool names: ${warning.evidence.parseError}`);
+    }
+  } finally {
+    fs.rmSync(tempdir, { recursive: true, force: true });
+  }
+});
+
+addTest('init-checks: instructions.memoryCompaction.current warns on a section missing a prescribed model', () => {
+  const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), 'adp-init-checks-'));
+  try {
+    populateGreenfield(tempdir);
+
+    // No instruction file with a Snail Trail section: the check passes (no warning).
+    const clean = runStrictChecks(tempdir);
+    const cleanResult = clean.results.find(r => r.id === 'instructions.memoryCompaction.current');
+    if (!cleanResult || cleanResult.passed !== true) {
+      throw new Error('Expected instructions.memoryCompaction.current to pass when no stale section exists');
+    }
+
+    // A Snail Trail section that prescribes no fast model is stale: non-blocking warning.
+    fs.writeFileSync(
+      path.join(tempdir, 'CLAUDE.md'),
+      '# Project\n\n## Subagent & Parallel Execution Guidelines\n\nDetect Capability First.\n\n## Context Budget and Subagent Orchestration Policy\n\nEstimate byte pressure.\n\n## Behavioral Core\n\nState assumptions.\n\n## Snail Trail — Memory Compaction at Settle\n\nCompact the session into memory at settle.\n',
+      'utf8'
+    );
+    const report = runStrictChecks(tempdir);
+    if (!report.ok) {
+      throw new Error(`Expected report.ok=true (warning is non-blocking). Failures: ${JSON.stringify(report.failures)}`);
+    }
+    const warning = report.warnings.find(w => w.id === 'instructions.memoryCompaction.current');
+    if (!warning) {
+      throw new Error('Expected instructions.memoryCompaction.current warning on a model-less section');
+    }
+    if (warning.required !== false) {
+      throw new Error('Expected required=false (non-blocking warning)');
+    }
+    if (!warning.evidence.parseError.includes('CLAUDE.md')) {
+      throw new Error(`Expected remediation evidence naming the file: ${warning.evidence.parseError}`);
+    }
+
+    // A section that names a prescribed model passes.
+    fs.writeFileSync(
+      path.join(tempdir, 'CLAUDE.md'),
+      '# Project\n\n## Snail Trail — Memory Compaction at Settle\n\nRun the compaction on `claude-haiku-4-5`.\n',
+      'utf8'
+    );
+    const ok = runStrictChecks(tempdir);
+    const okResult = ok.results.find(r => r.id === 'instructions.memoryCompaction.current');
+    if (!okResult || okResult.passed !== true) {
+      throw new Error('Expected the check to pass once a model is prescribed');
     }
   } finally {
     fs.rmSync(tempdir, { recursive: true, force: true });

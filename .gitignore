@@ -49,6 +49,7 @@ pip-delete-this-directory.txt
 *.env
 *.pem
 *.key
+.claude/settings.local.json
 
 # Serena cache and local configuration
 .serena/cache/

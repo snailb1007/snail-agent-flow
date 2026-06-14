@@ -1,6 +1,6 @@
 {
-  "feature_slug": "020-budget-pack-cli-commands",
-  "spec_path": "specs/020-budget-pack-cli-commands/",
+  "feature_slug": "022-feature-scoped-memory-and-handoff-integrity",
+  "spec_path": "specs/022-feature-scoped-memory-and-handoff-integrity/",
   "current_phase": "Recon",
   "last_gate": "Spec-Validation",
   "consecutive_failures": 0,
@@ -8,7 +8,7 @@
   "last_failed_step": null,
   "last_failed_rule": null,
   "last_validator_output": null,
-  "updated_at": "2026-06-10T17:16:56.043Z",
+  "updated_at": "2026-06-14T16:47:57.756Z",
   "last_gate_status": "PASS",
   "verified_artifacts": [],
   "blocked_reason": "none",

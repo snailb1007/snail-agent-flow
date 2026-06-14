@@ -64,24 +64,24 @@ You are integrated with RTK (Rust Token Killer). When executing or reading outpu
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **snail-agent-flow** (2641 symbols, 2977 relationships, 17 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **snail-agent-flow** (2069 symbols, 2674 relationships, 22 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+> Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
 ## Always Do
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+- When exploring unfamiliar code, use `query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
 
 ## Never Do
 
-- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER edit a function, class, or method without first running `impact` on it.
 - NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
-- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+- NEVER rename symbols with find-and-replace — use `rename` which understands the call graph.
+- NEVER commit changes without running `detect_changes()` to check affected scope.
 
 ## Resources
 
@@ -107,11 +107,14 @@ This project is indexed by GitNexus as **snail-agent-flow** (2641 symbols, 2977 
 
 ## Subagent & Parallel Execution Guidelines
 
-1. **Detect Independent Tasks:** Before starting execution, review the task list (e.g., `tasks.md`) to identify independent, non-sequential tasks.
-2. **Define Specialized Subagents:** For each independent task or sub-project, define a specialized subagent using the `define_subagent` tool.
-3. **Spawn in Parallel:** Invoke the defined subagents in parallel using the `invoke_subagent` tool to execute tasks concurrently.
-4. **Limit Context Size:** Do not pass large session logs or redundant context files to subagents. Keep their context focused and lightweight.
-5. **Coordinate & Wait:** Wait for all parallel subagents to complete before advancing to downstream tasks that depend on their outputs.
+1. **Detect Capability First:** Before planning parallel work, check whether your runtime exposes a tool for delegating work to subagents (for example Claude Code's `Agent`/Task tool or an equivalent parallel-task facility). If no such tool exists, do not simulate spawning: execute independent tasks sequentially in dependency-safe order, and use background execution only for long-running verification commands.
+2. **Detect Independent Tasks:** Review the task list (e.g., `tasks.md`) and group tasks into waves; tasks in the same wave must share no files and no data dependencies.
+3. **Spawn in Parallel (capable runtimes only):** Launch one subagent per independent task in the current wave. Each subagent prompt must be self-contained: goal, owned file list, and the verify command.
+4. **Limit Context Size:** Pass each subagent only the files it owns plus the relevant spec section. Never pass session logs, the ledger, or other agents' outputs.
+5. **Coordinate & Wait:** Wait for every subagent in a wave to finish and verify its results before starting the next wave or any dependent task.
+6. **Protect Shared State:** Subagents write only to their assigned files. Only the orchestrating agent updates `.ai/state/*` and the ledger.
+
+> Runtime note: This file is read by Codex and other AGENTS.md-compatible tools. Most of them expose no subagent tool — when none is available, always use the sequential fallback from rule 1.
 
 ## Context Budget and Subagent Orchestration Policy
 
@@ -150,3 +153,22 @@ Tool rules:
 
 Skills are internal execution modules selected by the router, not user commands.
 <!-- snailb-skills:end -->
+
+## Behavioral Core
+
+1. **State Assumptions:** Before implementation, name any assumptions that affect scope, behavior, data, or verification.
+2. **Prefer Simplicity:** Choose the smallest sufficient implementation path and avoid speculative abstractions.
+3. **Respect Boundaries:** Touch only files and symbols that are in scope for the accepted task, claim, or plan.
+4. **Define Verification:** Know the command, test, or observable check that proves completion before claiming success.
+
+## Snail Trail — Memory Compaction at Settle
+
+At settle / session close, compact the session into durable memory — but do NOT do it inline in the main session, and do NOT pick the model yourself.
+
+1. **Prep (deterministic):** Run `saf compact-memory`. It assembles a compaction input pack (the session logs, review notes, and current `.ai/memory/*`), scaffolds `.ai/state/handoff.md` from the template, and prints the prescribed fast model plus a subagent prompt skeleton. No LLM runs here.
+2. **Prescribed model (not your choice):** Run the compaction on your runtime's mini tier (e.g. `gpt-5.4-mini`). If no subagent tool exists, run the compaction in a fresh cheap-model session — never inline in the main session.
+3. **Delegate:** Spawn a subagent on that model and have it run the `/handoff` skill. If your runtime has no skill system, the subagent follows the handoff protocol directly (read `.ai/sessions/` + `.ai/reviews/<feature>/`; promote only durable, verified facts).
+4. **Subagent writes only:** `.ai/memory/project-summary.md`, `.ai/memory/current-architecture.md`, `.ai/memory/known-risks.md`, `.ai/memory/decisions.md`, `.ai/memory/verification-history.md`, `.ai/memory/patterns.md`, `.ai/memory/gotchas.md`, and the handoff report `.ai/state/handoff.md` (with headers `## Promoted to project memory`, `## Architecture updated`, `## Verification promoted`). It must not touch other `.ai/state/*` ledger files.
+5. **Verify:** As the main agent, run `saf handoff` to gate the result. Do not close the session until it exits 0.
+
+> Runtime note: This file is read by Codex and other AGENTS.md-compatible tools. Most of them expose no subagent tool — when none is available, always use the sequential fallback from rule 1.

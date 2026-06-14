@@ -484,6 +484,90 @@ console.log('--- validateHandoffArtifact ---');
 }
 
 // ============================================================
+// estimateBudget feature-scoping tests (022)
+// ============================================================
+
+console.log('--- estimateBudget feature-scoping ---');
+
+const {
+  readSessionFeature,
+  sessionMatchesFeature
+} = require('../../lib/context-budget');
+
+{
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'context-budget-scope-'));
+  const sessionsDir = path.join(tempDir, '.ai/sessions');
+  const archiveDir = path.join(sessionsDir, 'archive', 'feat-active');
+  const packsDir = path.join(tempDir, '.ai/context-packs');
+  const stateDir = path.join(tempDir, '.ai/state');
+  fs.mkdirSync(archiveDir, { recursive: true });
+  fs.mkdirSync(packsDir, { recursive: true });
+  fs.mkdirSync(stateDir, { recursive: true });
+
+  // Session logs: one for the active feature, one for another, one unmarked.
+  fs.writeFileSync(path.join(sessionsDir, 'a.md'), '# Session: a\n\n**Feature:** feat-active\nnotes', 'utf8');
+  fs.writeFileSync(path.join(sessionsDir, 'b.md'), '# Session: b\n\n**Feature:** feat-other\nnotes', 'utf8');
+  fs.writeFileSync(path.join(sessionsDir, 'c.md'), '# Session: c\n\nno marker here', 'utf8');
+  // A log already archived for the active feature — must never be counted.
+  fs.writeFileSync(path.join(archiveDir, 'old.md'), '# Session: old\n\n**Feature:** feat-active\n', 'utf8');
+
+  // Packs: one named for the active feature, one generic.
+  fs.writeFileSync(path.join(packsDir, 'compact-feat-active.json'), '{}', 'utf8');
+  fs.writeFileSync(path.join(packsDir, 'pack-other.json'), '{}', 'utf8');
+
+  const basePolicy = {
+    schema_version: '1.1.0',
+    inline_threshold_bytes: 50000,
+    pack_threshold_bytes: 200000,
+    max_parallelism: 3,
+    stage_overrides: {},
+    budget_inputs: {
+      include_required_artifacts: false,
+      include_session_logs: true,
+      include_planning_artifacts: false,
+      include_context_packs: true,
+      include_handoff_files: false,
+      session_scope: 'active_feature',
+      context_pack_scope: 'active_feature'
+    }
+  };
+  const policyPath = path.join(stateDir, 'context-policy.json');
+  const flowStage = { id: 's', required_artifacts: [] };
+
+  // readSessionFeature / sessionMatchesFeature unit behavior
+  assert(readSessionFeature(path.join(sessionsDir, 'a.md')) === 'feat-active', 'readSessionFeature: reads marker slug');
+  assert(readSessionFeature(path.join(sessionsDir, 'c.md')) === null, 'readSessionFeature: null when no marker');
+  assert(sessionMatchesFeature(path.join(sessionsDir, 'a.md'), 'feat-active') === true, 'sessionMatchesFeature: matches active');
+  assert(sessionMatchesFeature(path.join(sessionsDir, 'b.md'), 'feat-active') === false, 'sessionMatchesFeature: excludes other feature');
+
+  // Scoped: only a.md + compact-feat-active.json
+  fs.writeFileSync(policyPath, JSON.stringify(basePolicy), 'utf8');
+  const scoped = estimateBudget(flowStage, tempDir, { feature_slug: 'feat-active' });
+  const scopedPaths = scoped.inputs.map(i => i.path);
+  assert(scopedPaths.includes(path.join('.ai/sessions', 'a.md')), 'scoped: includes active-feature session');
+  assert(!scopedPaths.includes(path.join('.ai/sessions', 'b.md')), 'scoped: excludes other-feature session');
+  assert(!scopedPaths.includes(path.join('.ai/sessions', 'c.md')), 'scoped: excludes unmarked session');
+  assert(scopedPaths.includes(path.join('.ai/context-packs', 'compact-feat-active.json')), 'scoped: includes matching pack');
+  assert(!scopedPaths.includes(path.join('.ai/context-packs', 'pack-other.json')), 'scoped: excludes non-matching pack');
+  assert(!scopedPaths.some(p => p.includes('archive')), 'scoped: never counts archived logs');
+
+  // Unscoped ('all'): all top-level sessions + both packs, archive still skipped.
+  const allPolicy = JSON.parse(JSON.stringify(basePolicy));
+  allPolicy.budget_inputs.session_scope = 'all';
+  allPolicy.budget_inputs.context_pack_scope = 'all';
+  fs.writeFileSync(policyPath, JSON.stringify(allPolicy), 'utf8');
+  const all = estimateBudget(flowStage, tempDir, { feature_slug: 'feat-active' });
+  const allPaths = all.inputs.map(i => i.path);
+  assert(allPaths.includes(path.join('.ai/sessions', 'a.md'))
+    && allPaths.includes(path.join('.ai/sessions', 'b.md'))
+    && allPaths.includes(path.join('.ai/sessions', 'c.md')), 'all: counts every top-level session');
+  assert(allPaths.length === 5, `all: 3 sessions + 2 packs = 5 inputs, got ${allPaths.length}`);
+  assert(!allPaths.some(p => p.includes('archive')), 'all: archive subdir still skipped (shallow walk)');
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+}
+
+// ============================================================
 // Summary
 // ============================================================
 
