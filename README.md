@@ -161,16 +161,22 @@ Commands:
   handoff               Validate memory handoff checklist completeness.
   score <task.json>     Score task risk and output profile selection.
   claim <task-slug>     Claim work unit ownership.
-  lease <file>          Acquire advisory file lease lock.
+  lease <file>          Acquire advisory file lease lock. Options: --release, --check.
   checkpoint            Write profile-switch checkpoint.
   signal <type> <val>   Log observability signal.
   onboard-memory        Promote ONBOARDING.md content into .ai/memory/ files.
   budget                Report estimated context byte pressure and policy outcome.
-                        Options: --stage <id>, --json, --enforce (exit 1 unless inline).
+                        Options: --stage <id>, --json, --enforce (exit 1 unless inline), --profile.
   pack                  Generate a context pack manifest under .ai/context-packs/.
                         Options: --objective <text>, --stage <id>, --out <path>.
   compact-memory        Prep snail-trail memory compaction without calling an LLM.
                         Options: --archive, --focus <text>.
+  snapshot              Create a git-based stash checkpoint for the active feature.
+                        Options: --label <text>, --list.
+  restore <id>          Restore a git-based checkpoint. Options: --hard, --yes.
+  profile -- <cmd...>   Run a command, profiling its execution time and output size.
+  hooks <install|uninstall|status> Manage Claude Code lifecycle hooks. Options: --apply, --events <list>.
+  bypass <gate-id>      Temporarily bypass a secondary gate. Options: --ttl <seconds>, --reason <text>, --list, --clear.
 ```
 
 `budget` is report-only by default; gating is opt-in via `--enforce`

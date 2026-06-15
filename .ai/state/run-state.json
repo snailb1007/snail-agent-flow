@@ -1,6 +1,6 @@
 {
-  "feature_slug": "022-feature-scoped-memory-and-handoff-integrity",
-  "spec_path": "specs/022-feature-scoped-memory-and-handoff-integrity/",
+  "feature_slug": "026-session-based-bypass-secondary",
+  "spec_path": "specs/026-session-based-bypass-secondary/",
   "current_phase": "Recon",
   "last_gate": "Spec-Validation",
   "consecutive_failures": 0,
@@ -8,7 +8,7 @@
   "last_failed_step": null,
   "last_failed_rule": null,
   "last_validator_output": null,
-  "updated_at": "2026-06-14T16:47:57.756Z",
+  "updated_at": "2026-06-15T15:25:29.071Z",
   "last_gate_status": "PASS",
   "verified_artifacts": [],
   "blocked_reason": "none",

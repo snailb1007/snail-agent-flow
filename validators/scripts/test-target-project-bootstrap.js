@@ -8,6 +8,14 @@ const repoRoot = path.resolve(__dirname, '../..');
 // so `npm pack` cannot pick it up and concurrent test runs cannot pollute the tarball.
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'saf-bootstrap-'));
 
+function npmCommand(args) {
+  if (process.platform !== 'win32') {
+    return { command: 'npm', args };
+  }
+  const npmCli = path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+  return { command: process.execPath, args: [npmCli, ...args] };
+}
+
 function rmSyncWithRetry(dirPath, maxRetries = 10, delayMs = 50) {
   let retries = 0;
   while (true) {
@@ -35,8 +43,8 @@ function rmSyncWithRetry(dirPath, maxRetries = 10, delayMs = 50) {
 
 // 1. Pack the package
 console.log('[test-bootstrap] Running npm pack...');
-const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packResult = spawnSync(npmCmd, ['pack', '--json'], { cwd: repoRoot, encoding: 'utf8', shell: process.platform === 'win32' });
+const packCommand = npmCommand(['pack', '--json']);
+const packResult = spawnSync(packCommand.command, packCommand.args, { cwd: repoRoot, encoding: 'utf8', shell: false });
 if (packResult.status !== 0) {
   console.error(packResult.stderr || packResult.stdout);
   process.exit(1);
@@ -60,10 +68,11 @@ try {
 
   // Install packed package
   console.log('[test-bootstrap] Installing tarball in sandbox...');
-  const installResult = spawnSync(npmCmd, ['install', tarballPath], {
+  const installCommand = npmCommand(['install', tarballPath]);
+  const installResult = spawnSync(installCommand.command, installCommand.args, {
     cwd: tempRoot,
     encoding: 'utf8',
-    shell: process.platform === 'win32'
+    shell: false
   });
   if (installResult.status !== 0) {
     throw new Error(`Failed to install packed package: ${installResult.stderr || installResult.stdout}`);

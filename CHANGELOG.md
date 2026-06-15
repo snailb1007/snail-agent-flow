@@ -5,6 +5,12 @@ All notable changes to this project are documented here.
 ## [Unreleased]
 
 ### Added
+- Added `saf hooks` management commands (`install`, `uninstall`, `status`) to manage lifecycle hooks in `.claude/settings.json`, and Node-based cross-platform lifecycle hook scripts (`saf-session-start.cjs`, `saf-pre-write.cjs`, `saf-stop.cjs`).
+- Added read-only `saf lease --check` flag to inspect if a file is leased without mutating state, returning exit code 3 if leased by another active owner.
+- Added git-based `saf snapshot` and `saf restore` checkpoints for Stage A (Act) non-destructive stashes and hard rollbacks.
+- Added `saf profile -- <cmd...>` execution profiler measuring time, stdout/stderr byte size, and exit code.
+- Added `saf budget --profile` flag to display execution performance statistics (p50/p95 latency and output size) from `profile.jsonl`.
+- Added `saf bypass` command to temporarily bypass secondary gates (diff-hygiene, budget limits, lease checks) with TTL and audit logging.
 - Added feature-scoped context budgeting (`022`): `estimateBudget` and `saf compact-memory` can scope `.ai/sessions/` and `.ai/context-packs/` to the active feature (via the `**Feature:**` marker that `new-session` writes, and `compact-<slug>.json` pack names) instead of summing every historical feature. Controlled by new optional `budget_inputs.session_scope` / `budget_inputs.context_pack_scope` keys (`"all"` | `"active_feature"`); fresh `saf init` opts new projects into `"active_feature"`, existing policy files keep `"all"` until set.
 - Added handoff integrity verification (`022`): `saf handoff` now rejects an unedited compaction scaffold (the seed marker means it was never authored — always on), and a new opt-in `--strict` mode (or `handoff.strict` policy key) additionally requires authored section bodies and a cross-reference to a real, non-empty `.ai/memory/*` file. Checks remain deterministic and offline.
 - Added typed memory files (`022`): `saf init` now seeds `.ai/memory/patterns.md` and `.ai/memory/gotchas.md` (non-overwriting) alongside the existing five files, which keep their format.
@@ -21,6 +27,9 @@ All notable changes to this project are documented here.
 - Documented the packaged ATLAS bootstrap path and added a release verification checklist to `docs/installation.md`.
 
 ### Upgrade notes
+- Hooks are strictly opt-in and are installed only by running `saf hooks install --apply`.
+- Checkpoint snapshot and restore are git-stash-based and do not affect the working tree unless `--hard` and `--yes` are specified.
+- The `bypass` command is opt-in and secondary gates (like `diff-hygiene`, `budget --enforce`, and `lease --check`) only honor active bypass entries during their TTL.
 - Feature-scoped budgeting (`022`) is opt-in for existing projects: policy files without `budget_inputs.session_scope` keep today's `"all"` behavior byte-for-byte. A non-blocking `memory.budgetScope.recommended` doctor warning suggests the switch; the estimate only ever shrinks, so no gate tightens. Fresh `saf init` writes `"active_feature"` for new projects.
 - `saf handoff` now rejects an unedited compaction scaffold (the seed marker indicates it was never authored). This is a bugfix to a false-positive — author `.ai/state/handoff.md` (fill the three sections, remove the seed comment) before the gate passes. The stricter section/cross-reference checks remain opt-in behind `--strict` / `handoff.strict`. Exit codes are unchanged (`0` pass, `1` fail).
 - Typed memory files (`patterns.md`, `gotchas.md`) appear on the next `saf init`; the existing five memory files are untouched. Session-log archival is opt-in (`--archive` / `memory.archive_on_compact`) and only moves logs, never deletes them.

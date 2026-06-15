@@ -422,8 +422,9 @@ addTest('Pipeline Script Missing Command Usage', () => {
 
   if (
     process.platform === 'win32' &&
-    res.status === 127 &&
-    (res.stderr || '').includes('No such file or directory')
+    ((res.status === 127 && (res.stderr || '').includes('No such file or directory')) ||
+     (res.stderr || '').includes('WSL') ||
+     (res.stderr || '').includes('execvpe'))
   ) {
     console.log('Skipping bash usage assertion: WSL bash could not resolve the Windows script path.');
     return;

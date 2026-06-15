@@ -24,7 +24,7 @@ Commands:
   handoff               Validate memory handoff checklist completeness.
   score <task.json>     Score task risk and output profile selection.
   claim <task-slug>     Claim work unit ownership.
-  lease <file>          Acquire advisory file lease lock.
+  lease <file>          Acquire advisory file lease lock. Options: --release, --check.
   checkpoint            Write profile-switch checkpoint.
   signal <type> <val>   Log observability signal.
   onboard-memory          Promote ONBOARDING.md content into .ai/memory/ files.
@@ -36,6 +36,12 @@ Commands:
                         compaction input pack, scaffold .ai/state/handoff.md, and print the
                         prescribed fast model + subagent spawn skeleton. Does not call an LLM.
                         Options: --archive, --focus <text>.
+  snapshot              Create a git-based stash checkpoint for the active feature.
+                        Options: --label <text>, --list.
+  restore <id>          Restore a git-based checkpoint. Options: --hard, --yes.
+  profile -- <cmd...>   Run a command, profiling its execution time and output size.
+  hooks <install|uninstall|status> Manage Claude Code lifecycle hooks. Options: --apply, --events <list>.
+  bypass <gate-id>      Temporarily bypass a secondary gate. Options: --ttl <seconds>, --reason <text>, --list, --clear.
 `;
 
 // Target project directory: env override or caller's working directory
@@ -157,6 +163,21 @@ function runCli() {
       break;
     case 'compact-memory':
       handleCompactMemory(args.slice(1));
+      break;
+    case 'snapshot':
+      handleSnapshotCmd(args.slice(1));
+      break;
+    case 'restore':
+      handleRestoreCmd(args.slice(1));
+      break;
+    case 'profile':
+      handleProfileCmd(args.slice(1));
+      break;
+    case 'hooks':
+      handleHooksCmd(args.slice(1));
+      break;
+    case 'bypass':
+      handleBypassCmd(args.slice(1));
       break;
     default:
       console.error(`Error: Unknown command "${command}"`);
@@ -1817,6 +1838,7 @@ function handleLease(cmdArgs) {
 
   // parse options
   let release = false;
+  let check = false;
   let file = null;
   let owner = process.env.USER || process.env.USERNAME || 'agent';
   let purpose = null;
@@ -1826,6 +1848,8 @@ function handleLease(cmdArgs) {
     const arg = cmdArgs[i];
     if (arg === '--release') {
       release = true;
+    } else if (arg === '--check') {
+      check = true;
     } else if (arg === '--owner') {
       owner = cmdArgs[++i];
     } else if (arg === '--purpose') {
@@ -1849,6 +1873,22 @@ function handleLease(cmdArgs) {
   const absFile = path.resolve(repoRoot, file);
 
   try {
+    if (check) {
+      const info = leaseManager.inspect(absFile);
+      if (!info.held || info.owner === owner) {
+        process.exit(0);
+      } else {
+        const { checkBypass } = require('../lib/session-bypass');
+        const bypassInfo = checkBypass(repoRoot, 'lease');
+        if (bypassInfo.bypassed) {
+          console.warn(`WARNING: lease: BYPASSED (reason: ${bypassInfo.reason}, expires at: ${bypassInfo.expires_at})`);
+          process.exit(0);
+        }
+        console.log(`[lease] File is currently leased by owner: ${info.owner} (pid: ${info.pid}, purpose: ${info.purpose})`);
+        process.exit(3);
+      }
+    }
+
     if (release) {
       const released = leaseManager.release(absFile, owner);
       if (released) {
@@ -2042,10 +2082,52 @@ function readFeatureVariables() {
   return variables;
 }
 
+function percentile(arr, p) {
+  if (arr.length === 0) return 0;
+  const sorted = arr.slice().sort((a, b) => a - b);
+  const index = Math.ceil((p / 100) * sorted.length) - 1;
+  return sorted[index];
+}
+
+function getProfileStats(root) {
+  const logPath = path.join(root, '.ai/signals/profile.jsonl');
+  if (!fs.existsSync(logPath)) {
+    return null;
+  }
+  try {
+    const lines = fs.readFileSync(logPath, 'utf8').trim().split('\n');
+    const durations = [];
+    const outputSizes = [];
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const data = JSON.parse(line);
+        if (typeof data.duration_ms === 'number') {
+          durations.push(data.duration_ms);
+        }
+        if (typeof data.stdout_bytes === 'number' && typeof data.stderr_bytes === 'number') {
+          outputSizes.push(data.stdout_bytes + data.stderr_bytes);
+        }
+      } catch (e) {}
+    }
+    if (durations.length === 0) {
+      return null;
+    }
+    return {
+      count: durations.length,
+      duration: { p50: percentile(durations, 50), p95: percentile(durations, 95) },
+      output_size: { p50: percentile(outputSizes, 50), p95: percentile(outputSizes, 95) }
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
 function handleBudget(cmdArgs) {
   let stageFlag = null;
   let asJson = false;
   let enforce = false;
+  let profileFlag = false;
 
   for (let i = 0; i < cmdArgs.length; i++) {
     const arg = cmdArgs[i];
@@ -2059,6 +2141,8 @@ function handleBudget(cmdArgs) {
       asJson = true;
     } else if (arg === '--enforce') {
       enforce = true;
+    } else if (arg === '--profile') {
+      profileFlag = true;
     } else {
       console.error(`Error: Unknown flag/argument "${arg}"`);
       process.exit(1);
@@ -2080,7 +2164,7 @@ function handleBudget(cmdArgs) {
   const outcome = computeOutcome(totalBytes, flowStage.id, policyConfig);
 
   if (asJson) {
-    console.log(JSON.stringify({
+    const jsonOutput = {
       stage_id: stageId,
       stage_source: stageSource,
       stage_in_flow_definition: fromDefinition,
@@ -2091,7 +2175,11 @@ function handleBudget(cmdArgs) {
       },
       inputs,
       outcome
-    }, null, 2));
+    };
+    if (profileFlag) {
+      jsonOutput.performance_profile = getProfileStats(repoRoot);
+    }
+    console.log(JSON.stringify(jsonOutput, null, 2));
   } else {
     console.log(`[budget] Stage: ${stageId} (${stageSource})`);
     if (!fromDefinition) {
@@ -2114,9 +2202,30 @@ function handleBudget(cmdArgs) {
     } else {
       console.log('[budget] Action: write a handoff (.ai/state/context-handoff.json) and resume in a fresh session.');
     }
+
+    if (profileFlag) {
+      const stats = getProfileStats(repoRoot);
+      if (stats) {
+        console.log('\n--- Execution Performance Profile (recent commands) ---');
+        console.log(`Command count:  ${stats.count}`);
+        console.log(`Latency p50:    ${stats.duration.p50} ms`);
+        console.log(`Latency p95:    ${stats.duration.p95} ms`);
+        console.log(`Output size p50: ${stats.output_size.p50} bytes`);
+        console.log(`Output size p95: ${stats.output_size.p95} bytes`);
+        console.log('-------------------------------------------------------');
+      } else {
+        console.log('\n[budget] No execution performance profile data available.');
+      }
+    }
   }
 
   if (enforce && outcome !== 'inline') {
+    const { checkBypass } = require('../lib/session-bypass');
+    const bypassInfo = checkBypass(repoRoot, 'budget');
+    if (bypassInfo.bypassed) {
+      console.warn(`WARNING: budget: BYPASSED (reason: ${bypassInfo.reason}, expires at: ${bypassInfo.expires_at})`);
+      process.exit(0);
+    }
     process.exit(1);
   }
   process.exit(0);
@@ -2480,6 +2589,98 @@ function handleCompactMemory(cmdArgs) {
   console.log('');
   console.log('[compact-memory] After the subagent finishes, verify with: node bin/adp.js handoff');
   process.exit(0);
+}
+
+function handleSnapshotCmd(cmdArgs) {
+  const { handleSnapshot } = require('../lib/act-snapshot');
+  handleSnapshot(repoRoot, cmdArgs);
+}
+
+function handleRestoreCmd(cmdArgs) {
+  const { handleRestore } = require('../lib/act-snapshot');
+  handleRestore(repoRoot, cmdArgs);
+}
+
+function handleProfileCmd(cmdArgs) {
+  let actualArgs = cmdArgs;
+  if (cmdArgs[0] === '--') {
+    actualArgs = cmdArgs.slice(1);
+  }
+  const { profileCommand } = require('../lib/cmd-profiler');
+  profileCommand(repoRoot, actualArgs).then((code) => {
+    process.exit(code);
+  });
+}
+
+function handleHooksCmd(cmdArgs) {
+  const { installHooks, uninstallHooks, statusHooks } = require('../lib/hooks-installer');
+  const action = cmdArgs[0];
+  if (!action || !['install', 'uninstall', 'status'].includes(action)) {
+    console.error('Usage: adp hooks <install|uninstall|status> [options]');
+    process.exit(1);
+  }
+
+  if (action === 'install') {
+    let apply = false;
+    let events = ['SessionStart', 'Stop', 'PreToolUse'];
+    for (let i = 1; i < cmdArgs.length; i++) {
+      const arg = cmdArgs[i];
+      if (arg === '--apply') {
+        apply = true;
+      } else if (arg === '--events') {
+        events = cmdArgs[++i].split(',');
+      }
+    }
+    installHooks(repoRoot, { apply, events });
+  } else if (action === 'uninstall') {
+    uninstallHooks(repoRoot);
+  } else if (action === 'status') {
+    statusHooks(repoRoot);
+  }
+}
+
+function handleBypassCmd(cmdArgs) {
+  const { addBypass, listBypasses, clearBypasses } = require('../lib/session-bypass');
+  let list = false;
+  let clear = false;
+  let gateId = null;
+  let ttl = 3600;
+  let reason = '';
+
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const arg = cmdArgs[i];
+    if (arg === '--list') {
+      list = true;
+    } else if (arg === '--clear') {
+      clear = true;
+    } else if (arg === '--ttl') {
+      ttl = parseInt(cmdArgs[++i], 10);
+    } else if (arg === '--reason') {
+      reason = cmdArgs[++i];
+    } else if (arg.startsWith('--')) {
+      console.error(`Error: Unknown flag "${arg}"`);
+      process.exit(1);
+    } else {
+      gateId = arg;
+    }
+  }
+
+  if (list) {
+    listBypasses(repoRoot);
+    process.exit(0);
+  }
+
+  if (clear) {
+    clearBypasses(repoRoot);
+    process.exit(0);
+  }
+
+  if (!gateId) {
+    console.error('Error: Missing gate-id. Usage: adp bypass <gate-id> [--ttl <seconds>] [--reason <text>]');
+    process.exit(1);
+  }
+
+  addBypass(repoRoot, gateId, ttl, reason);
 }
 
 module.exports = {
