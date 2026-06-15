@@ -32,12 +32,73 @@ Commands:
                         Options: --stage <id>, --json, --enforce (exit 1 unless inline).
   pack                  Generate a context pack manifest under .ai/context-packs/.
                         Options: --objective <text>, --stage <id>, --out <path>.
+  compact-memory          Prep the "Vệt ốc sên" snail-trail memory compaction: build the
+                        compaction input pack, scaffold .ai/state/handoff.md, and print the
+                        prescribed fast model + subagent spawn skeleton. Does not call an LLM.
+                        Options: --archive, --focus <text>.
 `;
 
 // Target project directory: env override or caller's working directory
 const repoRoot = process.env.PROJECT_ROOT || process.env.REPO_ROOT || process.cwd();
 // Package install directory: for resolving bundled validators, templates, scripts
 const packageRoot = path.resolve(__dirname, '..');
+
+// --- SAF-owned instruction-guideline content ---------------------------------
+// These module-level constants are declared here (above the `require.main` entry point)
+// so they are initialized before handleInit() runs during module load; the guideline
+// writers below close over them. Per-runtime hints: file-name routing already selects the
+// audience (Claude Code reads CLAUDE.md, Codex/AGENTS.md-compatible tools read AGENTS.md,
+// Gemini-based tools such as Antigravity read GEMINI.md), so no runtime detection is needed.
+const SUBAGENT_RUNTIME_NOTES = {
+  'CLAUDE.md': 'This file is read by Claude Code. The subagent tool here is `Agent` (also called Task); issue multiple Agent calls in a single message to run subagents concurrently.',
+  'AGENTS.md': 'This file is read by Codex and other AGENTS.md-compatible tools. Most of them expose no subagent tool — when none is available, always use the sequential fallback from rule 1.',
+  'GEMINI.md': 'This file is read by Gemini-based tools (e.g. Antigravity). If your environment supports parallel agents or subagents, apply rules 2-6; otherwise use the sequential fallback from rule 1.'
+};
+
+const SUBAGENT_RUNTIME_NOTE_NEUTRAL = 'This file may be read by any runtime (Claude Code, Codex, Antigravity, ...). Resolve the actual subagent tool from your own tool list per rule 1.';
+
+// Prescribed fast/cheap model per runtime for the "Vệt ốc sên" (snail-trail) memory
+// compaction at settle. The model is DATA, not a main-agent decision: each instruction
+// file names the tier its runtime should spawn the compaction subagent on. This keeps the
+// expensive main session from doing distillation inline and removes ad-hoc model choice.
+const FAST_MODEL_BY_RUNTIME = {
+  'CLAUDE.md': '`claude-haiku-4-5` for routine sessions; `claude-sonnet-4-6` only for large or complex distillation. Spawn via the `Agent`/Task tool with a model override.',
+  'AGENTS.md': "your runtime's mini tier (e.g. `gpt-5.4-mini`). If no subagent tool exists, run the compaction in a fresh cheap-model session — never inline in the main session.",
+  'GEMINI.md': 'a Flash-tier model (e.g. Gemini Flash). Use a parallel agent if your environment has one; otherwise a fresh Flash session.'
+};
+
+const FAST_MODEL_NEUTRAL = "your runtime's fastest/cheapest model tier. Resolve the spawn mechanism from your own tool list; do NOT use the main session's model and do NOT decide the tier ad hoc.";
+
+const MEMORY_HANDOFF_OUTPUT_FILES = [
+  '.ai/memory/project-summary.md',
+  '.ai/memory/current-architecture.md',
+  '.ai/memory/known-risks.md',
+  '.ai/memory/decisions.md',
+  '.ai/memory/verification-history.md',
+  '.ai/memory/patterns.md',
+  '.ai/memory/gotchas.md'
+];
+
+const CONTEXT_POLICY_GUIDELINES_BODY = `## Context Budget and Subagent Orchestration Policy
+
+1. **Estimate Byte Pressure:** Before starting any flow stage, estimate the byte pressure locally to decide the execution path (inline, context pack, or fresh session).
+2. **Configure Thresholds:** Set conservative size thresholds (e.g. 50KB inline, 200KB context pack) in \`.ai/state/context-policy.json\` to prevent context bloat.
+3. **Generate Context Packs:** When context packs are required, generate a structured pack containing only essential files and omit all others.
+4. **Use Fresh Sessions:** When byte pressure exceeds limits, write a handoff artifact (\`.ai/state/context-handoff.json\`) and resume from a clean session.
+5. **Protect Ledger State:** Parallel subagents must run in isolated workspaces with disjoint write targets and must never modify the central ledger.`;
+
+const BEHAVIORAL_CORE_GUIDELINES_BODY = `## Behavioral Core
+
+1. **State Assumptions:** Before implementation, name any assumptions that affect scope, behavior, data, or verification.
+2. **Prefer Simplicity:** Choose the smallest sufficient implementation path and avoid speculative abstractions.
+3. **Respect Boundaries:** Touch only files and symbols that are in scope for the accepted task, claim, or plan.
+4. **Define Verification:** Know the command, test, or observable check that proves completion before claiming success.`;
+
+const ATLAS_LOOP_GUIDELINES_BODY = `## Autonomous ATLAS Loop
+
+When asked to run the ATLAS auto loop, use the local \`atlas-auto-loop\` skill.
+Read \`.ai/state/flow-state.json\`, resolve \`.ai/flows/atlas-flow.yaml\`, and follow the skill instructions.
+Do not read or create \`.ai/state/flow-ledger.json\`.`;
 
 function runCli() {
   if (!command || command === '--help' || command === '-h') {
@@ -68,7 +129,7 @@ function runCli() {
       handleValidateSpec();
       break;
     case 'handoff':
-      handleHandoff();
+      handleHandoff(args.slice(1));
       break;
     case 'score':
       handleScore(args.slice(1));
@@ -93,6 +154,9 @@ function runCli() {
       break;
     case 'pack':
       handlePack(args.slice(1));
+      break;
+    case 'compact-memory':
+      handleCompactMemory(args.slice(1));
       break;
     default:
       console.error(`Error: Unknown command "${command}"`);
@@ -289,6 +353,7 @@ function handleInit() {
   appendSubagentGuidelines(repoRoot, guidelineOpts);
   appendContextPolicyGuidelines(repoRoot, guidelineOpts);
   appendBehavioralCoreGuidelines(repoRoot, guidelineOpts);
+  appendMemoryCompactionGuidelines(repoRoot, guidelineOpts);
 
   const skippedInstructionFiles = instructionFiles.filter((f) => preExisting[f]);
   if (skippedInstructionFiles.length > 0) {
@@ -301,7 +366,7 @@ function handleInit() {
   const policyPath = path.join(repoRoot, '.ai/state/context-policy.json');
   if (!fs.existsSync(policyPath)) {
     const defaultPolicy = {
-      schema_version: "1.0.0",
+      schema_version: "1.1.0",
       inline_threshold_bytes: 50000,
       pack_threshold_bytes: 200000,
       max_parallelism: 3,
@@ -311,7 +376,19 @@ function handleInit() {
         include_session_logs: true,
         include_planning_artifacts: true,
         include_context_packs: true,
-        include_handoff_files: true
+        include_handoff_files: true,
+        // Fresh projects opt into feature-scoped budgeting (022). Existing
+        // policy files without these keys keep legacy 'all' behavior; doctor
+        // recommends the switch. The estimate only ever shrinks, so no gate
+        // tightens (matrix row P1/017).
+        session_scope: "active_feature",
+        context_pack_scope: "active_feature"
+      },
+      handoff: {
+        strict: false
+      },
+      memory: {
+        archive_on_compact: false
       }
     };
     fs.writeFileSync(policyPath, JSON.stringify(defaultPolicy, null, 2) + '\n', 'utf8');
@@ -331,7 +408,11 @@ function seedMemoryFiles(root) {
     { target: '.ai/memory/current-architecture.md', template: 'memory-current-architecture-template.md' },
     { target: '.ai/memory/known-risks.md', template: 'memory-known-risks-template.md' },
     { target: '.ai/memory/decisions.md', template: 'memory-decisions-template.md' },
-    { target: '.ai/memory/verification-history.md', template: 'memory-verification-history-template.md' }
+    { target: '.ai/memory/verification-history.md', template: 'memory-verification-history-template.md' },
+    // Typed memory files (022 / matrix "typed memory" row). New files only;
+    // the five files above keep their format. Non-overwriting like the rest.
+    { target: '.ai/memory/patterns.md', template: 'memory-patterns-template.md' },
+    { target: '.ai/memory/gotchas.md', template: 'memory-gotchas-template.md' }
   ];
 
   for (const { target, template } of memoryFiles) {
@@ -1092,7 +1173,20 @@ function runAndReport(repoRoot, source) {
   }
 }
 
-function handleHandoff() {
+function handleHandoff(cmdArgs) {
+  cmdArgs = cmdArgs || [];
+  let strict = cmdArgs.includes('--strict');
+  // Policy can also enable strict mode (handoff.strict: true). Absent === false.
+  try {
+    const { loadPolicyConfig } = require('../lib/context-budget');
+    const policy = loadPolicyConfig(repoRoot);
+    if (policy && policy.handoff && policy.handoff.strict === true) {
+      strict = true;
+    }
+  } catch (e) {
+    // Unreadable policy: strict stays off unless --strict was passed.
+  }
+
   let activeFeature = '';
   const specifyFeaturePath = path.join(repoRoot, '.specify/feature.json');
   if (fs.existsSync(specifyFeaturePath)) {
@@ -1150,7 +1244,91 @@ function handleHandoff() {
     process.exit(1);
   }
 
-  console.log('[validator] Memory Handoff report matches protocol validation criteria.');
+  // MH-04 (always on): reject an unedited scaffold. The seed marker is written
+  // by `compact-memory` and the handoff template; its presence means the report
+  // was never authored, so the gate must not pass it. Classified as a bugfix.
+  const SEED_MARKERS = ['Seeded by saf compact-memory', 'Remove this comment once authored'];
+  if (SEED_MARKERS.some((marker) => handoffContent.includes(marker))) {
+    console.error('ERROR: Handoff file still contains the seed marker; it has not been authored.');
+    console.error('  Author .ai/state/handoff.md (fill the three sections and remove the seed comment) before closing the session.');
+    process.exit(1);
+  }
+
+  // MH-05 (opt-in --strict / handoff.strict): deterministic, offline integrity
+  // checks that correlate the report against real on-disk memory state.
+  if (strict) {
+    const lines = handoffContent.split(/\r?\n/);
+
+    // Returns the body lines under a `## <header>` up to the next `## ` heading.
+    function sectionBody(header) {
+      const start = lines.findIndex((l) => l.trim() === header);
+      if (start === -1) return [];
+      const body = [];
+      for (let i = start + 1; i < lines.length; i++) {
+        if (/^##\s+/.test(lines[i].trim())) break;
+        body.push(lines[i]);
+      }
+      return body;
+    }
+
+    // A line counts as authored content when it is not blank, not an HTML
+    // comment, not a blockquote/template note, and not an italic `_..._` prompt.
+    function hasRealContent(bodyLines) {
+      return bodyLines.some((raw) => {
+        const t = raw.trim();
+        if (t === '') return false;
+        if (t.startsWith('<!--')) return false;
+        if (t.startsWith('>')) return false;
+        if (/^_.*_$/.test(t)) return false;
+        return true;
+      });
+    }
+
+    let strictFailed = false;
+    for (const header of requiredHeaders) {
+      if (!hasRealContent(sectionBody(header))) {
+        console.error(`ERROR (strict): Section "${header.replace(/^## /, '')}" has no authored content (only placeholder text).`);
+        strictFailed = true;
+      }
+    }
+
+    // Cross-reference: the "Promoted to project memory" section must name at
+    // least one real, non-empty, non-seed .ai/memory/*.md file.
+    const promotedBody = sectionBody('## Promoted to project memory').join('\n');
+    const referenced = new Set();
+    const fileRe = /([A-Za-z0-9_-]+\.md)/g;
+    let fm;
+    while ((fm = fileRe.exec(promotedBody)) !== null) {
+      referenced.add(fm[1]);
+    }
+    let crossRefOk = false;
+    for (const fileName of referenced) {
+      const memPath = path.join(repoRoot, '.ai/memory', fileName);
+      try {
+        if (!fs.existsSync(memPath)) continue;
+        const body = fs.readFileSync(memPath, 'utf8');
+        const isSeed = body.includes('Seeded by saf init')
+          || body.includes('No content yet. Update during Memory Handoff');
+        if (body.trim().length > 0 && !isSeed) {
+          crossRefOk = true;
+          break;
+        }
+      } catch (e) {
+        // Unreadable candidate: keep looking.
+      }
+    }
+    if (!crossRefOk) {
+      console.error('ERROR (strict): "Promoted to project memory" names no existing, non-empty .ai/memory/*.md file.');
+      console.error('  Name the memory file(s) each promoted fact landed in (e.g. .ai/memory/current-architecture.md).');
+      strictFailed = true;
+    }
+
+    if (strictFailed) {
+      process.exit(1);
+    }
+  }
+
+  console.log(`[validator] Memory Handoff report matches protocol validation criteria${strict ? ' (strict)' : ''}.`);
   process.exit(0);
 }
 
@@ -1269,13 +1447,61 @@ function localizeGlobalSkills(repoRoot) {
   }
 }
 
-function removeAtlasGuidelineSections(content) {
+// A SAF-owned section runs from its `##` heading until the next line that opens a new
+// top-level block: an H1/H2 heading, or an HTML comment fence that other tools use to
+// delimit their own managed blocks (e.g. `<!-- snailb-skills:start -->`). Stopping at these
+// boundaries keeps an upsert from swallowing foreign content that follows the section.
+function isSectionBoundary(line) {
+  return /^#{1,2}(\s|$)/.test(line) || /^<!--/.test(line);
+}
+
+// Upsert a SAF-owned section: remove every section matching headingRegex (deduping legacy
+// files that accumulated more than one), then reinsert `body` once at the position of the
+// FIRST removed section, preserving its place and all surrounding lines. If no section
+// matched, append `body` at end-of-file. Returns new content; callers compare against the
+// original to decide whether to write (idempotent no-op when content is already current).
+function replaceOrAppendSection(content, headingRegex, body) {
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  const kept = [];
+  let insertAt = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (headingRegex.test(lines[i])) {
+      if (insertAt === -1) insertAt = kept.length; // remember where the first section began
+      while (i + 1 < lines.length && !isSectionBoundary(lines[i + 1])) {
+        i++;
+      }
+      continue;
+    }
+    kept.push(lines[i]);
+  }
+
+  if (insertAt === -1) {
+    const trimmed = content.replace(/\s+$/, '');
+    return (trimmed ? `${trimmed}\n\n` : '') + body + '\n';
+  }
+
+  const before = kept.slice(0, insertAt).join('\n').replace(/\s+$/, '');
+  const after = kept.slice(insertAt).join('\n').replace(/^\s+/, '');
+
+  const parts = [];
+  if (before) parts.push(before, '');
+  parts.push(body);
+  if (after) parts.push('', after);
+  // Collapse any trailing blank lines to a single newline so repeated runs reach a fixed
+  // point (idempotent no-op) instead of accumulating blank lines from `after`.
+  return parts.join('\n').replace(/\s+$/, '') + '\n';
+}
+
+// Backward-compatible helper (exported): strip every section matching headingRegex.
+// Uses the same boundary rules as replaceOrAppendSection so it never swallows foreign blocks.
+function removeSectionsByHeading(content, headingRegex) {
   const lines = content.replace(/\r\n/g, '\n').split('\n');
   const kept = [];
 
   for (let i = 0; i < lines.length; i++) {
-    if (/^## (?:Autonomous )?ATLAS Loop\s*$/.test(lines[i])) {
-      while (i + 1 < lines.length && !/^## /.test(lines[i + 1])) {
+    if (headingRegex.test(lines[i])) {
+      while (i + 1 < lines.length && !isSectionBoundary(lines[i + 1])) {
         i++;
       }
       continue;
@@ -1287,132 +1513,113 @@ function removeAtlasGuidelineSections(content) {
   return kept.join('\n');
 }
 
-function upsertAtlasGuidelines(repoRoot, opts = {}) {
-  const skipExisting = (opts && opts.skipExisting) || {};
-  const newBlock = `## Autonomous ATLAS Loop\n\nWhen asked to run the ATLAS auto loop, use the local \`atlas-auto-loop\` skill.\nRead \`.ai/state/flow-state.json\`, resolve \`.ai/flows/atlas-flow.yaml\`, and follow the skill instructions.\nDo not read or create \`.ai/state/flow-ledger.json\`.`;
+function removeAtlasGuidelineSections(content) {
+  return removeSectionsByHeading(content, /^## (?:Autonomous )?ATLAS Loop\s*$/);
+}
 
+// Shared writer: upsert one SAF-owned section into each non-skipped instruction file.
+// bodyForFile is either a string or a function (f) => string for per-runtime content.
+function upsertSectionInFiles(repoRoot, opts, headingRegex, bodyForFile, label) {
+  const skipExisting = (opts && opts.skipExisting) || {};
   for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
     if (skipExisting[f]) continue;
-    const p = path.join(repoRoot, f);
+    const filePath = path.join(repoRoot, f);
     try {
-      if (!fs.existsSync(p)) continue;
-      let content = fs.readFileSync(p, 'utf8');
-
-      const withoutAtlas = removeAtlasGuidelineSections(content).trimEnd();
-      const nextContent = withoutAtlas ? `${withoutAtlas}\n\n${newBlock}\n` : `${newBlock}\n`;
-      fs.writeFileSync(p, nextContent, 'utf8');
-      console.log(`[init] Upserted Autonomous ATLAS Loop pointer in ${f}`);
+      if (!fs.existsSync(filePath)) continue;
+      const content = fs.readFileSync(filePath, 'utf8');
+      const body = typeof bodyForFile === 'function' ? bodyForFile(f) : bodyForFile;
+      const next = replaceOrAppendSection(content, headingRegex, body);
+      if (next === content) {
+        console.log(`[init] ${label} already up to date in ${f}, skipping.`);
+        continue;
+      }
+      fs.writeFileSync(filePath, next, 'utf8');
+      console.log(`[init] Upserted ${label} in ${f}`);
     } catch (e) {
-      console.warn(`[init] WARNING: Failed to update ${f} with ATLAS Loop guidelines: ${e.message}`);
+      console.warn(`[init] WARNING: Failed to update ${f} with ${label}: ${e.message}`);
     }
   }
+}
+
+function upsertAtlasGuidelines(repoRoot, opts = {}) {
+  upsertSectionInFiles(
+    repoRoot,
+    opts,
+    /^##\s+(?:Autonomous\s+)?ATLAS\s+Loop\s*$/i,
+    ATLAS_LOOP_GUIDELINES_BODY,
+    'Autonomous ATLAS Loop pointer'
+  );
+}
+
+function buildSubagentGuidelinesBody(runtimeNote) {
+  return `## Subagent & Parallel Execution Guidelines
+
+1. **Detect Capability First:** Before planning parallel work, check whether your runtime exposes a tool for delegating work to subagents (for example Claude Code's \`Agent\`/Task tool or an equivalent parallel-task facility). If no such tool exists, do not simulate spawning: execute independent tasks sequentially in dependency-safe order, and use background execution only for long-running verification commands.
+2. **Detect Independent Tasks:** Review the task list (e.g., \`tasks.md\`) and group tasks into waves; tasks in the same wave must share no files and no data dependencies.
+3. **Spawn in Parallel (capable runtimes only):** Launch one subagent per independent task in the current wave. Each subagent prompt must be self-contained: goal, owned file list, and the verify command.
+4. **Limit Context Size:** Pass each subagent only the files it owns plus the relevant spec section. Never pass session logs, the ledger, or other agents' outputs.
+5. **Coordinate & Wait:** Wait for every subagent in a wave to finish and verify its results before starting the next wave or any dependent task.
+6. **Protect Shared State:** Subagents write only to their assigned files. Only the orchestrating agent updates \`.ai/state/*\` and the ledger.
+
+> Runtime note: ${runtimeNote}`;
 }
 
 function appendSubagentGuidelines(repoRoot, opts = {}) {
-  const skipExisting = (opts && opts.skipExisting) || {};
-  const guidelinesBlock = `
-## Subagent & Parallel Execution Guidelines
-
-1. **Detect Independent Tasks:** Before starting execution, review the task list (e.g., \`tasks.md\`) to identify independent, non-sequential tasks.
-2. **Define Specialized Subagents:** For each independent task or sub-project, define a specialized subagent using the \`define_subagent\` tool.
-3. **Spawn in Parallel:** Invoke the defined subagents in parallel using the \`invoke_subagent\` tool to execute tasks concurrently.
-4. **Limit Context Size:** Do not pass large session logs or redundant context files to subagents. Keep their context focused and lightweight.
-5. **Coordinate & Wait:** Wait for all parallel subagents to complete before advancing to downstream tasks that depend on their outputs.
-`;
-
-  const files = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
-  for (const f of files) {
-    if (skipExisting[f]) continue;
-    const filePath = path.join(repoRoot, f);
-    if (fs.existsSync(filePath)) {
-      try {
-        let content = fs.readFileSync(filePath, 'utf8');
-        if (!content.match(/##\s+Subagent\s+&\s+Parallel\s+Execution\s+Guidelines/i)) {
-          if (content && !content.endsWith('\n')) {
-            content += '\n';
-          }
-          content += guidelinesBlock.trim() + '\n';
-          fs.writeFileSync(filePath, content, 'utf8');
-          console.log(`[init] Appended subagent guidelines to ${f}`);
-        } else {
-          console.log(`[init] Subagent guidelines already present in ${f}, skipping.`);
-        }
-      } catch (e) {
-        console.warn(`[init] WARNING: Failed to update ${f} with subagent guidelines: ${e.message}`);
-      }
-    }
-  }
+  upsertSectionInFiles(
+    repoRoot,
+    opts,
+    /^##\s+Subagent\s+&\s+Parallel\s+Execution\s+Guidelines\s*$/i,
+    (f) => buildSubagentGuidelinesBody(SUBAGENT_RUNTIME_NOTES[f] || SUBAGENT_RUNTIME_NOTE_NEUTRAL),
+    'subagent guidelines'
+  );
 }
 
 function appendContextPolicyGuidelines(repoRoot, opts = {}) {
-  const skipExisting = (opts && opts.skipExisting) || {};
-  const guidelinesBlock = `
-## Context Budget and Subagent Orchestration Policy
-
-1. **Estimate Byte Pressure:** Before starting any flow stage, estimate the byte pressure locally to decide the execution path (inline, context pack, or fresh session).
-2. **Configure Thresholds:** Set conservative size thresholds (e.g. 50KB inline, 200KB context pack) in \`.ai/state/context-policy.json\` to prevent context bloat.
-3. **Generate Context Packs:** When context packs are required, generate a structured pack containing only essential files and omit all others.
-4. **Use Fresh Sessions:** When byte pressure exceeds limits, write a handoff artifact (\`.ai/state/context-handoff.json\`) and resume from a clean session.
-5. **Protect Ledger State:** Parallel subagents must run in isolated workspaces with disjoint write targets and must never modify the central ledger.
-`;
-
-  const files = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
-  for (const f of files) {
-    if (skipExisting[f]) continue;
-    const filePath = path.join(repoRoot, f);
-    if (fs.existsSync(filePath)) {
-      try {
-        let content = fs.readFileSync(filePath, 'utf8');
-        if (!content.match(/##\s+Context\s+Budget\s+and\s+Subagent\s+Orchestration\s+Policy/i)) {
-          if (content && !content.endsWith('\n')) {
-            content += '\n';
-          }
-          content += guidelinesBlock.trim() + '\n';
-          fs.writeFileSync(filePath, content, 'utf8');
-          console.log(`[init] Appended context policy guidelines to ${f}`);
-        } else {
-          console.log(`[init] Context policy guidelines already present in ${f}, skipping.`);
-        }
-      } catch (e) {
-        console.warn(`[init] WARNING: Failed to update ${f} with context policy guidelines: ${e.message}`);
-      }
-    }
-  }
+  upsertSectionInFiles(
+    repoRoot,
+    opts,
+    /^##\s+Context\s+Budget\s+and\s+Subagent\s+Orchestration\s+Policy\s*$/i,
+    CONTEXT_POLICY_GUIDELINES_BODY,
+    'context policy guidelines'
+  );
 }
 
 function appendBehavioralCoreGuidelines(repoRoot, opts = {}) {
-  const skipExisting = (opts && opts.skipExisting) || {};
-  const guidelinesBlock = `
-## Behavioral Core
+  upsertSectionInFiles(
+    repoRoot,
+    opts,
+    /^##\s+Behavioral\s+Core\s*$/i,
+    BEHAVIORAL_CORE_GUIDELINES_BODY,
+    'behavioral core guidelines'
+  );
+}
 
-1. **State Assumptions:** Before implementation, name any assumptions that affect scope, behavior, data, or verification.
-2. **Prefer Simplicity:** Choose the smallest sufficient implementation path and avoid speculative abstractions.
-3. **Respect Boundaries:** Touch only files and symbols that are in scope for the accepted task, claim, or plan.
-4. **Define Verification:** Know the command, test, or observable check that proves completion before claiming success.
-`;
+function buildMemoryCompactionBody(runtimeNote, fastModel) {
+  const memoryOutputs = MEMORY_HANDOFF_OUTPUT_FILES.map((file) => `\`${file}\``).join(', ');
+  return `## Snail Trail — Memory Compaction at Settle
 
-  const files = ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md'];
-  for (const f of files) {
-    if (skipExisting[f]) continue;
-    const filePath = path.join(repoRoot, f);
-    if (fs.existsSync(filePath)) {
-      try {
-        let content = fs.readFileSync(filePath, 'utf8');
-        if (!content.match(/##\s+Behavioral\s+Core/i)) {
-          if (content && !content.endsWith('\n')) {
-            content += '\n';
-          }
-          content += guidelinesBlock.trim() + '\n';
-          fs.writeFileSync(filePath, content, 'utf8');
-          console.log(`[init] Appended behavioral core guidelines to ${f}`);
-        } else {
-          console.log(`[init] Behavioral core guidelines already present in ${f}, skipping.`);
-        }
-      } catch (e) {
-        console.warn(`[init] WARNING: Failed to update ${f} with behavioral core guidelines: ${e.message}`);
-      }
-    }
-  }
+At settle / session close, compact the session into durable memory — but do NOT do it inline in the main session, and do NOT pick the model yourself.
+
+1. **Prep (deterministic):** Run \`saf compact-memory\` (optionally \`--focus "<next session goal>"\`). It assembles a compaction input pack (the session logs, review notes, and current \`.ai/memory/*\`), scaffolds \`.ai/state/handoff.md\` from the template, and prints the prescribed fast model plus a subagent prompt skeleton. No LLM runs here.
+2. **Prescribed model (not your choice):** Run the compaction on ${fastModel}
+3. **Delegate:** Spawn a subagent on that model and have it run the \`/handoff\` skill. If your runtime has no skill system, the subagent follows the handoff protocol directly (read the compact pack and listed files only; promote only durable, verified facts).
+4. **Subagent writes only:** ${memoryOutputs}, and the handoff report \`.ai/state/handoff.md\`. The report leads with a plain-language \`## Session Summary\` (what we did / changed / verified / open) for the human reader, may include optional \`## Suggested Next Skills\`, then the three gate headers \`## Promoted to project memory\`, \`## Architecture updated\`, \`## Verification promoted\`. Reference existing artifacts by path/link instead of duplicating them, and redact secrets/PII as \`REDACTED\`. It must not touch other \`.ai/state/*\` ledger files.
+5. **Verify:** As the main agent, run \`saf handoff\` to gate the result. Do not close the session until it exits 0.
+
+> Runtime note: ${runtimeNote}`;
+}
+
+function appendMemoryCompactionGuidelines(repoRoot, opts = {}) {
+  upsertSectionInFiles(
+    repoRoot,
+    opts,
+    /^##\s+Snail\s+Trail\b.*Memory\s+Compaction/i,
+    (f) => buildMemoryCompactionBody(
+      SUBAGENT_RUNTIME_NOTES[f] || SUBAGENT_RUNTIME_NOTE_NEUTRAL,
+      FAST_MODEL_BY_RUNTIME[f] || FAST_MODEL_NEUTRAL
+    ),
+    'memory compaction guidelines'
+  );
 }
 
 // Non-intrusive output. Mirrors the four guideline blocks that upsertAtlasGuidelines /
@@ -1430,46 +1637,15 @@ function writeSeparateAtlasInstructions(repoRoot) {
 > To follow SAF, read this file alongside your existing instruction files.
 `;
 
-  // Each section is keyed by a regex matching its \`##\` heading so re-runs append only
-  // the blocks that are missing (idempotent upgrades), instead of skipping the whole file.
+  // Each section is keyed by a regex matching its `##` heading. On an existing file the
+  // section is refreshed in place (present) or appended at end (missing); foreign sections
+  // the team added are preserved. Bodies are the same constants the file writers use.
   const sections = [
-    {
-      match: /##\s+Autonomous\s+ATLAS\s+Loop/i,
-      body: `## Autonomous ATLAS Loop
-
-When asked to run the ATLAS auto loop, use the local \`atlas-auto-loop\` skill.
-Read \`.ai/state/flow-state.json\`, resolve \`.ai/flows/atlas-flow.yaml\`, and follow the skill instructions.
-Do not read or create \`.ai/state/flow-ledger.json\`.`,
-    },
-    {
-      match: /##\s+Subagent\s+&\s+Parallel\s+Execution\s+Guidelines/i,
-      body: `## Subagent & Parallel Execution Guidelines
-
-1. **Detect Independent Tasks:** Before starting execution, review the task list (e.g., \`tasks.md\`) to identify independent, non-sequential tasks.
-2. **Define Specialized Subagents:** For each independent task or sub-project, define a specialized subagent using the \`define_subagent\` tool.
-3. **Spawn in Parallel:** Invoke the defined subagents in parallel using the \`invoke_subagent\` tool to execute tasks concurrently.
-4. **Limit Context Size:** Do not pass large session logs or redundant context files to subagents. Keep their context focused and lightweight.
-5. **Coordinate & Wait:** Wait for all parallel subagents to complete before advancing to downstream tasks that depend on their outputs.`,
-    },
-    {
-      match: /##\s+Context\s+Budget\s+and\s+Subagent\s+Orchestration\s+Policy/i,
-      body: `## Context Budget and Subagent Orchestration Policy
-
-1. **Estimate Byte Pressure:** Before starting any flow stage, estimate the byte pressure locally to decide the execution path (inline, context pack, or fresh session).
-2. **Configure Thresholds:** Set conservative size thresholds (e.g. 50KB inline, 200KB context pack) in \`.ai/state/context-policy.json\` to prevent context bloat.
-3. **Generate Context Packs:** When context packs are required, generate a structured pack containing only essential files and omit all others.
-4. **Use Fresh Sessions:** When byte pressure exceeds limits, write a handoff artifact (\`.ai/state/context-handoff.json\`) and resume from a clean session.
-5. **Protect Ledger State:** Parallel subagents must run in isolated workspaces with disjoint write targets and must never modify the central ledger.`,
-    },
-    {
-      match: /##\s+Behavioral\s+Core/i,
-      body: `## Behavioral Core
-
-1. **State Assumptions:** Before implementation, name any assumptions that affect scope, behavior, data, or verification.
-2. **Prefer Simplicity:** Choose the smallest sufficient implementation path and avoid speculative abstractions.
-3. **Respect Boundaries:** Touch only files and symbols that are in scope for the accepted task, claim, or plan.
-4. **Define Verification:** Know the command, test, or observable check that proves completion before claiming success.`,
-    },
+    { match: /^##\s+(?:Autonomous\s+)?ATLAS\s+Loop\s*$/i, body: ATLAS_LOOP_GUIDELINES_BODY },
+    { match: /^##\s+Subagent\s+&\s+Parallel\s+Execution\s+Guidelines\s*$/i, body: buildSubagentGuidelinesBody(SUBAGENT_RUNTIME_NOTE_NEUTRAL) },
+    { match: /^##\s+Context\s+Budget\s+and\s+Subagent\s+Orchestration\s+Policy\s*$/i, body: CONTEXT_POLICY_GUIDELINES_BODY },
+    { match: /^##\s+Behavioral\s+Core\s*$/i, body: BEHAVIORAL_CORE_GUIDELINES_BODY },
+    { match: /^##\s+Snail\s+Trail\b.*Memory\s+Compaction/i, body: buildMemoryCompactionBody(SUBAGENT_RUNTIME_NOTE_NEUTRAL, FAST_MODEL_NEUTRAL) },
   ];
 
   try {
@@ -1482,21 +1658,19 @@ Do not read or create \`.ai/state/flow-ledger.json\`.`,
       return;
     }
 
-    // File exists: append only the sections it is missing so older onboarded projects
-    // pick up guidance added after they were first initialized.
-    let content = fs.readFileSync(dest, 'utf8');
-    const missing = sections.filter((s) => !s.match.test(content));
-    if (missing.length === 0) {
+    // File exists: refresh each SAF-owned section in place so older onboarded projects
+    // pick up corrected guidance, while preserving any sections the team added.
+    const content = fs.readFileSync(dest, 'utf8');
+    let next = content;
+    for (const s of sections) {
+      next = replaceOrAppendSection(next, s.match, s.body);
+    }
+    if (next === content) {
       console.log('[init] .ai/instructions/ATLAS.md already up to date, skipping.');
       return;
     }
-
-    if (content && !content.endsWith('\n')) {
-      content += '\n';
-    }
-    content += '\n' + missing.map((s) => s.body).join('\n\n') + '\n';
-    fs.writeFileSync(dest, content, 'utf8');
-    console.log(`[init] Updated .ai/instructions/ATLAS.md (added ${missing.length} missing section(s)).`);
+    fs.writeFileSync(dest, next, 'utf8');
+    console.log('[init] Refreshed SAF-owned sections in .ai/instructions/ATLAS.md.');
   } catch (e) {
     console.warn(`[init] WARNING: Failed to write .ai/instructions/ATLAS.md: ${e.message}`);
   }
@@ -2109,12 +2283,217 @@ function buildProjectSummary(sections) {
   return result;
 }
 
+// "Vệt ốc sên" snail-trail compaction PREP. Deterministic only: never calls an LLM.
+// It assembles the compaction input pack (path-only references, no file bodies), scaffolds
+// the handoff report, and prints the prescribed fast model + subagent spawn skeleton so the
+// agent can delegate distillation to a cheap subagent instead of doing it inline.
+function listFilesShallow(dirAbs, relBase) {
+  const out = [];
+  try {
+    for (const entry of fs.readdirSync(dirAbs, { withFileTypes: true })) {
+      if (entry.isFile()) out.push(`${relBase}/${entry.name}`);
+    }
+  } catch (e) {
+    // Directory absent or unreadable: contributes no inputs.
+  }
+  return out;
+}
+
+function readOptionalFlagValue(cmdArgs, flag) {
+  const eqPrefix = `${flag}=`;
+  const eqArg = cmdArgs.find((arg) => typeof arg === 'string' && arg.startsWith(eqPrefix));
+  if (eqArg) return eqArg.slice(eqPrefix.length).replace(/\s+/g, ' ').trim();
+
+  const idx = cmdArgs.indexOf(flag);
+  if (idx === -1) return null;
+
+  const value = cmdArgs[idx + 1];
+  if (!value || value.startsWith('--')) return '';
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function handleCompactMemory(cmdArgs) {
+  cmdArgs = cmdArgs || [];
+  const nextSessionFocus = readOptionalFlagValue(cmdArgs, '--focus');
+  if (nextSessionFocus === '') {
+    console.error('Error: compact-memory --focus requires a value.');
+    process.exit(1);
+  }
+
+  const feature = (() => {
+    try {
+      return require('../lib/context-pack-generator').readActiveFeature(repoRoot);
+    } catch (e) {
+      return null;
+    }
+  })();
+  const slug = feature ? feature.slug : null;
+
+  const { sessionMatchesFeature, loadPolicyConfig } = require('../lib/context-budget');
+
+  // Archival is opt-in: --archive flag or memory.archive_on_compact policy key.
+  let archive = cmdArgs.includes('--archive');
+  try {
+    const policy = loadPolicyConfig(repoRoot);
+    if (policy && policy.memory && policy.memory.archive_on_compact === true) {
+      archive = true;
+    }
+  } catch (e) {
+    // Unreadable policy: archive stays off unless --archive was passed.
+  }
+
+  // 1. Collect session logs scoped to the active feature (MH-03). With no active
+  //    feature, keep all logs (legacy no-feature path). listFilesShallow lists
+  //    only top-level files, so .ai/sessions/archive/ is never included.
+  const allSessionLogs = listFilesShallow(path.join(repoRoot, '.ai/sessions'), '.ai/sessions');
+  let scopedSessionLogs = slug
+    ? allSessionLogs.filter((rel) => sessionMatchesFeature(path.join(repoRoot, rel), slug))
+    : allSessionLogs;
+
+  // 1b. When archiving, move the scoped logs into .ai/sessions/archive/<slug>/
+  //     first, so the pack references their final (archived) location and the
+  //     active scan surface stays bounded. Logs are moved, never deleted.
+  if (archive && slug && scopedSessionLogs.length > 0) {
+    const archiveRelBase = `.ai/sessions/archive/${slug}`;
+    const archiveDir = path.join(repoRoot, archiveRelBase);
+    fs.mkdirSync(archiveDir, { recursive: true });
+    const archived = [];
+    for (const rel of scopedSessionLogs) {
+      const src = path.join(repoRoot, rel);
+      const base = path.basename(rel);
+      const dest = path.join(archiveDir, base);
+      try {
+        fs.renameSync(src, dest);
+        archived.push(`${archiveRelBase}/${base}`);
+      } catch (e) {
+        archived.push(rel); // Leave in place on failure; still reference it.
+      }
+    }
+    scopedSessionLogs = archived;
+    console.log(`[compact-memory] Archived ${archived.length} session log(s) to ${archiveRelBase}/ (moved, not deleted).`);
+  }
+
+  // 1c. Assemble compaction inputs (path-only; bodies stay on disk).
+  const inputs = [
+    ...scopedSessionLogs,
+    ...listFilesShallow(path.join(repoRoot, '.ai/memory'), '.ai/memory')
+  ];
+  if (feature) {
+    inputs.push(...listFilesShallow(path.join(repoRoot, '.ai/reviews', slug), `.ai/reviews/${slug}`));
+  }
+
+  const manifest = {
+    schema_version: '1.0.0',
+    kind: 'memory-compaction',
+    feature: slug,
+    objective: feature
+      ? `Compact session notes for feature ${slug} into durable .ai/memory/* and .ai/state/handoff.md.`
+      : 'Compact session notes into durable .ai/memory/* and .ai/state/handoff.md.',
+    input_files: inputs,
+    output_files: [
+      ...MEMORY_HANDOFF_OUTPUT_FILES,
+      '.ai/state/handoff.md'
+    ],
+    verification_command: 'node bin/adp.js handoff'
+  };
+  if (nextSessionFocus) {
+    manifest.next_session_focus = nextSessionFocus;
+  }
+
+  const packsDir = path.join(repoRoot, '.ai/context-packs');
+  fs.mkdirSync(packsDir, { recursive: true });
+  const packName = `compact-${slug || 'adhoc'}.json`;
+  const packPath = path.join(packsDir, packName);
+  fs.writeFileSync(packPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+  console.log(`[compact-memory] Wrote compaction pack: .ai/context-packs/${packName} (${inputs.length} input files)`);
+
+  // 2. Scaffold the handoff report if absent or still seed-marked.
+  const handoffPath = path.join(repoRoot, '.ai/state/handoff.md');
+  fs.mkdirSync(path.dirname(handoffPath), { recursive: true });
+  const SEED_MARKER = 'Seeded by saf compact-memory';
+  let scaffold = true;
+  if (fs.existsSync(handoffPath)) {
+    const existing = fs.readFileSync(handoffPath, 'utf8');
+    scaffold = existing.includes(SEED_MARKER);
+  }
+  if (scaffold) {
+    const templatePath = path.join(packageRoot, '.specify/templates/handoff-template.md');
+    let body;
+    if (fs.existsSync(templatePath)) {
+      const nextFocusBlock = nextSessionFocus
+        ? `> Next session focus: ${nextSessionFocus}\n`
+        : '';
+      body = fs.readFileSync(templatePath, 'utf8')
+        .replace(/\{\{FEATURE_SLUG\}\}/g, slug || 'no-active-feature')
+        .replace(/\{\{NEXT_SESSION_FOCUS_BLOCK\}\}/g, nextFocusBlock);
+    } else {
+      body = `<!-- ${SEED_MARKER}. The compaction subagent fills this in. -->\n`
+        + `# Memory Handoff — ${slug || 'no-active-feature'}\n\n`
+        + `> Compaction protocol: promote ONLY durable, verified, project-relevant facts. Do not copy\n`
+        + `> session notes verbatim. Reference existing artifacts by path/link and record only the delta.\n`
+        + `> Redact secrets, credentials, tokens, passwords, and personal data as REDACTED.\n\n`
+        + (nextSessionFocus ? `> Next session focus: ${nextSessionFocus}\n\n` : '')
+        + `## Session Summary\n\n`
+        + `<!-- Plain-language recap for the human in the loop — write this first. -->\n`
+        + `- **What we did:** _Goal and outcome of this session, in one or two sentences._\n`
+        + `- **What changed:** _The behavioral/user-visible change, not a file list._\n`
+        + `- **Verified:** _Did it work? Name the check and result (e.g. "npm test — all green")._\n`
+        + `- **Open / next:** _Anything unfinished or needing a human decision ("Nothing" is valid)._\n\n`
+        + `## Suggested Next Skills\n\n`
+        + `<!-- Optional, non-gated guidance for the next agent. Delete this section if it adds no value. -->\n\n`
+        + `- _Skill name_ — _why it is the right next route._\n\n`
+        + `## Promoted to project memory\n\n_What durable facts were promoted, and to which .ai/memory/ file._\n\n`
+        + `## Architecture updated\n\n_Architecture/behavior changes recorded, with affected files._\n\n`
+        + `## Verification promoted\n\n_Verification evidence promoted (commands run, results)._\n`;
+    }
+    fs.writeFileSync(handoffPath, body, 'utf8');
+    console.log('[compact-memory] Scaffolded .ai/state/handoff.md (fill it during compaction).');
+  } else {
+    console.log('[compact-memory] .ai/state/handoff.md already authored, leaving it untouched.');
+  }
+
+  // 3. Print the prescribed model(s) — never the main agent's choice.
+  const instructionFiles = ['CLAUDE.md', 'AGENTS.md', 'GEMINI.md'];
+  const present = instructionFiles.filter((f) => fs.existsSync(path.join(repoRoot, f)));
+  console.log('');
+  console.log('[compact-memory] Delegate compaction to a subagent on the PRESCRIBED fast model (do NOT use the main session model):');
+  if (present.length === 0) {
+    console.log(`  - (no CLAUDE.md/AGENTS.md/GEMINI.md found) ${FAST_MODEL_NEUTRAL}`);
+  } else {
+    for (const f of present) {
+      console.log(`  - ${f}: ${FAST_MODEL_BY_RUNTIME[f]}`);
+    }
+  }
+  console.log('');
+  console.log('[compact-memory] Subagent prompt skeleton:');
+  console.log('  Run the /handoff skill (or follow the handoff protocol if your runtime has no skill system).');
+  console.log(`  Read only: .ai/context-packs/${packName} and the files it lists.`);
+  if (nextSessionFocus) {
+    console.log(`  Next session focus: ${nextSessionFocus}`);
+  }
+  console.log('  Promote only durable, verified facts into .ai/memory/*; write .ai/state/handoff.md with the 3 required headers.');
+  console.log('  Lead handoff.md with a plain-language "## Session Summary" (what we did / changed / verified / open) for the human reader.');
+  console.log('  Reference existing specs/plans/tasks/PRs/commits/diffs/reviews by path or link; record only the important delta.');
+  console.log('  Redact secrets, credentials, tokens, passwords, and personal data as REDACTED.');
+  console.log('  Optional: add "## Suggested Next Skills" with concrete next routes; it is guidance, not a gate.');
+  console.log('  Do not touch any other .ai/state/* ledger files.');
+  console.log('');
+  console.log('[compact-memory] After the subagent finishes, verify with: node bin/adp.js handoff');
+  process.exit(0);
+}
+
 module.exports = {
+  isSectionBoundary,
+  replaceOrAppendSection,
+  removeSectionsByHeading,
   removeAtlasGuidelineSections,
+  buildSubagentGuidelinesBody,
+  buildMemoryCompactionBody,
   upsertAtlasGuidelines,
   appendSubagentGuidelines,
   appendContextPolicyGuidelines,
   appendBehavioralCoreGuidelines,
+  appendMemoryCompactionGuidelines,
   writeSeparateAtlasInstructions
 };
 

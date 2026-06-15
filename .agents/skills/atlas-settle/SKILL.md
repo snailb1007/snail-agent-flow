@@ -43,6 +43,12 @@ Before archiving a phase or plan, you MUST compile a retrospective report outlin
 
 These are written to the phase's `{phase}-{plan}-SUMMARY.md` file.
 
+**Durable memory updates ("Vệt ốc sên" compaction):** do not distill the session into
+`.ai/memory/*` inline in this (expensive) session. Run `saf compact-memory` to prep the
+compaction pack and handoff scaffold, then delegate the distillation to a subagent on the
+**prescribed fast model** (see the `## Snail Trail — Memory Compaction at Settle` section of
+your instruction file) running the `saf-handoff` skill. Gate the result with `saf handoff`.
+
 ### 2.2. Metric Logging Verification (Deterministic)
 Log the task's final attempt count and latency metrics to the central period observability ledger by executing:
 ```bash

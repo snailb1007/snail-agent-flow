@@ -47,13 +47,18 @@ You are integrated with RTK (Rust Token Killer). When executing or reading outpu
 - Test Runners: Expect failed assertions only. Ignore truncated lines for passing suites.
 - File Tree/Operations: Recognize that boilerplate directories (node_modules, .git, target, target/debug) are hidden by default; do not re-run commands to find them unless explicitly requested.
 - Error logs: Focus strictly on the core stack trace signals; summary formats contain the complete execution diagnostic.
+
 ## Subagent & Parallel Execution Guidelines
 
-1. **Detect Independent Tasks:** Before starting execution, review the task list (e.g., `tasks.md`) to identify independent, non-sequential tasks.
-2. **Define Specialized Subagents:** For each independent task or sub-project, define a specialized subagent using the `define_subagent` tool.
-3. **Spawn in Parallel:** Invoke the defined subagents in parallel using the `invoke_subagent` tool to execute tasks concurrently.
-4. **Limit Context Size:** Do not pass large session logs or redundant context files to subagents. Keep their context focused and lightweight.
-5. **Coordinate & Wait:** Wait for all parallel subagents to complete before advancing to downstream tasks that depend on their outputs.
+1. **Detect Capability First:** Before planning parallel work, check whether your runtime exposes a tool for delegating work to subagents (for example Claude Code's `Agent`/Task tool or an equivalent parallel-task facility). If no such tool exists, do not simulate spawning: execute independent tasks sequentially in dependency-safe order, and use background execution only for long-running verification commands.
+2. **Detect Independent Tasks:** Review the task list (e.g., `tasks.md`) and group tasks into waves; tasks in the same wave must share no files and no data dependencies.
+3. **Spawn in Parallel (capable runtimes only):** Launch one subagent per independent task in the current wave. Each subagent prompt must be self-contained: goal, owned file list, and the verify command.
+4. **Limit Context Size:** Pass each subagent only the files it owns plus the relevant spec section. Never pass session logs, the ledger, or other agents' outputs.
+5. **Coordinate & Wait:** Wait for every subagent in a wave to finish and verify its results before starting the next wave or any dependent task.
+6. **Protect Shared State:** Subagents write only to their assigned files. Only the orchestrating agent updates `.ai/state/*` and the ledger.
+
+> Runtime note: This file is read by Gemini-based tools (e.g. Antigravity). If your environment supports parallel agents or subagents, apply rules 2-6; otherwise use the sequential fallback from rule 1.
+
 ## Context Budget and Subagent Orchestration Policy
 
 1. **Estimate Byte Pressure:** Before starting any flow stage, estimate the byte pressure locally to decide the execution path (inline, context pack, or fresh session).
@@ -91,3 +96,22 @@ Tool rules:
 
 Skills are internal execution modules selected by the router, not user commands.
 <!-- snailb-skills:end -->
+
+## Behavioral Core
+
+1. **State Assumptions:** Before implementation, name any assumptions that affect scope, behavior, data, or verification.
+2. **Prefer Simplicity:** Choose the smallest sufficient implementation path and avoid speculative abstractions.
+3. **Respect Boundaries:** Touch only files and symbols that are in scope for the accepted task, claim, or plan.
+4. **Define Verification:** Know the command, test, or observable check that proves completion before claiming success.
+
+## Snail Trail — Memory Compaction at Settle
+
+At settle / session close, compact the session into durable memory — but do NOT do it inline in the main session, and do NOT pick the model yourself.
+
+1. **Prep (deterministic):** Run `saf compact-memory`. It assembles a compaction input pack (the session logs, review notes, and current `.ai/memory/*`), scaffolds `.ai/state/handoff.md` from the template, and prints the prescribed fast model plus a subagent prompt skeleton. No LLM runs here.
+2. **Prescribed model (not your choice):** Run the compaction on a Flash-tier model (e.g. Gemini Flash). Use a parallel agent if your environment has one; otherwise a fresh Flash session.
+3. **Delegate:** Spawn a subagent on that model and have it run the `/handoff` skill. If your runtime has no skill system, the subagent follows the handoff protocol directly (read `.ai/sessions/` + `.ai/reviews/<feature>/`; promote only durable, verified facts).
+4. **Subagent writes only:** `.ai/memory/project-summary.md`, `.ai/memory/current-architecture.md`, `.ai/memory/known-risks.md`, `.ai/memory/decisions.md`, `.ai/memory/verification-history.md`, `.ai/memory/patterns.md`, `.ai/memory/gotchas.md`, and the handoff report `.ai/state/handoff.md` (with headers `## Promoted to project memory`, `## Architecture updated`, `## Verification promoted`). It must not touch other `.ai/state/*` ledger files.
+5. **Verify:** As the main agent, run `saf handoff` to gate the result. Do not close the session until it exits 0.
+
+> Runtime note: This file is read by Gemini-based tools (e.g. Antigravity). If your environment supports parallel agents or subagents, apply rules 2-6; otherwise use the sequential fallback from rule 1.

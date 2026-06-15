@@ -323,7 +323,7 @@ addTest('appendBehavioralCoreGuidelines is idempotent', () => {
   }
 });
 
-addTest('writeSeparateAtlasInstructions creates .ai/instructions/ATLAS.md with all 4 blocks (idempotent)', () => {
+addTest('writeSeparateAtlasInstructions creates .ai/instructions/ATLAS.md with all 5 blocks (idempotent)', () => {
   const tempDir = fs.mkdtempSync(path.join(repoRoot, '.tmp-test-noninstrusive-separate-'));
   const projectDir = path.join(tempDir, 'project');
   try {
@@ -338,6 +338,7 @@ addTest('writeSeparateAtlasInstructions creates .ai/instructions/ATLAS.md with a
     assert.ok(content.includes('## Subagent & Parallel Execution Guidelines'), 'has subagent block');
     assert.ok(content.includes('## Context Budget and Subagent Orchestration Policy'), 'has context policy block');
     assert.ok(content.includes('## Behavioral Core'), 'has behavioral core block');
+    assert.ok(content.includes('## Snail Trail — Memory Compaction at Settle'), 'has snail-trail memory compaction block');
 
     // Idempotent: a second call must not duplicate or throw.
     writeSeparateAtlasInstructions(projectDir);

@@ -169,11 +169,16 @@ Commands:
                         Options: --stage <id>, --json, --enforce (exit 1 unless inline).
   pack                  Generate a context pack manifest under .ai/context-packs/.
                         Options: --objective <text>, --stage <id>, --out <path>.
+  compact-memory        Prep snail-trail memory compaction without calling an LLM.
+                        Options: --archive, --focus <text>.
 ```
 
 `budget` is report-only by default; gating is opt-in via `--enforce`
 (see [docs/compatibility-policy.md](docs/compatibility-policy.md)).
 `pack` fails closed: an invalid manifest is never left on disk.
+`compact-memory --focus "<next session goal>"` stores `next_session_focus`
+in the compaction pack and handoff scaffold so the next session summary and
+open items can be tailored without changing the handoff gate.
 
 ---
 

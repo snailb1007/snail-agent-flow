@@ -1176,6 +1176,176 @@ When asked to run the ATLAS auto loop, use the local \`atlas-auto-loop\` skill.
   }
 });
 
+addTest('Guideline writers produce runtime-aware capability-detection content', () => {
+  setupSandbox();
+
+  const { appendSubagentGuidelines } = require(cliScriptPath);
+
+  // SAF-managed files (no skipExisting gate): each runtime file gets its own note.
+  for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
+    fs.writeFileSync(path.join(testSandboxRoot, f), '# Instructions\n', 'utf8');
+  }
+
+  appendSubagentGuidelines(testSandboxRoot, {});
+
+  const expectations = [
+    ['CLAUDE.md', '`Agent` (also called Task)'],
+    ['AGENTS.md', 'no subagent tool'],
+    ['GEMINI.md', 'Antigravity']
+  ];
+  for (const [f, marker] of expectations) {
+    const content = readFile(f);
+    if (!content.includes('## Subagent & Parallel Execution Guidelines')) {
+      throw new Error(`Expected subagent heading in ${f}`);
+    }
+    if (!content.includes('Detect Capability First')) {
+      throw new Error(`Expected capability-detection rule in ${f}`);
+    }
+    if (/define_subagent|invoke_subagent/.test(content)) {
+      throw new Error(`Legacy tool names must not appear in ${f}`);
+    }
+    if (!content.includes(marker)) {
+      throw new Error(`Expected runtime note marker "${marker}" in ${f}`);
+    }
+  }
+});
+
+addTest('Guideline writers upsert a legacy SAF block in place', () => {
+  setupSandbox();
+
+  const { appendSubagentGuidelines } = require(cliScriptPath);
+
+  const legacy = `# Project
+
+## Custom Team Section
+
+Keep me.
+
+## Subagent & Parallel Execution Guidelines
+
+2. **Define Specialized Subagents:** use the \`define_subagent\` tool.
+3. **Spawn in Parallel:** use the \`invoke_subagent\` tool.
+
+## Another Team Section
+
+Also keep me.
+`;
+  fs.writeFileSync(path.join(testSandboxRoot, 'CLAUDE.md'), legacy, 'utf8');
+
+  appendSubagentGuidelines(testSandboxRoot, {});
+
+  const content = readFile('CLAUDE.md');
+  if (/define_subagent|invoke_subagent/.test(content)) {
+    throw new Error('Legacy tool names must be replaced by the upsert');
+  }
+  const occurrences = (content.match(/## Subagent & Parallel Execution Guidelines/g) || []).length;
+  if (occurrences !== 1) {
+    throw new Error(`Expected exactly one subagent heading after upsert, got ${occurrences}`);
+  }
+  if (!content.includes('## Custom Team Section') || !content.includes('Keep me.')
+    || !content.includes('## Another Team Section') || !content.includes('Also keep me.')) {
+    throw new Error('Upsert must preserve surrounding team sections');
+  }
+
+  // Idempotent: a second run performs no write (content byte-identical).
+  appendSubagentGuidelines(testSandboxRoot, {});
+  const after = readFile('CLAUDE.md');
+  if (after !== content) {
+    throw new Error('Second writer run must be a no-op on up-to-date content');
+  }
+});
+
+addTest('Guideline upsert preserves foreign HTML-comment-fenced block that follows a SAF section', () => {
+  setupSandbox();
+
+  const { upsertAtlasGuidelines } = require(cliScriptPath);
+
+  // Reproduces the layout where another tool fences its own H1 block right after a SAF
+  // section. The boundary must stop at the comment/H1 so the foreign block is never swallowed.
+  const seeded = `# Project
+
+## Autonomous ATLAS Loop
+
+Old stale pointer text.
+
+<!-- othertool:start -->
+# Foreign Bootstrap Policy
+
+Owned by another tool — must survive untouched.
+<!-- othertool:end -->
+`;
+  fs.writeFileSync(path.join(testSandboxRoot, 'CLAUDE.md'), seeded, 'utf8');
+
+  upsertAtlasGuidelines(testSandboxRoot, {});
+
+  const content = readFile('CLAUDE.md');
+  if (!content.includes('<!-- othertool:start -->') || !content.includes('<!-- othertool:end -->')
+    || !content.includes('# Foreign Bootstrap Policy')
+    || !content.includes('Owned by another tool — must survive untouched.')) {
+    throw new Error(`Foreign comment-fenced block must be preserved, got:\n${content}`);
+  }
+  if (content.includes('Old stale pointer text.')) {
+    throw new Error('Stale SAF section body must be replaced');
+  }
+  if (!content.includes('atlas-auto-loop')) {
+    throw new Error('Refreshed ATLAS Loop pointer must be present');
+  }
+  const occurrences = (content.match(/## Autonomous ATLAS Loop/g) || []).length;
+  if (occurrences !== 1) {
+    throw new Error(`Expected exactly one ATLAS Loop heading, got ${occurrences}`);
+  }
+
+  // Idempotent on re-run.
+  upsertAtlasGuidelines(testSandboxRoot, {});
+  if (readFile('CLAUDE.md') !== content) {
+    throw new Error('Second upsert run must be a no-op when content is current');
+  }
+});
+
+addTest('writeSeparateAtlasInstructions refreshes stale SAF sections and preserves custom ones', () => {
+  setupSandbox();
+
+  const { writeSeparateAtlasInstructions } = require(cliScriptPath);
+
+  const atlasDir = path.join(testSandboxRoot, '.ai/instructions');
+  fs.mkdirSync(atlasDir, { recursive: true });
+  const stale = `# SAF / ATLAS Instructions
+
+## Team Addendum
+
+Custom team notes.
+
+## Subagent & Parallel Execution Guidelines
+
+2. **Define Specialized Subagents:** use the \`define_subagent\` tool.
+`;
+  fs.writeFileSync(path.join(atlasDir, 'ATLAS.md'), stale, 'utf8');
+
+  writeSeparateAtlasInstructions(testSandboxRoot);
+
+  const refreshed = readFile('.ai/instructions/ATLAS.md');
+  if (/define_subagent|invoke_subagent/.test(refreshed)) {
+    throw new Error('Stale SAF-owned section must be refreshed in ATLAS.md');
+  }
+  if (!refreshed.includes('Detect Capability First')) {
+    throw new Error('Expected capability-detection content in refreshed ATLAS.md');
+  }
+  if (!refreshed.includes('## Team Addendum') || !refreshed.includes('Custom team notes.')) {
+    throw new Error('Custom team section must survive the refresh');
+  }
+  const occurrences = (refreshed.match(/## Subagent & Parallel Execution Guidelines/g) || []).length;
+  if (occurrences !== 1) {
+    throw new Error(`Expected exactly one subagent heading, got ${occurrences}`);
+  }
+
+  // No-op on a second run.
+  writeSeparateAtlasInstructions(testSandboxRoot);
+  const second = readFile('.ai/instructions/ATLAS.md');
+  if (second !== refreshed) {
+    throw new Error('Second run must not modify an up-to-date ATLAS.md');
+  }
+});
+
 addTest('CLI Init Localizes Multiple Execution Context Blocks', () => {
   setupSandbox();
 
@@ -1708,6 +1878,328 @@ addTest('CLI Pack Command Rejects Out Path Outside Context Packs', () => {
   if (fileExists('specs/evil-pack.json')) {
     throw new Error('Pack must not be written outside .ai/context-packs');
   }
+});
+
+addTest('CLI Init writes runtime-aware Snail Trail memory-compaction guidelines (idempotent)', () => {
+  setupSandbox();
+  writeJson('.specify/templates/constitution-template.md', '# Constitution');
+  const res = runCLI(['init']);
+  if (res.code !== 0) {
+    cleanupSandbox();
+    throw new Error(`Expected exit 0 on init, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+
+  const expectations = [
+    ['CLAUDE.md', 'claude-haiku-4-5'],
+    ['AGENTS.md', 'gpt-5.4-mini'],
+    ['GEMINI.md', 'Flash']
+  ];
+  const memoryOutputs = [
+    '.ai/memory/project-summary.md',
+    '.ai/memory/current-architecture.md',
+    '.ai/memory/known-risks.md',
+    '.ai/memory/decisions.md',
+    '.ai/memory/verification-history.md',
+    '.ai/memory/patterns.md',
+    '.ai/memory/gotchas.md'
+  ];
+  for (const [f, model] of expectations) {
+    const content = readFile(f);
+    if (!content.includes('## Snail Trail — Memory Compaction at Settle')) {
+      cleanupSandbox();
+      throw new Error(`Expected Snail Trail section in ${f}`);
+    }
+    if (!content.includes(model)) {
+      cleanupSandbox();
+      throw new Error(`Expected prescribed model token "${model}" in ${f}`);
+    }
+    if (!content.includes('saf compact-memory') || !content.includes('saf handoff')) {
+      cleanupSandbox();
+      throw new Error(`Expected compact-memory + handoff verify references in ${f}`);
+    }
+    for (const output of memoryOutputs) {
+      if (!content.includes(output)) {
+        cleanupSandbox();
+        throw new Error(`Expected Snail Trail guidance in ${f} to include ${output}`);
+      }
+    }
+  }
+
+  // Idempotent: a second init leaves exactly one section heading per file.
+  runCLI(['init']);
+  for (const [f] of expectations) {
+    const occurrences = (readFile(f).match(/## Snail Trail — Memory Compaction at Settle/g) || []).length;
+    if (occurrences !== 1) {
+      cleanupSandbox();
+      throw new Error(`Expected exactly one Snail Trail heading in ${f} after re-run, got ${occurrences}`);
+    }
+  }
+  cleanupSandbox();
+});
+
+addTest('appendMemoryCompactionGuidelines is runtime-aware and idempotent', () => {
+  setupSandbox();
+  const { appendMemoryCompactionGuidelines } = require(cliScriptPath);
+
+  for (const f of ['CLAUDE.md', 'GEMINI.md', 'AGENTS.md']) {
+    fs.writeFileSync(path.join(testSandboxRoot, f), '# Instructions\n', 'utf8');
+  }
+  appendMemoryCompactionGuidelines(testSandboxRoot, {});
+
+  const markers = [
+    ['CLAUDE.md', 'claude-sonnet-4-6'],
+    ['AGENTS.md', 'gpt-5.4-mini'],
+    ['GEMINI.md', 'Gemini Flash']
+  ];
+  for (const [f, marker] of markers) {
+    const content = readFile(f);
+    if (!content.includes('## Snail Trail — Memory Compaction at Settle')) {
+      throw new Error(`Expected Snail Trail heading in ${f}`);
+    }
+    if (!content.includes(marker)) {
+      throw new Error(`Expected runtime model marker "${marker}" in ${f}`);
+    }
+    for (const output of [
+      '.ai/memory/project-summary.md',
+      '.ai/memory/current-architecture.md',
+      '.ai/memory/known-risks.md',
+      '.ai/memory/decisions.md',
+      '.ai/memory/verification-history.md',
+      '.ai/memory/patterns.md',
+      '.ai/memory/gotchas.md'
+    ]) {
+      if (!content.includes(output)) {
+        throw new Error(`Expected memory compaction guidance in ${f} to include ${output}`);
+      }
+    }
+  }
+
+  // Second run is a no-op (byte-identical).
+  const before = readFile('CLAUDE.md');
+  appendMemoryCompactionGuidelines(testSandboxRoot, {});
+  if (readFile('CLAUDE.md') !== before) {
+    throw new Error('Second compaction-guideline run must be a no-op on up-to-date content');
+  }
+});
+
+addTest('CLI compact-memory preps pack + handoff scaffold and prescribes a model (no LLM)', () => {
+  setupSandbox();
+  runCLI(['init']);
+  writeJson('.specify/feature.json', { feature_directory: 'specs/test-compact' });
+  writeFile('.ai/sessions/session-1.md', '# raw session notes');
+
+  const res = runCLI(['compact-memory']);
+  if (res.code !== 0) {
+    cleanupSandbox();
+    throw new Error(`Expected exit 0, got ${res.code}. Stderr: ${res.stderr}. Stdout: ${res.stdout}`);
+  }
+  if (!fileExists('.ai/context-packs/compact-test-compact.json')) {
+    cleanupSandbox();
+    throw new Error('Expected compaction pack .ai/context-packs/compact-test-compact.json');
+  }
+  if (!fileExists('.ai/state/handoff.md')) {
+    cleanupSandbox();
+    throw new Error('Expected scaffolded .ai/state/handoff.md');
+  }
+  const pack = JSON.parse(readFile('.ai/context-packs/compact-test-compact.json'));
+  const expectedOutputs = [
+    '.ai/memory/project-summary.md',
+    '.ai/memory/current-architecture.md',
+    '.ai/memory/known-risks.md',
+    '.ai/memory/decisions.md',
+    '.ai/memory/verification-history.md',
+    '.ai/memory/patterns.md',
+    '.ai/memory/gotchas.md',
+    '.ai/state/handoff.md'
+  ];
+  for (const output of expectedOutputs) {
+    if (!pack.output_files.includes(output)) {
+      cleanupSandbox();
+      throw new Error(`Expected compact-memory output_files to include ${output}`);
+    }
+  }
+  // The prescribed model is printed (data-driven, not the agent's choice).
+  if (!res.stdout.includes('claude-haiku-4-5')) {
+    cleanupSandbox();
+    throw new Error(`Expected prescribed model in stdout. Stdout: ${res.stdout}`);
+  }
+  // The scaffold carries the active slug + the three required headers ...
+  const handoff = readFile('.ai/state/handoff.md');
+  for (const h of ['## Session Summary', '## Suggested Next Skills']) {
+    if (!handoff.includes(h)) {
+      cleanupSandbox();
+      throw new Error(`Scaffolded handoff missing guidance section: ${h}`);
+    }
+  }
+  if (handoff.includes('{{NEXT_SESSION_FOCUS_BLOCK}}')) {
+    cleanupSandbox();
+    throw new Error('Scaffolded handoff should not leave the focus template token unresolved');
+  }
+  if (!handoff.includes('Reference existing artifacts by path/link')) {
+    cleanupSandbox();
+    throw new Error('Scaffolded handoff should instruct reference-not-duplicate behavior');
+  }
+  if (!handoff.includes('REDACTED')) {
+    cleanupSandbox();
+    throw new Error('Scaffolded handoff should instruct sensitive-info redaction');
+  }
+  if (!res.stdout.includes('Suggested Next Skills') || !res.stdout.includes('Redact secrets')) {
+    cleanupSandbox();
+    throw new Error(`Expected compact-memory prompt skeleton to mention suggested skills and redaction. Stdout: ${res.stdout}`);
+  }
+  for (const h of ['## Promoted to project memory', '## Architecture updated', '## Verification promoted']) {
+    if (!handoff.includes(h)) {
+      cleanupSandbox();
+      throw new Error(`Scaffolded handoff missing header: ${h}`);
+    }
+  }
+  // ... but an UNEDITED scaffold must be REJECTED (MH-04): the seed marker means
+  // it was never authored. This is the fix for the surface-only verification hole.
+  const unedited = runCLI(['handoff']);
+  if (unedited.code === 0) {
+    cleanupSandbox();
+    throw new Error('Expected unedited scaffold to FAIL the handoff gate (seed marker present), but it passed.');
+  }
+  // Once authored (seed marker removed, real content), the gate passes.
+  writeFile('.ai/state/handoff.md',
+    '# Memory Handoff — test-compact\n\n' +
+    '## Promoted to project memory\nPromoted the routing decision to .ai/memory/decisions.md.\n\n' +
+    '## Architecture updated\nRecorded the new module boundary.\n\n' +
+    '## Verification promoted\nRan npm test; all suites green.\n');
+  const verify = runCLI(['handoff']);
+  if (verify.code !== 0) {
+    cleanupSandbox();
+    throw new Error(`Expected authored handoff to pass the gate, got ${verify.code}. Stderr: ${verify.stderr}`);
+  }
+  cleanupSandbox();
+});
+
+addTest('CLI compact-memory --focus records next session focus in pack, scaffold, and prompt', () => {
+  setupSandbox();
+  runCLI(['init']);
+  writeJson('.specify/feature.json', { feature_directory: 'specs/test-focus' });
+  writeFile('.ai/sessions/session-1.md', '# Session\n\n**Feature:** test-focus\nwork');
+
+  const res = runCLI(['compact-memory', '--focus', 'finish settle review']);
+  if (res.code !== 0) {
+    cleanupSandbox();
+    throw new Error(`Expected exit 0, got ${res.code}. Stderr: ${res.stderr}. Stdout: ${res.stdout}`);
+  }
+
+  const pack = JSON.parse(readFile('.ai/context-packs/compact-test-focus.json'));
+  if (pack.next_session_focus !== 'finish settle review') {
+    cleanupSandbox();
+    throw new Error(`Expected next_session_focus in pack, got: ${pack.next_session_focus}`);
+  }
+
+  const handoff = readFile('.ai/state/handoff.md');
+  if (!handoff.includes('> Next session focus: finish settle review')) {
+    cleanupSandbox();
+    throw new Error('Expected scaffolded handoff to include next session focus');
+  }
+  if (!res.stdout.includes('Next session focus: finish settle review')) {
+    cleanupSandbox();
+    throw new Error(`Expected prompt skeleton to echo next session focus. Stdout: ${res.stdout}`);
+  }
+
+  cleanupSandbox();
+});
+
+// 022: init seeds typed memory files, non-overwriting.
+addTest('CLI init seeds typed memory files patterns.md + gotchas.md (idempotent)', () => {
+  setupSandbox();
+  runCLI(['init']);
+  if (!fileExists('.ai/memory/patterns.md')) {
+    cleanupSandbox();
+    throw new Error('Expected .ai/memory/patterns.md to be seeded by init');
+  }
+  if (!fileExists('.ai/memory/gotchas.md')) {
+    cleanupSandbox();
+    throw new Error('Expected .ai/memory/gotchas.md to be seeded by init');
+  }
+  // An edited typed file must survive a re-run (non-intrusive / idempotent).
+  writeFile('.ai/memory/patterns.md', 'CUSTOM PATTERN CONTENT');
+  runCLI(['init']);
+  if (readFile('.ai/memory/patterns.md') !== 'CUSTOM PATTERN CONTENT') {
+    cleanupSandbox();
+    throw new Error('init overwrote an edited typed memory file');
+  }
+  cleanupSandbox();
+});
+
+// 022: handoff --strict enforces authored section bodies + a memory cross-reference.
+addTest('CLI handoff --strict enforces authored sections and memory cross-reference', () => {
+  setupSandbox();
+  runCLI(['init']);
+  writeJson('.specify/feature.json', { feature_directory: 'specs/feat-x' });
+
+  // Placeholder bodies: non-strict passes (slug + headers, no seed marker) but
+  // strict fails (no authored content, no real memory file named).
+  writeFile('.ai/state/handoff.md',
+    '# Memory Handoff — feat-x\n\n' +
+    '## Promoted to project memory\n_None._\n\n' +
+    '## Architecture updated\n_None._\n\n' +
+    '## Verification promoted\n_None._\n');
+  if (runCLI(['handoff']).code !== 0) {
+    cleanupSandbox();
+    throw new Error('Non-strict handoff should pass on slug + headers without seed marker');
+  }
+  if (runCLI(['handoff', '--strict']).code === 0) {
+    cleanupSandbox();
+    throw new Error('Strict handoff should fail on placeholder-only sections');
+  }
+
+  // Authored: real content + a real, non-seed memory file named.
+  writeFile('.ai/memory/decisions.md', '# Decisions\n\n2026-06-14: chose routing approach A because B.\n');
+  writeFile('.ai/state/handoff.md',
+    '# Memory Handoff — feat-x\n\n' +
+    '## Promoted to project memory\nPromoted the routing decision to .ai/memory/decisions.md.\n\n' +
+    '## Architecture updated\nRecorded the new module boundary in current-architecture.\n\n' +
+    '## Verification promoted\nRan npm test; all suites green.\n');
+  const strictOk = runCLI(['handoff', '--strict']);
+  if (strictOk.code !== 0) {
+    cleanupSandbox();
+    throw new Error(`Strict handoff should pass on an authored report. Stderr: ${strictOk.stderr}`);
+  }
+  cleanupSandbox();
+});
+
+// 022: compact-memory --archive moves only the active feature's logs and scopes the pack.
+addTest('CLI compact-memory --archive moves scoped logs and scopes the pack', () => {
+  setupSandbox();
+  runCLI(['init']);
+  writeJson('.specify/feature.json', { feature_directory: 'specs/feat-a' });
+  writeFile('.ai/sessions/s-a.md', '# Session\n\n**Feature:** feat-a\nwork');
+  writeFile('.ai/sessions/s-b.md', '# Session\n\n**Feature:** feat-b\nother');
+
+  const res = runCLI(['compact-memory', '--archive']);
+  if (res.code !== 0) {
+    cleanupSandbox();
+    throw new Error(`Expected exit 0, got ${res.code}. Stderr: ${res.stderr}`);
+  }
+  if (fileExists('.ai/sessions/s-a.md')) {
+    cleanupSandbox();
+    throw new Error('Scoped log s-a.md should have been moved out of .ai/sessions/');
+  }
+  if (!fileExists('.ai/sessions/archive/feat-a/s-a.md')) {
+    cleanupSandbox();
+    throw new Error('Scoped log should have been archived to .ai/sessions/archive/feat-a/');
+  }
+  if (!fileExists('.ai/sessions/s-b.md')) {
+    cleanupSandbox();
+    throw new Error('Other-feature log s-b.md must remain in place');
+  }
+  const pack = JSON.parse(readFile('.ai/context-packs/compact-feat-a.json'));
+  const refs = (pack.input_files || []).join('|');
+  if (!refs.includes('archive/feat-a/s-a.md')) {
+    cleanupSandbox();
+    throw new Error('Pack should reference the archived log location');
+  }
+  if (refs.includes('s-b.md')) {
+    cleanupSandbox();
+    throw new Error('Pack must not include another feature\'s log');
+  }
+  cleanupSandbox();
 });
 
 // Run all tests
