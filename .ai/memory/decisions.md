@@ -10,4 +10,5 @@
 - **2026-05-24 | D-15: GSD Execution Layer**: GSD consumes Spec-Kit artifacts (`spec.md`, `plan.md`, `tasks.md`) for code execution. It must not generate or maintain competing `SPEC.md` or `PLAN.md` files.
 - **2026-05-24 | D-16: Critique Gates**: GStack reviews (CEO/Eng Manager) act as the critique gates for product, architecture, design, and release readiness.
 - **2026-05-24 | D-16a: Issue Projection**: GitHub issues are created as projections directly from tasks in `tasks.md` (e.g., via `speckit-taskstoissues`) and must not diverge from the canonical tasks list.
+- **2026-06-20 | D-17: Session-Scoped Gate Bypasses**: Added a temporary, TTL-bounded bypass substrate for secondary gates (budget, lease, diff-hygiene). Critical gates (validate-spec, security) are strictly forbidden from being bypassed (fail-closed). All create/clear actions are logged locally in `.ai/signals/bypass.jsonl` for maintainer audit.
 

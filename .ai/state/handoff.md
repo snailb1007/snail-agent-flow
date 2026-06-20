@@ -1,21 +1,40 @@
 # Memory Handoff Report
 
-**Feature:** 018-pure-task-scoring-profile and Phase 19 (atlas-refactor-CONTEXT)
+**Feature:** 026-session-based-bypass-secondary
+
+## Session Summary
+
+- **What we did**: Added a session-scoped bypass substrate for non-critical secondary gates (`budget`, `lease`, `diff-hygiene`). The bypass is temporary, bounded by TTL, audited to disk, and visible in command outputs to allow unblocking local development tasks without weakening primary/critical validation or security gates.
+- **What changed**:
+  - Hardened [lib/session-bypass.js](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/lib/session-bypass.js) with case-insensitive normalization of gate IDs, strict allowlist validation (`budget`, `lease`, `diff-hygiene`), and explicit forbidden gates rejection (`validate-spec`, `security`).
+  - Added CLI commands in [bin/adp.js](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/bin/adp.js) supporting bypass creation, listing, and clearing (`adp bypass <gate-id> [--ttl <seconds>] [--reason <text>]`, `adp bypass --list`, `adp bypass --clear`).
+  - Integrated bypass checking into existing checks to emit warning logs instead of failing.
+  - Implemented automatic `.gitignore` updates for `.ai/state/session-bypass.json`.
+  - Added append-only JSONL audits of all bypass operations in `.ai/signals/bypass.jsonl`.
+- **Verified**:
+  - Ran focused substrate tests with `node validators/scripts/test-session-bypass.js` (26 passed).
+  - Ran CLI command validations and edge cases with `node validators/scripts/test-cli.js`.
+  - Validated the feature packet spec-kit with `node validators/scripts/validate-spec.js` (passed).
+  - Verified 49/49 CLI tests pass successfully via CLI test run.
+- **Open / next**: Nothing. The session-based bypass secondary implementation is complete and verified.
+
+## Suggested Next Skills
+
+- `atlas-settle` — finish settle checks and release cleanup.
 
 ## Promoted to project memory
-- Implemented task risk evaluation module `lib/profile-scorer.js` supporting Novelty, Blast Radius, Ambiguity, Reversibility, and User/Biz Risk dimensions.
-- Consolidated the GSD 10-stage flow into the 5-stage ATLAS Loop (Align, Trace, Lay, Act, Settle).
-- Replaced `flow-ledger.json` and `run-state.json` with `flow-state.json` (v2.0 schema) to record pipeline executions.
-- Designed and registered Schema Contracts (`artifact-map.json`, `entities.schema.json`, `gate-result.schema.json`) for data integrity.
-- Implemented Workspace Drift Validator to enforce path boundaries, lock state compliance, and prevent duplicate specifications.
+- Added local developer-safety bypass mechanisms for secondary gates to project summary scope [.ai/memory/project-summary.md](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/.ai/memory/project-summary.md).
+- Added bypass state files (`session-bypass.json` and `bypass.jsonl`) under State Pointers list [.ai/memory/current-architecture.md](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/.ai/memory/current-architecture.md).
+- Documented bypass overuse risk and mitigation [.ai/memory/known-risks.md](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/.ai/memory/known-risks.md).
+- Recorded D-17 session-scoped gate bypasses decision [.ai/memory/decisions.md](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/.ai/memory/decisions.md).
+- Documented feature 026 verification history [.ai/memory/verification-history.md](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/.ai/memory/verification-history.md).
+- Documented Safe Gate Bypassing code pattern [.ai/memory/patterns.md](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/.ai/memory/patterns.md).
+- Documented Bypass State Gitignore Leakage and Critical Gate Hard Lock gotchas [.ai/memory/gotchas.md](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/.ai/memory/gotchas.md).
 
 ## Architecture updated
-- Created `lib/profile-scorer.js` for risk assessment.
-- Implemented `lib/validate-drift.js` to validate workspace anomalies.
-- Integrated `flow-state.json` support into `bin/adp.js`, `lib/init-checks.js`, and `lib/flow-engine.js`.
-- Registered `atlas-routing`, `atlas-gates`, `atlas-settle`, and `atlas-review` skills under `.claude/skills/`.
+- Implementation of bypass substrate in [lib/session-bypass.js](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/lib/session-bypass.js).
+- Integration of bypass CLI parser and command handler in [bin/adp.js](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/bin/adp.js).
 
 ## Verification promoted
-- Added unit tests for profile scoring in `validators/scripts/test-profile-scorer.js`.
-- Implemented new E2E integration test suite simulating the full ATLAS loop in `validators/scripts/test-atlas-e2e.js`.
-- Updated test validation suites in `validators/scripts/test-cli.js`, `validators/scripts/test-init-checks.js`, `validators/scripts/test-validate-drift.js`, and `package.json`.
+- Added dedicated substrate test suite in [validators/scripts/test-session-bypass.js](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/validators/scripts/test-session-bypass.js).
+- Added CLI bypass command integration checks in [validators/scripts/test-cli.js](file:///C:/Users/ADMIN/source/repos/snail-agent-flow/validators/scripts/test-cli.js).

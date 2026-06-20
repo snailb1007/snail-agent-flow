@@ -17,10 +17,10 @@ This document defines the canonical artifact contract, path ownership model, and
 | `validators/scripts/validate-spec.js` | Protocol / Validator | Authoritative | `implemented` | Deterministic Node.js validator for active feature pointers, Spec-Kit file structure, required headings, path drift, placeholders, retry state, and human review packet generation. |
 | `validators/scripts/test-validator.js` | Protocol / Validator | Authoritative | `implemented` | Local validator test suite covering pass, failure, retry, resume, and generated review packet behavior. |
 | `validators/scripts/test-cli.js` | Protocol / Validator | Authoritative | `implemented` | CLI integration test suite covering command routing, initialization, session creation, status, doctor, validate-spec, and handoff behavior. |
-| `bin/adp.js` | Node.js Tooling | Authoritative | `implemented` | Zero-dependency CLI registered as `adp` and `saf` for protocol initialization, status, validation, session logging, doctor checks, and memory handoff validation. |
+| `bin/adp.js` | Node.js Tooling | Authoritative | `implemented` | Zero-dependency CLI registered as `adp` and `saf`; command registry currently exposes 22 commands documented below. |
 | `package.json` | Node.js Tooling | Authoritative | `implemented` | Defines package metadata, the `adp`/`saf` binary mappings, `npm run validate`, `npm run test:validator`, `npm run test:pipeline`, `npm run test:cli`, and `npm test`. |
 | `.github/workflows/ci.yml` | GitHub Actions | Authoritative | `implemented` | CI workflow matrix that runs spec validation, validator tests, pipeline simulation, CLI integration tests, and the full verification suite. |
-| `.github/workflows/release.yml` | GitHub Actions | Authoritative | `implemented` | Release workflow that runs the full validation suite, packs the CLI tarball, uploads the artifact, and attaches it to tagged releases. |
+| `.github/workflows/release.yml` | GitHub Actions | Authoritative | `implemented` | Release workflow that runs the full validation suite, packs the CLI tarball, uploads the artifact, and attaches it to semver `v*.*.*` tags plus legacy `v*.*.*.*` transition tags. |
 | `docs/` | Protocol / Human | Authoritative | `implemented` | Project documentation and artifact registries. |
 | `docs/installation.md` | Protocol / Human | Authoritative | `implemented` | Local setup, CLI usage, and verification command reference. |
 | `docs/artifact-registry.md` | Protocol / Human | Authoritative | `implemented` | Registry of paths, owners, and statuses. |
@@ -46,7 +46,7 @@ This document defines the canonical artifact contract, path ownership model, and
 | `README.md` | Protocol / Human | Authoritative | `implemented` | Entry-point documentation for CLI usage, verification commands, project structure, and documentation links. |
 | `CLAUDE.md` | Claude CLI | Authoritative | `implemented` | Developer guide, build/test commands, local CLI commands, and CLI constraints. |
 | `GEMINI.md` | Gemini CLI | Authoritative | `implemented` | Gemini-specific adapter command details and guidelines. |
-| `AGENTS.md` | Protocol / Human | Authoritative | `generated-scaffold` | High-level agent team documentation and directives. |
+| `AGENTS.md` | Protocol / Human | Authoritative | `implemented` | AGENTS.md-compatible agent instructions and directives. |
 | `CONTEXT.md` | Protocol / Human | Authoritative | `implemented` | Defines feature spec source of truth and state pointers. |
 | `.gitignore` | Git | Authoritative | `implemented` | Workspace path exclusion settings. |
 
@@ -57,6 +57,35 @@ This document defines the canonical artifact contract, path ownership model, and
 - **placeholder**: Exists as an empty file or dummy context to reserve the path.
 - **generated-scaffold**: Scaffolding created by tools/CLIs, not yet customized or validated.
 - **deferred**: Documented in the roadmap but not yet created in the workspace.
+
+## Generated CLI Command Reference
+
+Source: `bin/adp.js` `USAGE` registry. Count: **22 implemented commands**. Aliases: `adp` and `saf` both point to `bin/adp.js`.
+
+| Command | Artifact / State touched |
+|---|---|
+| `init` | `.ai/`, `.specify/`, `specs/`, instruction templates, packaged skills |
+| `feature <description>` | `specs/<feature-slug>/`, `.specify/feature.json` |
+| `run <description>` | `init` + `feature` + validation gate |
+| `new-session <name>` | `.ai/sessions/`, active feature state |
+| `status` | `.specify/feature.json`, `.ai/state/run-state.json`, `.ai/state/flow-state.json` |
+| `doctor` | static checks, spec validator, repair guide output |
+| `validate-spec` | `validators/scripts/validate-spec.js` |
+| `handoff` | `.ai/state/handoff.md`, `.ai/memory/` readiness |
+| `score <task.json>` | risk/profile scoring output |
+| `claim <task-slug>` | `.ai/claims/*.json` |
+| `lease <file>` | `.ai/locks/*.json` |
+| `checkpoint` | profile-switch checkpoint artifact |
+| `signal <type> <val>` | `.ai/signals/current-period.jsonl` |
+| `onboard-memory` | `.ai/memory/*.md` seeded from `ONBOARDING.md` |
+| `budget` | context byte-pressure report from `.ai/state/context-policy.json` |
+| `pack` | `.ai/context-packs/*.json` |
+| `compact-memory` | compaction input pack and `.ai/state/handoff.md` scaffold |
+| `snapshot` | git stash checkpoint metadata |
+| `restore <id>` | git checkpoint restore path |
+| `profile -- <cmd...>` | command profiler report |
+| `hooks <install\|uninstall\|status>` | `.claude/settings.json`, `.claude/hooks/` |
+| `bypass <gate-id>` | temporary secondary-gate bypass state |
 
 ## Directory Layout Status Table
 

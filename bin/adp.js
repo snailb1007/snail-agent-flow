@@ -2639,29 +2639,37 @@ function handleHooksCmd(cmdArgs) {
   }
 }
 
-function handleBypassCmd(cmdArgs) {
-  const { addBypass, listBypasses, clearBypasses } = require('../lib/session-bypass');
-  let list = false;
-  let clear = false;
-  let gateId = null;
-  let ttl = 3600;
-  let reason = '';
-
-  for (let i = 0; i < cmdArgs.length; i++) {
-    const arg = cmdArgs[i];
-    if (arg === '--list') {
-      list = true;
-    } else if (arg === '--clear') {
-      clear = true;
-    } else if (arg === '--ttl') {
-      ttl = parseInt(cmdArgs[++i], 10);
-    } else if (arg === '--reason') {
-      reason = cmdArgs[++i];
-    } else if (arg.startsWith('--')) {
-      console.error(`Error: Unknown flag "${arg}"`);
-      process.exit(1);
-    } else {
-      gateId = arg;
+function handleBypassCmd(cmdArgs) { 
+  const { addBypass, listBypasses, clearBypasses } = require('../lib/session-bypass'); 
+  let list = false; 
+  let clear = false; 
+  let gateId = null; 
+  let ttl = undefined; 
+  let reason = ''; 
+ 
+  for (let i = 0; i < cmdArgs.length; i++) { 
+    const arg = cmdArgs[i]; 
+    if (arg === '--list') { 
+      list = true; 
+    } else if (arg === '--clear') { 
+      clear = true; 
+    } else if (arg === '--ttl') { 
+      ttl = cmdArgs[++i]; 
+      if (!ttl || ttl.startsWith('--')) { 
+        console.error('Error: --ttl requires a positive integer number of seconds.'); 
+        process.exit(1); 
+      } 
+    } else if (arg === '--reason') { 
+      reason = cmdArgs[++i]; 
+      if (!reason || reason.startsWith('--')) { 
+        console.error('Error: --reason requires text.'); 
+        process.exit(1); 
+      } 
+    } else if (arg.startsWith('--')) { 
+      console.error(`Error: Unknown flag "${arg}"`); 
+      process.exit(1); 
+    } else { 
+      gateId = arg; 
     }
   }
 
@@ -2675,13 +2683,18 @@ function handleBypassCmd(cmdArgs) {
     process.exit(0);
   }
 
-  if (!gateId) {
-    console.error('Error: Missing gate-id. Usage: adp bypass <gate-id> [--ttl <seconds>] [--reason <text>]');
-    process.exit(1);
-  }
-
-  addBypass(repoRoot, gateId, ttl, reason);
-}
+  if (!gateId) { 
+    console.error('Error: Missing gate-id. Usage: adp bypass <gate-id> [--ttl <seconds>] [--reason <text>]'); 
+    process.exit(1); 
+  } 
+ 
+  try { 
+    addBypass(repoRoot, gateId, ttl, reason); 
+  } catch (e) { 
+    console.error(`Error: ${e.message}`); 
+    process.exit(1); 
+  } 
+} 
 
 module.exports = {
   isSectionBoundary,

@@ -108,7 +108,7 @@ npm run test:cli           # CLI command integration coverage
 npm test                   # full validation suite
 ```
 
-The release workflow runs `npm test`, builds an npm tarball with `npm pack`, uploads the package artifact, and attaches it to tagged GitHub releases matching `v*.*.*.*`.
+The release workflow runs `npm test`, builds an npm tarball with `npm pack`, uploads the package artifact, and attaches it to tagged GitHub releases matching semver `v*.*.*` and legacy transition tags `v*.*.*.*`.
 
 ## Release Verification Checklist
 

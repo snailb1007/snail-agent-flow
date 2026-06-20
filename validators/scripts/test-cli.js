@@ -1834,6 +1834,61 @@ addTest('CLI Budget Command Enforce Flag Exits 1 When Not Inline', () => {
   }
 });
 
+// Bypass command: secondary gates only, TTL validation, and audit trail
+addTest('CLI Bypass Command Enforces Secondary Gate TTL And Audit', () => {
+  setupSandbox();
+  writeFile('.gitignore', '# test sandbox\n');
+
+  const res = runCLI(['bypass', 'diff-hygiene', '--ttl', '30', '--reason', 'temporary maintenance']);
+  if (res.code !== 0) {
+    throw new Error(`Expected bypass create exit 0, got ${res.code}: ${res.stderr}`);
+  }
+  if (!res.stdout.includes('Created temporary bypass for gate "diff-hygiene"')) {
+    throw new Error(`Expected create message, got: ${res.stdout}`);
+  }
+
+  const bypasses = readJson('.ai/state/session-bypass.json');
+  if (!Array.isArray(bypasses) || bypasses.length !== 1 || bypasses[0].gate !== 'diff-hygiene') {
+    throw new Error(`Expected one diff-hygiene bypass, got: ${JSON.stringify(bypasses)}`);
+  }
+
+  const auditLines = readFile('.ai/signals/bypass.jsonl').trim().split('\n').map(line => JSON.parse(line));
+  if (auditLines[0].action !== 'add' || auditLines[0].ttl_seconds !== 30) {
+    throw new Error(`Expected add audit with ttl, got: ${JSON.stringify(auditLines[0])}`);
+  }
+  if (!readFile('.gitignore').includes('.ai/state/session-bypass.json')) {
+    throw new Error('Expected session bypass state file to be gitignored');
+  }
+
+  const forbidden = runCLI(['bypass', 'validate-spec', '--ttl', '30']);
+  if (forbidden.code !== 1 || !forbidden.stderr.includes('critical and cannot be bypassed')) {
+    throw new Error(`Expected critical gate rejection, got code ${forbidden.code}: ${forbidden.stderr}`);
+  }
+
+  const unknown = runCLI(['bypass', 'unknown-gate', '--ttl', '30']);
+  if (unknown.code !== 1 || !unknown.stderr.includes('not a bypassable secondary gate')) {
+    throw new Error(`Expected unknown gate rejection, got code ${unknown.code}: ${unknown.stderr}`);
+  }
+
+  const badTtl = runCLI(['bypass', 'budget', '--ttl', '0']);
+  if (badTtl.code !== 1 || !badTtl.stderr.includes('TTL must be a positive integer')) {
+    throw new Error(`Expected TTL rejection, got code ${badTtl.code}: ${badTtl.stderr}`);
+  }
+
+  const cleared = runCLI(['bypass', '--clear']);
+  if (cleared.code !== 0) {
+    throw new Error(`Expected clear exit 0, got ${cleared.code}: ${cleared.stderr}`);
+  }
+  const afterClear = readJson('.ai/state/session-bypass.json');
+  if (!Array.isArray(afterClear) || afterClear.length !== 0) {
+    throw new Error(`Expected bypasses to be cleared, got: ${JSON.stringify(afterClear)}`);
+  }
+  const finalAudit = readFile('.ai/signals/bypass.jsonl').trim().split('\n').map(line => JSON.parse(line)).pop();
+  if (finalAudit.action !== 'clear' || finalAudit.cleared_count !== 1) {
+    throw new Error(`Expected clear audit, got: ${JSON.stringify(finalAudit)}`);
+  }
+});
+
 // Pack command: creates a schema-valid manifest
 addTest('CLI Pack Command Creates Valid Context Pack', () => {
   setupSandbox();

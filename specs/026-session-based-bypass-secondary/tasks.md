@@ -4,16 +4,16 @@
 
 ## Specification Review
 
-- [ ] T001 Review generated spec for scope and acceptance criteria.
-- [ ] T002 Refine plan with impacted files, risks, and verification commands.
+- [x] T001 Review generated spec for scope and acceptance criteria.
+- [x] T002 Refine plan with impacted files, risks, and verification commands.
 
 ## Implementation
 
-- [ ] T003 Implement the accepted feature changes.
-- [ ] T004 Add or update tests for the changed behavior.
+- [x] T003 Implement the accepted feature changes.
+- [x] T004 Add or update tests for the changed behavior.
 
 ## Verification And Handoff
 
-- [ ] T005 Run deterministic spec validation.
-- [ ] T006 Run project verification commands.
-- [ ] T007 Update handoff and memory notes if the feature changes durable project knowledge.
+- [x] T005 Run deterministic spec validation.
+- [x] T006 Run project verification commands.
+- [x] T007 Record durable feature details in spec/plan; defer formal memory compaction to session settle.

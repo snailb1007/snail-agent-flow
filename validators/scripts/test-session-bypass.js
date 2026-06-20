@@ -1,7 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { addBypass, checkBypass, clearBypasses } = require('../../lib/session-bypass');
+const {
+  addBypass,
+  checkBypass,
+  clearBypasses,
+  normalizeTtlSeconds,
+  validateGateId,
+  MAX_TTL_SECONDS
+} = require('../../lib/session-bypass');
 const { checkDiffHygiene } = require('../../lib/diff-hygiene');
 
 let passed = 0;
@@ -14,6 +21,23 @@ function assertTest(condition, message) {
   } else {
     failed++;
     console.error(`  FAIL: ${message}`);
+  }
+}
+
+function assertThrows(fn, expectedMessage, message) {
+  try {
+    fn();
+    failed++;
+    console.error(`  FAIL: ${message}`);
+  } catch (err) {
+    const ok = String(err.message || err).includes(expectedMessage);
+    if (ok) {
+      passed++;
+      console.log(`  PASS: ${message}`);
+    } else {
+      failed++;
+      console.error(`  FAIL: ${message} (${err.message})`);
+    }
   }
 }
 
@@ -39,6 +63,10 @@ try {
   const res2 = checkBypass(tempDir, 'diff-hygiene');
   assertTest(res2.bypassed === true, 'bypass is active');
   assertTest(res2.reason === 'Hotfix for hot issue', 'reason matches');
+  const auditPath = path.join(tempDir, '.ai/signals/bypass.jsonl');
+  const auditRecords = fs.readFileSync(auditPath, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  assertTest(auditRecords[0].action === 'add', 'add writes audit record');
+  assertTest(auditRecords[0].ttl_seconds === 10, 'audit records ttl');
 
   // Verify gitignore was updated dynamically
   const gitignoreContent = fs.readFileSync(path.join(tempDir, '.gitignore'), 'utf8');
@@ -68,9 +96,14 @@ try {
   // Test 4: Clear bypasses
   console.log('Running Test 4: Clear bypasses');
   addBypass(tempDir, 'diff-hygiene', 60, 'Temp bypass');
-  clearBypasses(tempDir);
+  const clearedCount = clearBypasses(tempDir);
   const res4 = checkBypass(tempDir, 'diff-hygiene');
+  const auditAfterClear = fs.readFileSync(auditPath, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  const lastAudit = auditAfterClear[auditAfterClear.length - 1];
+  assertTest(clearedCount === 1, 'clearBypasses returns cleared count');
   assertTest(res4.bypassed === false, 'bypasses cleared successfully');
+  assertTest(lastAudit.action === 'clear', 'clear writes audit record');
+  assertTest(lastAudit.cleared_count === 1, 'clear audit records cleared count');
 
   // Test 5: checkDiffHygiene respects bypass
   console.log('Running Test 5: checkDiffHygiene respects bypass');
@@ -80,6 +113,21 @@ try {
   const hygieneRes = checkDiffHygiene(tempDir);
   assertTest(hygieneRes.ok === true, 'checkDiffHygiene passes when bypassed');
   assertTest(hygieneRes.warnings.some(w => w.includes('diff-hygiene: BYPASSED')), 'warnings include bypass warning');
+
+  // Test 6: Only secondary gates can be bypassed
+  console.log('Running Test 6: Secondary gate allowlist');
+  assertTest(validateGateId('budget') === 'budget', 'budget is bypassable');
+  assertTest(validateGateId('LEASE') === 'lease', 'gate validation normalizes case');
+  assertThrows(() => validateGateId('validate-spec'), 'critical and cannot be bypassed', 'validate-spec cannot be bypassed');
+  assertThrows(() => validateGateId('unknown-gate'), 'not a bypassable secondary gate', 'unknown gates are rejected');
+
+  // Test 7: TTL validation is finite and bounded
+  console.log('Running Test 7: TTL validation');
+  assertTest(normalizeTtlSeconds(undefined) === 3600, 'default TTL is one hour');
+  assertTest(normalizeTtlSeconds('15') === 15, 'string TTL parses to integer seconds');
+  assertThrows(() => normalizeTtlSeconds('abc'), 'positive integer', 'non-numeric TTL is rejected');
+  assertThrows(() => normalizeTtlSeconds(0), 'positive integer', 'zero TTL is rejected');
+  assertThrows(() => normalizeTtlSeconds(MAX_TTL_SECONDS + 1), 'seconds or less', 'oversized TTL is rejected');
 
 } catch (err) {
   console.error('Test suite failed with error:', err);

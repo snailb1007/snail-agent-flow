@@ -10,3 +10,4 @@ Make it obvious which AI engineering tool should run next, what artifact it shou
 - Tool routing rules and state transition validation.
 - Circuit breakers, retry loops, and human-review handoffs.
 - Memory seeding and handoff validation.
+- Local developer-safety bypass mechanisms for secondary gates (session-based bypass).

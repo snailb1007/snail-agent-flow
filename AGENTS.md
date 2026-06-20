@@ -50,27 +50,23 @@ node bin/adp.js handoff
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///Volumes/D/snail-agent-flow/specs/017-context-budget-gate/plan.md)
+[plan.md](specs/017-context-budget-gate/plan.md)
 <!-- SPECKIT END -->
-
-# RTK Token Optimization Rules
-You are integrated with RTK (Rust Token Killer). When executing or reading outputs of system commands, you must respect the compressed structural signatures to preserve context tokens:
-
-- Git Status: Interpret short hex indicators and bulleted branches (e.g., "📌 master") as standard clean working trees.
-- Test Runners: Expect failed assertions only. Ignore truncated lines for passing suites.
-- File Tree/Operations: Recognize that boilerplate directories (node_modules, .git, target, target/debug) are hidden by default; do not re-run commands to find them unless explicitly requested.
-- Error logs: Focus strictly on the core stack trace signals; summary formats contain the complete execution diagnostic.
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **snail-agent-flow** (2069 symbols, 2674 relationships, 22 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **snail-agent-flow** (2414 symbols, 3238 relationships, 45 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
 ## Always Do
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **Use risk-tiered impact analysis before editing symbols:**
+  - **FAST (low risk)**: Skip impact analysis.
+  - **STANDARD (medium risk)**: Advisory/optional impact analysis.
+  - **FULL (high risk)**: Required impact analysis before edit, reporting the blast radius (direct callers, affected processes, risk level) to the user.
+- **Mandatory impact analysis:** ALWAYS run `impact({target: "symbolName", direction: "upstream"})` before performing a `rename`, cross-module changes, or public-API changes.
 - **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
 - When exploring unfamiliar code, use `query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
@@ -78,7 +74,6 @@ This project is indexed by GitNexus as **snail-agent-flow** (2069 symbols, 2674 
 
 ## Never Do
 
-- NEVER edit a function, class, or method without first running `impact` on it.
 - NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
 - NEVER rename symbols with find-and-replace — use `rename` which understands the call graph.
 - NEVER commit changes without running `detect_changes()` to check affected scope.

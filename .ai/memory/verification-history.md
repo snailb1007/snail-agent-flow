@@ -6,3 +6,5 @@
 - **2026-05-24 | Phase 4 Setup**: Aligned CLAUDE.md, GEMINI.md, AGENTS.md and .ai/constitution.md to the shared protocol contract, and cleaned up legacy active-feature pointer.
 - **2026-05-24 | Phase 5 Setup**: Added node-based CLI command suite with `adp` and `saf` executables, safe initializer, session manager, doctor diagnostic, status command, and handoff gate checks.
 - **2026-05-24 | Phase 6 Setup**: Expanded integration examples with greenfield and brownfield fixture projects, configured CI workflow matrix validation (GitHub Actions), and implemented evaluation rubric structural schema tests. All 12 CLI checks, 15 spec-validator assertions, and phase 2 simulations are fully verified and green via `npm test`.
+- **2026-06-20 | Feature 026 Setup**: Implemented a session-based bypass substrate for secondary gates (budget, lease, diff-hygiene). Verified functionality with localized unit tests (test-session-bypass.js), CLI execution coverage (test-cli.js), and integration warnings checks. Fully verified 49 CLI integration/unit tests successfully.
+

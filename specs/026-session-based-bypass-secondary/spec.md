@@ -2,48 +2,55 @@
 
 ## Goal
 
-Create a feature packet for this request: session based bypass for secondary gates with ttl and audit
-
-The generated scaffold gives the team a validated starting point for agent-assisted planning and implementation.
+Add a session-scoped bypass substrate for non-critical secondary gates. The bypass must be temporary, bounded by TTL, visible in command output, and audited to disk so maintainers can unblock local work without weakening primary validation or security gates.
 
 ## Non-Goals
 
-- Declare implementation complete.
-- Replace product, engineering, QA, or release review.
-- Add behavior outside the supplied feature request.
+- Bypass `validate-spec`, security, or other primary/critical gates.
+- Create persistent repository configuration for bypasses.
+- Automatically mutate project ledger or claim state when a bypass is used.
+- Add network calls or external approval services.
 
 ## Acceptance Criteria
 
-1. The feature request is captured in the canonical feature specification.
-2. The implementation plan identifies the intended change area at a high level.
-3. The task list gives the implementing agent a concrete starting checklist.
-4. The generated feature packet passes deterministic validation before code execution begins.
+1. `adp bypass <gate-id> --ttl <seconds> --reason <text>` creates an active bypass only for supported secondary gates: `budget`, `lease`, and `diff-hygiene`.
+2. Critical gates such as `validate-spec` and `security` fail closed and cannot be bypassed.
+3. TTL is required to be a positive integer when supplied, defaults to one hour, and is capped at 24 hours.
+4. Active bypass state is stored in `.ai/state/session-bypass.json`, and the state file is added to `.gitignore` when possible.
+5. Bypass create and clear actions append audit records to `.ai/signals/bypass.jsonl`.
+6. Existing secondary gate checks for budget enforcement, lease check, and diff hygiene honor active bypasses and emit warnings.
 
 ## Test Strategy
 
-- Validate the generated feature packet with the deterministic spec validator.
-- Add implementation-specific tests during planning and execution.
-- Verify acceptance criteria before release handoff.
+- Validate the feature packet with `node validators/scripts/validate-spec.js`.
+- Run focused substrate tests with `node validators/scripts/test-session-bypass.js`.
+- Run integration coverage with `node validators/scripts/test-cli.js` and `node validators/scripts/test-diff-hygiene.js`.
+- Run relevant lint/test commands before handoff.
 
 ## Behavior-Preservation Rules
 
-- Preserve existing behavior unless the feature request explicitly changes it.
-- Keep changes scoped to the accepted feature packet.
-- Run relevant verification before marking tasks complete.
+- Preserve default behavior when no bypass is active.
+- Keep bypass handling opt-in and command-scoped.
+- Fail closed for unsupported or critical gates.
+- Preserve existing secondary gate warning patterns when bypasses are honored.
 
 ## User Scenarios
 
 ### Primary Scenario
 
-A project maintainer asks for the feature, reviews the generated packet, refines it as needed, and then uses the accepted artifacts to guide implementation.
+A maintainer needs to temporarily skip a secondary local gate during a time-boxed maintenance workflow. They create a bypass with an explicit reason and TTL, run the blocked command, and later clear bypasses. The action remains visible in `.ai/signals/bypass.jsonl`.
 
 ## Functional Requirements
 
-- FR-001: The project must capture the requested feature in spec.md.
-- FR-002: The project must keep planning and task artifacts in the same feature directory.
-- FR-003: The project must validate the feature packet before implementation.
+- FR-001: The CLI must support creating, listing, and clearing session bypasses.
+- FR-002: The bypass library must normalize gate ids case-insensitively.
+- FR-003: The bypass library must reject critical gates and unsupported gate ids.
+- FR-004: The bypass library must validate TTL as a positive bounded integer number of seconds.
+- FR-005: Active bypasses must expire automatically based on `expires_at`.
+- FR-006: Bypass create and clear operations must append JSONL audit records.
+- FR-007: Integrated secondary gates must treat active bypasses as successful with an explicit warning.
 
 ## Assumptions
 
-- The generated packet is a starting point and may be refined before coding.
-- Detailed technical choices are finalized during planning.
+- Secondary gates are local developer-safety checks, not release/security controls.
+- The first supported gate allowlist is `budget`, `lease`, and `diff-hygiene` because those are the currently integrated bypass call sites.

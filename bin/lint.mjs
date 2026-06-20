@@ -46,9 +46,62 @@ const REQUIRED_BOOTSTRAP_PHRASES = [
   'Skills are internal execution modules selected by the router'
 ];
 
+// Resident instruction surface guarded against re-forked transport rules and
+// machine-specific absolute paths (improvement-plan Phase 2A; §6 "zero drift",
+// "zero hardcoded absolute paths"). ADAPTER_FILES are the agent-facing roots;
+// .claude/CLAUDE.md is the always-resident routing core.
+const RESIDENT_INSTRUCTION_FILES = [...ADAPTER_FILES, '.claude/CLAUDE.md'];
+const FORBIDDEN_TRANSPORT_RE = /RTK Token Optimization|Rust Token Killer/;
+const ABSOLUTE_PATH_PATTERNS = [
+  { re: /file:\/\//, label: 'file:// URI' },
+  { re: /\/Volumes\//, label: 'macOS /Volumes/ path' },
+  { re: /\/(?:home|Users)\/[A-Za-z0-9._-]+\//, label: 'absolute home-directory path' },
+  { re: /\b[A-Za-z]:\\(?:Users|home)\b/i, label: 'Windows absolute user path' }
+];
+const FORBIDDEN_IMPACT_PATTERNS = [
+  { re: /must run impact analysis before editing any symbol/i, label: 'unconditional impact before editing' },
+  { re: /never edit a function, class, or method without first running.*impact/i, label: 'unconditional impact before editing' }
+];
+
 // --- Helper Functions ---
 function getRelativePath(absolutePath, rootDir) {
   return path.relative(rootDir, absolutePath);
+}
+
+function getSkillMarkdownFiles(dir) {
+  const files = [];
+  if (!fs.existsSync(dir)) return files;
+  
+  function walk(currentDir) {
+    let entries;
+    try {
+      entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    } catch (e) {
+      return;
+    }
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+        files.push(fullPath);
+      }
+    }
+  }
+  walk(dir);
+  return files;
+}
+
+// Read a file with line endings normalized to LF. The lint must be deterministic
+// across platforms: with git's core.autocrlf=true a Windows checkout yields CRLF
+// while Linux CI yields LF, which would otherwise flip exact-byte block matches
+// and inflate byte budgets. Comparisons and budgets are measured on LF content.
+function readText(filePath) {
+  return fs.readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n');
+}
+
+function byteLen(filePath) {
+  return Buffer.byteLength(readText(filePath), 'utf8');
 }
 
 function countOccurrences(haystack, needle) {
@@ -119,7 +172,7 @@ export function lintTree(rootDir) {
     });
   } else {
     filesChecked.add(claudePath);
-    const size = fs.statSync(fullClaudePath).size;
+    const size = byteLen(fullClaudePath);
     if (size > BUDGETS[claudePath]) {
       const delta = size - BUDGETS[claudePath];
       violations.push({
@@ -142,7 +195,7 @@ export function lintTree(rootDir) {
       });
     } else {
       filesChecked.add(skillPath);
-      const size = fs.statSync(fullSkillPath).size;
+      const size = byteLen(fullSkillPath);
       if (size > SKILL_BUDGET) {
         const delta = size - SKILL_BUDGET;
         violations.push({
@@ -166,7 +219,7 @@ export function lintTree(rootDir) {
     });
   } else {
     filesChecked.add(BOOTSTRAP_TEMPLATE);
-    const template = fs.readFileSync(templatePath, 'utf8');
+    const template = readText(templatePath);
     validateBootstrapText(template, BOOTSTRAP_TEMPLATE, violations);
     expectedBlock = renderManagedBlock(template);
   }
@@ -183,8 +236,74 @@ export function lintTree(rootDir) {
     }
     filesChecked.add(adapterPath);
     if (expectedBlock) {
-      const content = fs.readFileSync(fullAdapterPath, 'utf8');
+      const content = readText(fullAdapterPath);
       validateManagedAdapter(content, adapterPath, expectedBlock, violations);
+    }
+  }
+
+  // 1b. Anti-regression content checks on the resident instruction surface.
+  // LINT-05: no re-forked transport/compression rules (e.g. RTK) — those are a
+  // personal global hook, not repo policy. LINT-06: no machine-specific absolute
+  // paths — keep instruction files portable across clones and runtimes.
+  for (const relPath of RESIDENT_INSTRUCTION_FILES) {
+    const fullPath = path.join(rootDir, relPath);
+    if (!fs.existsSync(fullPath)) {
+      // Missing-file is already reported by the budget / adapter checks above.
+      continue;
+    }
+    const content = fs.readFileSync(fullPath, 'utf8');
+
+    if (FORBIDDEN_TRANSPORT_RE.test(content)) {
+      violations.push({
+        relPath,
+        rule: 'LINT-05',
+        detail: 'contains re-forked transport/compression rules (RTK)',
+        hint: 'RTK is a personal global hook, not repo policy — remove it from committed instruction files.'
+      });
+    }
+
+    for (const { re, label } of ABSOLUTE_PATH_PATTERNS) {
+      const m = content.match(re);
+      if (m) {
+        violations.push({
+          relPath,
+          rule: 'LINT-06',
+          detail: `hardcoded absolute path (${label}): "${m[0]}"`,
+          hint: 'Use a repo-relative path.'
+        });
+        break;
+      }
+    }
+  }
+
+  // LINT-07: prevents unconditional "impact before every edit" in instruction and skill files
+  const skillFiles = [
+    ...getSkillMarkdownFiles(path.join(rootDir, '.claude/skills')),
+    ...getSkillMarkdownFiles(path.join(rootDir, '.agents/skills'))
+  ].map(p => path.relative(rootDir, p));
+
+  const allInstructionAndSkillFiles = Array.from(new Set([
+    ...RESIDENT_INSTRUCTION_FILES,
+    ...skillFiles
+  ]));
+
+  for (const relPath of allInstructionAndSkillFiles) {
+    const fullPath = path.join(rootDir, relPath);
+    if (!fs.existsSync(fullPath)) {
+      continue;
+    }
+    const content = fs.readFileSync(fullPath, 'utf8');
+
+    for (const { re, label } of FORBIDDEN_IMPACT_PATTERNS) {
+      if (re.test(content)) {
+        violations.push({
+          relPath,
+          rule: 'LINT-07',
+          detail: `contains ${label}`,
+          hint: 'Use risk-tiered impact rules instead of unconditional impact before every edit.'
+        });
+        break;
+      }
     }
   }
 

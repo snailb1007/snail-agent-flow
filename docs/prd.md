@@ -625,51 +625,41 @@ A, unless product explicitly wants order state mutation.
 
 ---
 
-## 9. CLI MVP Proposal
+## 9. CLI Reference
 
-Initial CLI commands:
+Generated from the command registry in `bin/adp.js` (`USAGE`). The packaged binary is exposed as both `adp` and `saf`.
 
 ```bash
-adp init
-adp new-session "payment-logging"
-adp status
-adp validate-spec
-adp handoff
-adp doctor
+adp <command> [arguments]
+saf <command> [arguments]
 ```
 
-### `adp init`
+| Command | Purpose |
+|---|---|
+| `init` | Safely initialize required directories and template files. |
+| `feature <description>` | Create a validated Spec-Kit feature scaffold. |
+| `run <description>` | Initialize, create a feature scaffold, and validate it. |
+| `new-session <name>` | Create a new session log file and update active feature. |
+| `status` | Display active feature name, current phase, and gate status. |
+| `doctor` | Run static project integrity checks and validations. |
+| `validate-spec` | Run the deterministic specification validation gate. |
+| `handoff` | Validate memory handoff checklist completeness. |
+| `score <task.json>` | Score task risk and output profile selection. |
+| `claim <task-slug>` | Claim work unit ownership. |
+| `lease <file>` | Acquire advisory file lease lock. Options: `--release`, `--check`. |
+| `checkpoint` | Write profile-switch checkpoint. |
+| `signal <type> <val>` | Log observability signal. |
+| `onboard-memory` | Promote `ONBOARDING.md` content into `.ai/memory/` files. |
+| `budget` | Report estimated context byte pressure and policy outcome. Options: `--stage <id>`, `--json`, `--enforce`. |
+| `pack` | Generate a context pack manifest under `.ai/context-packs/`. Options: `--objective <text>`, `--stage <id>`, `--out <path>`. |
+| `compact-memory` | Prep snail-trail memory compaction: build the input pack, scaffold `.ai/state/handoff.md`, and print the prescribed fast-model subagent skeleton. Options: `--archive`, `--focus <text>`. |
+| `snapshot` | Create a git-based stash checkpoint for the active feature. Options: `--label <text>`, `--list`. |
+| `restore <id>` | Restore a git-based checkpoint. Options: `--hard`, `--yes`. |
+| `profile -- <cmd...>` | Run a command while profiling execution time and output size. |
+| `hooks <install\|uninstall\|status>` | Manage Claude Code lifecycle hooks. Options: `--apply`, `--events <list>`. |
+| `bypass <gate-id>` | Temporarily bypass a secondary gate. Options: `--ttl <seconds>`, `--reason <text>`, `--list`, `--clear`. |
 
-Creates:
-
-```text
-.ai/
-.specify/
-CLAUDE.md
-AGENTS.md
-```
-
-### `adp new-session`
-
-Creates:
-
-```text
-.ai/sessions/YYYY-MM-DD-<agent>-<task>.md
-.ai/state/active-feature.json
-.ai/state/run-state.json
-```
-
-### `adp validate-spec`
-
-Runs the deterministic spec validation gate.
-
-### `adp handoff`
-
-Checks whether Memory Handoff has been completed before ship.
-
-### `adp doctor`
-
-Checks missing files, broken state, missing memory, and validation gate status.
+The source of truth for command text is `bin/adp.js`; documentation should be refreshed from that registry when commands are added, removed, or renamed.
 
 ---
 
@@ -764,34 +754,9 @@ Ship:
 
 No heavy CLI required.
 
-### Phase 2 — CLI Init
+### Phase 2 — CLI Init / Runtime Commands
 
-Add:
-
-```bash
-adp init
-adp new-session
-adp status
-```
-
-### Phase 3 — Spec Validation Gate
-
-Add:
-
-```bash
-npm run validate
-npm run test:validator
-```
-
-Support deterministic validation before GSD execution.
-
-### Phase 4 — Memory Handoff Checker
-
-Add:
-
-```bash
-adp handoff
-```
+The original MVP commands (`init`, `new-session`, `status`, `validate-spec`, `handoff`, `doctor`) are implemented. The current CLI reference in Section 9 lists the full 22-command surface and should be treated as the doc↔code parity checkpoint.
 
 ### Phase 5 — Agent Presets
 

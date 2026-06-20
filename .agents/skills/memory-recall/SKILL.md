@@ -1,6 +1,6 @@
 ---
 name: memory-recall
-description: Use Codex-mem correctly — tag taxonomy, per-mode filters, proj: auto-detect, and the two-store memory hierarchy. Load when the turn needs cross-session memory or hits a resumption signal.
+description: "Use Codex-mem correctly — tag taxonomy, per-mode filters, proj: auto-detect, and the two-store memory hierarchy. Load when the turn needs cross-session memory or hits a resumption signal."
 ---
 
 # memory-recall

@@ -13,6 +13,8 @@ jobs:
         include:
           - suite: spec validation
             command: npm run validate
+          - suite: instruction-adapter lint
+            command: npm run test:lint
           - suite: validator unit tests
             command: npm run test:validator
           - suite: pipeline simulation
