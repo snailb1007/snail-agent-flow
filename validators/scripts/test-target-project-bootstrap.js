@@ -120,6 +120,13 @@ try {
     '.agents/skills/contracts/artifact-map.json',
     '.agents/skills/contracts/entities.schema.json',
     '.agents/skills/contracts/gate-result.schema.json',
+    // Vendored speckit skills invoke these support assets at runtime — they must be
+    // localized into the target so the skills are self-contained (regression guard).
+    '.specify/scripts/bash/setup-plan.sh',
+    '.specify/scripts/bash/check-prerequisites.sh',
+    '.specify/extensions.yml',
+    '.specify/extensions/git/scripts/bash/create-new-feature.sh',
+    '.specify/templates/spec-template.md',
     '.ai/memory/project-summary.md',
     '.ai/memory/current-architecture.md',
     '.ai/memory/known-risks.md',

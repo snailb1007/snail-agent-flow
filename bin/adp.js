@@ -359,6 +359,12 @@ function handleInit() {
 
   initializePackagedAtlasAssets(repoRoot);
 
+  // Many vendored skills (speckit-plan, speckit-tasks, speckit-git-*, ...) invoke shared
+  // support scripts under .specify/ at runtime. Localize that portable support tree alongside
+  // the skills so they are self-contained and reproducible, never depending on a globally
+  // installed spec-kit. Runs after skills so deps land with the skills that need them.
+  initializeSpecKitSupport(repoRoot);
+
   // Update .gitignore (idempotent, additive). Intentionally NOT subject to non-intrusive
   // gating: it protects the team from committing SAF runtime state (.ai/state, .ai/locks,
   // sessions, context packs) and is preventive plumbing, not workflow instruction.
@@ -1062,52 +1068,90 @@ function copyDirectoryNoOverwrite(srcDir, destDir) {
   return { copied, skipped, missing: false };
 }
 
+// Vendored skills are the deterministic source of truth. Every skill folder committed
+// under the package's .claude/skills (and any .agents/skills-only twins) is shipped via
+// package.json `files` and localized into target projects FROM THE PACKAGE — never from a
+// developer's machine-local ~/.gemini dir — so target installs are reproducible across
+// machines and runtimes. Copy is no-overwrite, so user-modified skills are preserved.
 function initializePackagedAtlasAssets(repoRoot) {
-  const assetDirs = [
-    '.claude/skills/atlas-auto-loop',
-    '.claude/skills/atlas-routing',
-    '.claude/skills/atlas-gates',
-    '.claude/skills/atlas-settle',
-    '.claude/skills/atlas-review',
-    '.claude/skills/saf-upgrade',
-    '.claude/skills/contracts'
-  ];
+  const listSkillDirs = (rel) => {
+    try {
+      return fs.readdirSync(path.join(packageRoot, rel), { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .map((e) => e.name)
+        .sort();
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const claudeSkills = listSkillDirs('.claude/skills');
+  const agentsSkills = listSkillDirs('.agents/skills');
+  const claudeSet = new Set(claudeSkills);
+
+  if (claudeSkills.length === 0) {
+    console.warn('[init] WARNING: No packaged skills found under the SAF package; skipping skill localization.');
+    return;
+  }
 
   let totalCopied = 0;
   let totalSkipped = 0;
   let anyMissing = false;
 
-  for (const relDir of assetDirs) {
-    const srcDir = path.join(packageRoot, relDir);
-
-    // Copy to .claude/skills/...
-    const destDir = path.join(repoRoot, relDir);
-    const result = copyDirectoryNoOverwrite(srcDir, destDir);
-
+  const tally = (srcRel, destRel) => {
+    const result = copyDirectoryNoOverwrite(path.join(packageRoot, srcRel), path.join(repoRoot, destRel));
     if (result.missing) {
-      console.warn(`[init] WARNING: Packaged ATLAS asset missing: ${relDir}`);
+      console.warn(`[init] WARNING: Packaged skill missing: ${srcRel}`);
       anyMissing = true;
-      continue;
-    } else if (result.copied > 0) {
-      console.log(`[init] Created ${relDir} (${result.copied} files copied, ${result.skipped} existing skipped)`);
-    } else {
-      console.log(`[init] ${relDir} already exists, skipping.`);
+      return;
+    }
+    if (result.copied > 0) {
+      console.log(`[init] Created ${destRel} (${result.copied} files copied, ${result.skipped} existing skipped)`);
     }
     totalCopied += result.copied;
     totalSkipped += result.skipped;
+  };
 
-    // Also copy to .agents/skills/... to support Gemini/Antigravity and other agents that look there
-    const agentsRelDir = relDir.replace('.claude/skills', '.agents/skills');
-    const agentsDestDir = path.join(repoRoot, agentsRelDir);
-    const agentsResult = copyDirectoryNoOverwrite(srcDir, agentsDestDir);
-    if (agentsResult.copied > 0) {
-      console.log(`[init] Created ${agentsRelDir} (${agentsResult.copied} files copied, ${agentsResult.skipped} existing skipped)`);
-    }
-    totalCopied += agentsResult.copied;
-    totalSkipped += agentsResult.skipped;
+  // Canonical Claude skills are localized into both roots so every skill is available to
+  // Claude Code (.claude/skills) and to Gemini/Antigravity/Codex (.agents/skills).
+  for (const slug of claudeSkills) {
+    tally(path.join('.claude/skills', slug), path.join('.claude/skills', slug));
+    tally(path.join('.claude/skills', slug), path.join('.agents/skills', slug));
+  }
+
+  // Skills that exist only on the agents side (no .claude twin) are localized to .agents only,
+  // preserving their runtime-specific scope.
+  for (const slug of agentsSkills) {
+    if (claudeSet.has(slug)) continue;
+    tally(path.join('.agents/skills', slug), path.join('.agents/skills', slug));
   }
 
   recordSkillsVersionStamp(repoRoot, { copied: totalCopied, skipped: totalSkipped, anyMissing });
+}
+
+// Localizes the portable .specify support tree that vendored skills invoke at runtime
+// (scripts, extensions, templates, extensions config). Copies are no-overwrite so user
+// customization is preserved, and only support assets are copied — never project state
+// (.specify/feature.json, .specify/memory/*) which is created per-project elsewhere.
+function initializeSpecKitSupport(repoRoot) {
+  for (const rel of ['.specify/scripts', '.specify/extensions', '.specify/templates']) {
+    const result = copyDirectoryNoOverwrite(path.join(packageRoot, rel), path.join(repoRoot, rel));
+    if (result.missing) {
+      continue;
+    }
+    if (result.copied > 0) {
+      console.log(`[init] Localized ${rel} (${result.copied} files copied, ${result.skipped} existing skipped)`);
+    }
+  }
+
+  // Single-file support config: a sensible default the user may edit (no-overwrite).
+  const ymlSrc = path.join(packageRoot, '.specify/extensions.yml');
+  const ymlDest = path.join(repoRoot, '.specify/extensions.yml');
+  if (fs.existsSync(ymlSrc) && !fs.existsSync(ymlDest)) {
+    fs.mkdirSync(path.dirname(ymlDest), { recursive: true });
+    fs.copyFileSync(ymlSrc, ymlDest);
+    console.log('[init] Localized .specify/extensions.yml');
+  }
 }
 
 // Records which SAF version localized the packaged skills, so `saf doctor` can
@@ -1371,11 +1415,15 @@ function localizeGlobalSkills(repoRoot) {
   const globalSkillsDir = path.join(homeDir, '.gemini/config/skills');
 
   if (!fs.existsSync(globalSkillsDir)) {
-    console.log('[init] Global skills directory does not exist, skipping GSD skill localization.');
+    // Not an error: the reproducible vendored skill set already shipped with the package and
+    // was localized by initializePackagedAtlasAssets. This step is an optional supplement.
     return;
   }
 
-  console.log('[init] Localizing global GSD skills...');
+  // Supplement only: any vendored gsd-* skill already exists on disk (copied from the package)
+  // and is skipped by the no-overwrite guard below. This adds *additional* gsd-* skills the
+  // developer has globally that the package does not vendor.
+  console.log('[init] Supplementing with additional global GSD skills (no-overwrite)...');
   try {
     const entries = fs.readdirSync(globalSkillsDir, { withFileTypes: true });
     for (const entry of entries) {

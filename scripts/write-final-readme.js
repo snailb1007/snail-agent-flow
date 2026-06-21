@@ -1,4 +1,6 @@
-# Snail Agent Flow
+const fs = require('fs');
+
+const content = `# Snail Agent Flow
 
 **Version 0.5.0**
 
@@ -8,11 +10,11 @@
 
 Snail Agent Flow is a local operating protocol for AI coding agents. It keeps specs, plans, validation gates, execution notes, reviews, and durable memory in predictable paths so a project can move from idea to release without scattered agent state.
 
-It implements the **ATLAS Loop** (`Align → Trace → Lay → Act → Settle`), a 5-stage risk-adaptive execution protocol.
+It implements the **ATLAS Loop** (\`Align → Trace → Lay → Act → Settle\`), a 5-stage risk-adaptive execution protocol.
 
 ## Flow Design
 
-```mermaid
+\`\`\`mermaid
 flowchart LR
   A["Align (A1)"] --> T["Trace (T)"]
   T --> L["Lay (L)"]
@@ -21,14 +23,14 @@ flowchart LR
 
   Act -. "tests fail" .-> L
   S -. "verify fail" .-> Act
-```
+\`\`\`
 
 ### The 5 ATLAS Stages
-- **Align (`align`)**: Scores task risk, claims work units, and selects risk profiles and work modes.
-- **Trace (`trace`)**: Writes or updates specifications and slices them into checklists of independent tasks.
-- **Lay (`lay`)**: Sets up failing tests, records git states, and acquires advisory file locks/leases.
-- **Act (`act`)**: Iterative TDD execution of tasks/slices with strict loop limits.
-- **Settle (`settle`)**: Verification, PR creation/shipping, code reviews, cleanup, and logging signals.
+- **Align (\`align\`)**: Scores task risk, claims work units, and selects risk profiles and work modes.
+- **Trace (\`trace\`)**: Writes or updates specifications and slices them into checklists of independent tasks.
+- **Lay (\`lay\`)**: Sets up failing tests, records git states, and acquires advisory file locks/leases.
+- **Act (\`act\`)**: Iterative TDD execution of tasks/slices with strict loop limits.
+- **Settle (\`settle\`)**: Verification, PR creation/shipping, code reviews, cleanup, and logging signals.
 
 ---
 
@@ -56,9 +58,9 @@ Profiles are evaluated using a 5-dimension risk rubric:
 | Layer | Tooling | Role |
 |---|---|---|
 | Constitution | Superpowers | Defines non-negotiable engineering behavior before work starts. |
-| Canonical spec | Spec-Kit | Owns `specs/<feature-slug>/spec.md`, `plan.md`, `tasks.md`, and checklists. |
-| Orchestration | Snail Agent Flow CLI (`adp` / `saf`) | Initializes paths, creates feature packets, tracks status, manages claims/leases, and logs signals. |
-| Custom gates | ATLAS Skills | Custom control skills (`atlas-auto-loop`, `atlas-routing`, `atlas-gates`, `atlas-settle`, `atlas-review`). |
+| Canonical spec | Spec-Kit | Owns \`specs/<feature-slug>/spec.md\`, \`plan.md\`, \`tasks.md\`, and checklists. |
+| Orchestration | Snail Agent Flow CLI (\`adp\` / \`saf\`) | Initializes paths, creates feature packets, tracks status, manages claims/leases, and logs signals. |
+| Custom gates | ATLAS Skills | Custom control skills (\`atlas-auto-loop\`, \`atlas-routing\`, \`atlas-gates\`, \`atlas-settle\`, \`atlas-review\`). |
 | Deterministic gates | Node.js validators | Checks spec headings, scans placeholders, detects drift, and creates human review packets. |
 | Recon support | Serena, Semble, Context7, GitNexus | Codebase indexing, context lookup, semantic search, and impact analysis. |
 
@@ -68,24 +70,24 @@ Profiles are evaluated using a 5-dimension risk rubric:
 
 | Path | Owner | Purpose |
 |---|---|---|
-| `.specify/` | Spec-Kit | Presets, templates, validation scripts, and the active feature pointer (`.specify/feature.json`). |
-| `specs/<feature-slug>/` | Spec-Kit | Feature Spec Source of Truth (`spec.md`, `plan.md`, `tasks.md`). |
-| `.claude/skills/` | ATLAS Loop | Custom ATLAS control skills (`atlas-auto-loop`, `atlas-routing`, `atlas-gates`, `atlas-settle`, `atlas-review`, `contracts`). |
-| `.ai/` | Orchestration | Session logs, reviews, memory, and runtime metadata. |
-| `.ai/state/flow-state.json` | Flow state | Durable execution state snapshot (replaces legacy `flow-ledger` and `run-state`). |
-| `.ai/claims/` | Claims manager | Active work unit claims (`.ai/claims/*.json`). |
-| `.ai/locks/` | Lease manager | Time-limited advisory file locks (`.ai/locks/*.json`). |
-| `.ai/signals/` | Signal logger | Flow metrics and observability signals (`.ai/signals/current-period.jsonl`). |
-| `bin/adp.js` | CLI | Zero-dependency local CLI command entry point. |
-| `lib/` | Runtime | Core library including context-pack-generator, context-policy-validator, init-checks, lease-manager, claim-manager, profile-scorer, signal-logger, checkpoint-writer, act-snapshot, cmd-profiler, hooks-installer, session-bypass, diff-hygiene, and validate-drift. |
-| `.ai/context-packs/` | Context Pack Generator | Context-pack manifests for scoped work units. |
-| `.ai/sessions/archive/<slug>/` | Session Manager | Archived session logs from compacted features. |
-| `.ai/state/skills-version.json` | Skill Localization | Localized skills version stamp for drift detection. |
-| `.ai/state/context-policy.json` | Context Budget | Context size policy limits and thresholds. |
-| `.ai/flows/` | Flow Engine | ATLAS flow definition files. |
-| `.claude/settings.json` | Hooks Installer | Claude Code lifecycle hooks configuration. |
-| `.agents/skills/` | Skill Localization | Alternative skill localization path for other runtimes. |
-| `validators/scripts/` | Gates | Offline test suites and verification scripts. |
+| \`.specify/\` | Spec-Kit | Presets, templates, validation scripts, and the active feature pointer (\`.specify/feature.json\`). |
+| \`specs/<feature-slug>/\` | Spec-Kit | Feature Spec Source of Truth (\`spec.md\`, \`plan.md\`, \`tasks.md\`). |
+| \`.claude/skills/\` | ATLAS Loop | Custom ATLAS control skills (\`atlas-auto-loop\`, \`atlas-routing\`, \`atlas-gates\`, \`atlas-settle\`, \`atlas-review\`, \`contracts\`). |
+| \`.ai/\` | Orchestration | Session logs, reviews, memory, and runtime metadata. |
+| \`.ai/state/flow-state.json\` | Flow state | Durable execution state snapshot (replaces legacy \`flow-ledger\` and \`run-state\`). |
+| \`.ai/claims/\` | Claims manager | Active work unit claims (\`.ai/claims/*.json\`). |
+| \`.ai/locks/\` | Lease manager | Time-limited advisory file locks (\`.ai/locks/*.json\`). |
+| \`.ai/signals/\` | Signal logger | Flow metrics and observability signals (\`.ai/signals/current-period.jsonl\`). |
+| \`bin/adp.js\` | CLI | Zero-dependency local CLI command entry point. |
+| \`lib/\` | Runtime | Core library including context-pack-generator, context-policy-validator, init-checks, lease-manager, claim-manager, profile-scorer, signal-logger, checkpoint-writer, act-snapshot, cmd-profiler, hooks-installer, session-bypass, diff-hygiene, and validate-drift. |
+| \`.ai/context-packs/\` | Context Pack Generator | Context-pack manifests for scoped work units. |
+| \`.ai/sessions/archive/<slug>/\` | Session Manager | Archived session logs from compacted features. |
+| \`.ai/state/skills-version.json\` | Skill Localization | Localized skills version stamp for drift detection. |
+| \`.ai/state/context-policy.json\` | Context Budget | Context size policy limits and thresholds. |
+| \`.ai/flows/\` | Flow Engine | ATLAS flow definition files. |
+| \`.claude/settings.json\` | Hooks Installer | Claude Code lifecycle hooks configuration. |
+| \`.agents/skills/\` | Skill Localization | Alternative skill localization path for other runtimes. |
+| \`validators/scripts/\` | Gates | Offline test suites and verification scripts. |
 
 ---
 
@@ -94,35 +96,35 @@ Profiles are evaluated using a 5-dimension risk rubric:
 Snail Agent Flow coordinates planning, execution, and release quality gates through modular, purpose-built skills:
 
 ### 1. Core ATLAS Loop
-* `atlas-auto-loop`: Entry skill for running the autonomous loop from `flow-state` and `atlas-flow`.
-* `atlas-routing`: Maps tasks to operating profiles and drives stage transitions dynamically.
-* `atlas-gates`: Evaluates preflight checklists, context budgets, and validation gates.
-* `atlas-review`: Conducts pre-landing reviews, threat models, and code quality checks.
-* `atlas-settle`: Automates post-execution validation, repository cleanup, and signal logging.
+* \`atlas-auto-loop\`: Entry skill for running the autonomous loop from \`flow-state\` and \`atlas-flow\`.
+* \`atlas-routing\`: Maps tasks to operating profiles and drives stage transitions dynamically.
+* \`atlas-gates\`: Evaluates preflight checklists, context budgets, and validation gates.
+* \`atlas-review\`: Conducts pre-landing reviews, threat models, and code quality checks.
+* \`atlas-settle\`: Automates post-execution validation, repository cleanup, and signal logging.
 
 ### 2. Spec-Kit & Planning
-* `speckit-specify` / `speckit-plan`: Scaffolds specifications (`spec.md`) and designs architecture (`plan.md`).
-* `speckit-tasks` / `speckit-checklist`: Generates dependency-ordered lists and verifies artifact consistency.
-* `speckit-taskstoissues`: Projects canonical `tasks.md` checklist items as GitHub tracking issues.
+* \`speckit-specify\` / \`speckit-plan\`: Scaffolds specifications (\`spec.md\`) and designs architecture (\`plan.md\`).
+* \`speckit-tasks\` / \`speckit-checklist\`: Generates dependency-ordered lists and verifies artifact consistency.
+* \`speckit-taskstoissues\`: Projects canonical \`tasks.md\` checklist items as GitHub tracking issues.
 
 ### 3. Execution (GSD)
-* `gsd-fast` / `gsd-quick`: Inline execution for trivial fixes (<2m) or medium-scale checklists.
-* `gsd-execute-phase` / `gsd-autonomous`: Manages parallel execution of phases using dedicated subagents.
-* `gsd-progress` / `gsd-manager`: Interactively displays active work status and routes commands.
-* `gsd-workspace` / `gsd-workstreams`: Manages isolated branch sandboxes and checkpoint states.
+* \`gsd-fast\` / \`gsd-quick\`: Inline execution for trivial fixes (<2m) or medium-scale checklists.
+* \`gsd-execute-phase\` / \`gsd-autonomous\`: Manages parallel execution of phases using dedicated subagents.
+* \`gsd-progress\` / \`gsd-manager\`: Interactively displays active work status and routes commands.
+* \`gsd-workspace\` / \`gsd-workstreams\`: Manages isolated branch sandboxes and checkpoint states.
 
 ### 4. Utility & Engineering Discipline
-* `using-superpowers`: Guides overall skill discovery and requires skill preflight checks.
-* `systematic-debugging` / `test-driven-development`: Enforces Red-Green-Refactor testing rigor.
-* `using-git-worktrees`: Allocates isolated workspace directories to parallel features.
-* `logo-generator`: Builds professional geometric and vector SVG product logo assets.
+* \`using-superpowers\`: Guides overall skill discovery and requires skill preflight checks.
+* \`systematic-debugging\` / \`test-driven-development\`: Enforces Red-Green-Refactor testing rigor.
+* \`using-git-worktrees\`: Allocates isolated workspace directories to parallel features.
+* \`logo-generator\`: Builds professional geometric and vector SVG product logo assets.
 
 ### 5. Upgrade & Contracts
-* `saf-upgrade`: Version-agnostic upgrade conductor for target projects (AI interprets `saf doctor` output and resolves project-specific conflicts).
-* `contracts`: Schema contracts mapping ATLAS entities and shapes in `.claude/skills/contracts`.
+* \`saf-upgrade\`: Version-agnostic upgrade conductor for target projects (AI interprets \`saf doctor\` output and resolves project-specific conflicts).
+* \`contracts\`: Schema contracts mapping ATLAS entities and shapes in \`.claude/skills/contracts\`.
 
 ### 6. Workspace Management
-* `gsd-workspace` / `gsd-workstreams`: Manages isolated branch sandboxes and checkpoint states.
+* \`gsd-workspace\` / \`gsd-workstreams\`: Manages isolated branch sandboxes and checkpoint states.
 
 ---
 
@@ -132,41 +134,41 @@ Snail Agent Flow is designed to structure AI context and execution for **any** r
 
 ### 1. Global Setup (Install CLI)
 Clone the repository and link or install the CLI globally:
-```bash
+\`\`\`bash
 git clone <repository-url>
 cd snail-agent-flow
 npm install
 npm link  # makes 'saf' and 'adp' commands available globally
-```
+\`\`\`
 
 ### 2. Integration in Your Target Project
 Navigate to your project directory and initialize the operating protocol:
-```bash
+\`\`\`bash
 cd /path/to/your/target-project
 saf init
-```
-This bootstraps all protocol directories (`.ai/`, `.specify/`, `specs/`), copies agent instruction documents (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) with ATLAS Loop guidance, configures the default ATLAS flow (`.ai/flows/atlas-flow.yaml`), sets up the context policy (`.ai/state/context-policy.json`), and copies the packaged ATLAS skills, including `atlas-auto-loop`, and contracts into `.claude/skills/atlas-*` and `.claude/skills/contracts`.
+\`\`\`
+This bootstraps all protocol directories (\`.ai/\`, \`.specify/\`, \`specs/\`), copies agent instruction documents (\`CLAUDE.md\`, \`GEMINI.md\`, \`AGENTS.md\`) with ATLAS Loop guidance, configures the default ATLAS flow (\`.ai/flows/atlas-flow.yaml\`), sets up the context policy (\`.ai/state/context-policy.json\`), and copies the packaged ATLAS skills, including \`atlas-auto-loop\`, and contracts into \`.claude/skills/atlas-*\` and \`.claude/skills/contracts\`.
 
 ### 3. Create a Feature Flow
 Start a new feature flow with specifications, architectural plans, and checklists:
-```bash
+\`\`\`bash
 saf run "Add user login"
-```
+\`\`\`
 
 ### 4. Monitor & Validate
-```bash
+\`\`\`bash
 # Check current stage status
 saf status
 
 # Verify spec and project health
 saf doctor
-```
+\`\`\`
 
 ---
 
 ## CLI Reference
 
-```
+\`\`\`
 Commands:
   init                  Safely initialize required directories and template files.
   feature <description> Create a validated Spec-Kit feature scaffold.
@@ -194,12 +196,12 @@ Commands:
                         Options: --stage <id>, --json, --enforce (exit 1 unless inline), --profile.
   pack                  Generate a context pack manifest under .ai/context-packs/.
                         Options: --objective <text>, --stage <id>, --out <path>.
-```
+\`\`\`
 
-`budget` is report-only by default; gating is opt-in via `--enforce`
+\`budget\` is report-only by default; gating is opt-in via \`--enforce\`
 (see [docs/compatibility-policy.md](docs/compatibility-policy.md)).
-`pack` fails closed: an invalid manifest is never left on disk.
-`compact-memory --focus "<next session goal>"` stores `next_session_focus`
+\`pack\` fails closed: an invalid manifest is never left on disk.
+\`compact-memory --focus "<next session goal>"\` stores \`next_session_focus\`
 in the compaction pack and handoff scaffold so the next session summary and
 open items can be tailored without changing the handoff gate.
 
@@ -207,7 +209,7 @@ open items can be tailored without changing the handoff gate.
 
 ## Verification Commands
 
-```bash
+\`\`\`bash
 npm run validate        # deterministic Spec-Kit validation
 npm run test:validator  # validator unit coverage
 npm run test:init-checks # strict init-time sanity check coverage
@@ -215,7 +217,7 @@ npm run test:pipeline   # Phase 2 pipeline simulation
 npm run test:cli        # CLI command integration coverage
 npm run test:lint       # lint checks
 npm test                # full validation suite
-```
+\`\`\`
 
 ## Reference Docs
 
@@ -231,3 +233,7 @@ npm test                # full validation suite
 - [Failure modes runbook](docs/runbooks/failure-modes.md)
 - [Compatibility policy](docs/compatibility-policy.md)
 - [Migration guide](docs/migration.md)
+`;
+
+fs.writeFileSync('README.md', content);
+console.log('README.md written successfully');
