@@ -10,19 +10,13 @@
   "last_verified_commit": "31e5ce2f8fd028ec333cc0e49f8096ebb494a974",
   "completed_steps": [
     "align.score",
-    "align.claim"
+    "align.claim",
+    "settle.verify",
+    "settle.signal",
+    "settle.release"
   ],
   "pending_step": "",
-  "locks": [
-    {
-      "file": "specs\\019-optimize-saf-init-prevent\\spec.md",
-      "acquired_at": "2026-05-30T18:15:39.179Z"
-    },
-    {
-      "file": "scratch\\temp.txt",
-      "acquired_at": "2026-06-15T14:26:12.592Z"
-    }
-  ],
+  "locks": [],
   "signals": [],
   "consecutive_failures": 0,
   "retry_count": 0,

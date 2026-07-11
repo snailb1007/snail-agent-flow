@@ -10,3 +10,11 @@ This file tracks decision-aligned metrics for the current period.
 - **Value:** 1
 - **Reason:** Final attempt count for feature
 
+### [2026-07-11T09:53:18.555Z] REVISION_COUNT
+- **Value:** 1
+- **Reason:** Final attempt count for feature
+
+### [2026-07-11T09:57:18.739Z] REVISION_COUNT
+- **Value:** 1
+- **Reason:** Final attempt count for feature
+
